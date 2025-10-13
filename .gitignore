@@ -1,0 +1,58 @@
+# 環境設定
+.env
+*.local
+api/.env*
+!api/.env*.erb
+
+# Git
+**/.git
+
+# Ruby/Rails
+api/.bundle
+api/log/*
+!api/log/.keep
+api/tmp/*
+!api/tmp/.keep
+api/tmp/pids/*
+!api/tmp/pids/.keep
+api/storage/*
+!api/storage/.keep
+api/tmp/storage/*
+!api/tmp/storage/.keep
+api/config/master.key
+
+# Node.js
+**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ビルド成果物
+front/dist
+front/dist-ssr
+
+# ログ
+**/logs
+*.log
+
+# テスト
+**/coverage
+
+# キャッシュ
+**/.cache
+
+
+# OS
+**/.DS_Store
+
+# エディタ
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

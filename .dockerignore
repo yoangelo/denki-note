@@ -1,0 +1,7 @@
+**/.git
+**/node_modules
+**/tmp
+**/log
+**/coverage
+**/.cache
+**/.DS_Store
