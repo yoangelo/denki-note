@@ -3,7 +3,7 @@ set -e
 
 if [ "$NODE_ENV" = "production" ]; then
   echo "==> Building front (production) and starting nginx"
-  npm ci
+  npm ci --include=dev
   npm run build
   # dist を nginx のドキュメントルートに配置
   rm -rf /var/www && mkdir -p /var/www && cp -r dist/* /var/www/

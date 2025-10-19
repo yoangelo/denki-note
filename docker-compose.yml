@@ -1,5 +1,3 @@
-version: "3.9"
-
 name: timesheet-app
 services:
   db:
@@ -32,6 +30,7 @@ services:
       RAILS_ENV: ${RAILS_ENV:-development}
       RAILS_LOG_TO_STDOUT: ${RAILS_LOG_TO_STDOUT:-true}
       RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-5}
+      FORCE_SSL: ${FORCE_SSL:-}
       TZ: ${TZ:-Asia/Tokyo}
     depends_on:
       db:
