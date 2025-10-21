@@ -37,6 +37,9 @@ front/dist-ssr
 **/logs
 *.log
 
+# ドキュメント
+**/docs
+
 # テスト
 **/coverage
 
@@ -56,3 +59,6 @@ front/dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AIプロンプト設定（個人用）
+CLAUDE.md
