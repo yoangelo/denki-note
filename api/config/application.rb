@@ -40,5 +40,27 @@ module App
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # ① CORS: 最前に差し込む（OPTIONSはここで204を返す）
+    config.middleware.insert_before 0, Rack::Cors do
+      allow do
+        # devはローカルフロントのみ。将来はENV化（例: CORS_ORIGINS）
+        origins ENV.fetch("CORS_ORIGINS", "http://localhost:5173").split(",")
+
+        # credentials=true の場合は '*' は使えません（特定Origin必須）
+        resource "*",
+          headers: :any,
+          methods: [:get, :post, :put, :patch, :delete, :options, :head],
+          credentials: true,
+          max_age: 86_400
+      end
+    end
+
+    # OpenAPIFirst validation middleware
+    # CORSミドルウェアの後に追加されるように、ここで設定
+    require 'openapi_first'
+    spec_path = File.expand_path('../../openapi/openapi.yaml', __dir__)
+    config.middleware.use OpenapiFirst::Middlewares::RequestValidation, spec: spec_path
+    config.middleware.use OpenapiFirst::Middlewares::ResponseValidation, spec: spec_path unless Rails.env.production?
   end
 end

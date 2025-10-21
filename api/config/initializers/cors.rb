@@ -1,8 +1,9 @@
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins '*'  # 開発中は全許可。将来はドメイン指定に。
+    origins ENV.fetch("CORS_ALLOWED_ORIGINS", "").split(",")
     resource '*',
       headers: :any,
-      methods: [:get, :post, :options]
+      methods: [:get, :post, :put, :patch, :delete, :options, :head],
+      credentials: true
   end
 end

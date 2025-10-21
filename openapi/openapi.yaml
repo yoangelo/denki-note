@@ -1,0 +1,34 @@
+openapi: 3.0.3
+info:
+  title: Timesheet API
+  version: 0.1.0
+servers:
+# .envファイルのVITE_API_ORIGINに合わせて修正
+  - url: ${VITE_API_ORIGIN}
+paths:
+  /health:
+    get:
+      operationId: health_check
+      tags: [Health]
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, time, message]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        time:
+          type: string
+          format: date-time
+        message:
+          type: string

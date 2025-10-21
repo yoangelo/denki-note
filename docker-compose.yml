@@ -37,6 +37,7 @@ services:
         condition: service_healthy
     volumes:
       - ./api:/app:cached
+      - ./openapi:/openapi:cached
       - bundle-cache:/usr/local/bundle
     ports:
       - "3000:3000"
@@ -55,6 +56,7 @@ services:
       TZ: ${TZ:-Asia/Tokyo}
     volumes:
       - ./front:/usr/src/app:cached
+      - ./openapi:/openapi:cached
       - front-node-modules:/usr/src/app/node_modules
     ports:
       - "5173:5173"   # dev: Vite
