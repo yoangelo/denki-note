@@ -4,12 +4,11 @@
  * Timesheet API
  * OpenAPI spec version: 0.1.0
  */
-export type HealthResponseStatus = typeof HealthResponseStatus[keyof typeof HealthResponseStatus];
-
+export type HealthResponseStatus = (typeof HealthResponseStatus)[keyof typeof HealthResponseStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const HealthResponseStatus = {
-  ok: 'ok',
+  ok: "ok",
 } as const;
 
 export interface HealthResponse {
@@ -17,4 +16,3 @@ export interface HealthResponse {
   time: string;
   message: string;
 }
-
