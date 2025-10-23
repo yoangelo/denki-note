@@ -47,45 +47,33 @@ export function BulkSave({ entries, onSuccess }: BulkSaveProps) {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h3>作業エントリのバルク保存</h3>
+    <div className="p-5">
+      <h3 className="text-lg font-semibold mb-4">作業エントリのバルク保存</h3>
       
-      <div style={{ marginBottom: "15px" }}>
-        <p>保存待ちエントリ数: {entries.length}件</p>
+      <div className="mb-4">
+        <p className="text-gray-700">保存待ちエントリ数: {entries.length}件</p>
       </div>
 
       <button
         onClick={handleSave}
         disabled={bulkCreate.isPending || entries.length === 0}
-        style={{
-          padding: "12px 24px",
-          fontSize: "16px",
-          backgroundColor: bulkCreate.isPending ? "#6c757d" : "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: bulkCreate.isPending || entries.length === 0 ? "not-allowed" : "pointer",
-          opacity: bulkCreate.isPending || entries.length === 0 ? 0.7 : 1,
-        }}
+        className={`px-6 py-3 text-base text-white border-none rounded transition-all ${
+          bulkCreate.isPending || entries.length === 0
+            ? "bg-gray-500 cursor-not-allowed opacity-70"
+            : "bg-blue-500 cursor-pointer hover:bg-blue-600"
+        }`}
       >
         {bulkCreate.isPending ? "保存中..." : "まとめて保存"}
       </button>
 
       {/* 成功メッセージ */}
       {bulkCreate.isSuccess && bulkCreate.data && (
-        <div style={{
-          marginTop: "15px",
-          padding: "10px",
-          backgroundColor: "#d4edda",
-          color: "#155724",
-          border: "1px solid #c3e6cb",
-          borderRadius: "4px",
-        }}>
+        <div className="mt-4 p-2.5 bg-green-100 text-green-800 border border-green-300 rounded">
           ✅ 保存完了: {bulkCreate.data.accepted}件成功
           {bulkCreate.data.failed && bulkCreate.data.failed.length > 0 && (
-            <div style={{ marginTop: "10px", color: "#721c24" }}>
+            <div className="mt-2.5 text-red-800">
               ⚠️ 失敗: {bulkCreate.data.failed.length}件
-              <ul>
+              <ul className="pl-5 mt-2">
                 {bulkCreate.data.failed.map((f, idx) => (
                   <li key={idx}>
                     ID: {f.client_entry_id} - {f.reason}
@@ -99,28 +87,13 @@ export function BulkSave({ entries, onSuccess }: BulkSaveProps) {
 
       {/* エラーメッセージ */}
       {bulkCreate.isError && (
-        <div style={{
-          marginTop: "15px",
-          padding: "10px",
-          backgroundColor: "#f8d7da",
-          color: "#721c24",
-          border: "1px solid #f5c6cb",
-          borderRadius: "4px",
-        }}>
+        <div className="mt-4 p-2.5 bg-red-100 text-red-800 border border-red-300 rounded">
           ❌ エラー: {(bulkCreate.error as Error).message}
         </div>
       )}
 
       {/* オフライン対応のヒント */}
-      <div style={{
-        marginTop: "20px",
-        padding: "15px",
-        backgroundColor: "#fff3cd",
-        color: "#856404",
-        border: "1px solid #ffeaa7",
-        borderRadius: "4px",
-        fontSize: "14px",
-      }}>
+      <div className="mt-5 p-4 bg-yellow-50 text-yellow-800 border border-yellow-300 rounded text-sm">
         💡 ヒント: オフライン時はローカルストレージに保存され、オンライン復帰時に自動同期されます（今後実装予定）
       </div>
     </div>

@@ -27,7 +27,14 @@ function MainApp() {
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   
   // サンプル用の作業エントリ（実際はフォームから入力）
-  const [workEntries, setWorkEntries] = useState<any[]>([]);
+  interface WorkEntry {
+    client_entry_id: string;
+    daily_report_id: string;
+    user_id: string;
+    summary: string;
+    minutes: number;
+  }
+  const [workEntries, setWorkEntries] = useState<WorkEntry[]>([]);
 
   const { data: customers } = useListCustomers();
 
@@ -57,59 +64,37 @@ function MainApp() {
   };
 
   return (
-    <div style={{ fontFamily: "sans-serif", minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
+    <div className="font-sans min-h-screen bg-gray-100">
       {/* ヘッダー */}
-      <header style={{
-        backgroundColor: "#343a40",
-        color: "white",
-        padding: "20px",
-        marginBottom: "20px",
-      }}>
-        <h1 style={{ margin: 0 }}>日報管理システム MVP</h1>
-        <p style={{ margin: "10px 0 0 0", opacity: 0.8 }}>
+      <header className="bg-gray-800 text-white p-5 mb-5">
+        <h1 className="m-0 text-3xl font-bold">日報管理システム MVP</h1>
+        <p className="mt-2.5 opacity-80">
           工数記録から請求予定額までをワンストップで管理
         </p>
       </header>
 
       {/* ビューモード切替 */}
-      <div style={{ 
-        padding: "0 20px 20px", 
-        display: "flex", 
-        gap: "10px",
-        borderBottom: "2px solid #dee2e6",
-      }}>
+      <div className="px-5 pb-5 flex gap-2.5 border-b-2 border-gray-300">
         <button
           onClick={() => setViewMode("daily")}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: viewMode === "daily" ? "#007bff" : "#6c757d",
-            color: "white",
-            border: "none",
-            borderRadius: "4px 4px 0 0",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
+          className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors ${
+            viewMode === "daily" ? "bg-blue-500" : "bg-gray-500"
+          }`}
         >
           日報入力
         </button>
         <button
           onClick={() => setViewMode("summary")}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: viewMode === "summary" ? "#007bff" : "#6c757d",
-            color: "white",
-            border: "none",
-            borderRadius: "4px 4px 0 0",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
+          className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors ${
+            viewMode === "summary" ? "bg-blue-500" : "bg-gray-500"
+          }`}
         >
           月次集計
         </button>
       </div>
 
       {/* メインコンテンツ */}
-      <main style={{ padding: "20px", backgroundColor: "white", margin: "20px", borderRadius: "8px" }}>
+      <main className="p-5 bg-white m-5 rounded-lg">
         {viewMode === "daily" ? (
           <div>
             {/* 顧客・現場選択 */}
@@ -117,7 +102,7 @@ function MainApp() {
             
             {/* バルク保存 */}
             {workEntries.length > 0 && (
-              <div style={{ marginTop: "40px", borderTop: "2px solid #dee2e6", paddingTop: "20px" }}>
+              <div className="mt-10 border-t-2 border-gray-300 pt-5">
                 <BulkSave 
                   entries={workEntries} 
                   onSuccess={handleBulkSaveSuccess}
@@ -127,15 +112,9 @@ function MainApp() {
             
             {/* 選択情報表示 */}
             {selectedCustomer && selectedSiteId && (
-              <div style={{
-                marginTop: "20px",
-                padding: "15px",
-                backgroundColor: "#e7f3ff",
-                borderRadius: "4px",
-                border: "1px solid #007bff",
-              }}>
-                <h4>選択中の情報</h4>
-                <p>顧客: {selectedCustomer.name}</p>
+              <div className="mt-5 p-4 bg-blue-50 rounded border border-blue-500">
+                <h4 className="text-lg font-semibold mb-2">選択中の情報</h4>
+                <p className="mb-1">顧客: {selectedCustomer.name}</p>
                 <p>現場ID: {selectedSiteId}</p>
               </div>
             )}
@@ -149,32 +128,20 @@ function MainApp() {
                 customerName={selectedCustomer.name}
               />
             ) : (
-              <div style={{
-                textAlign: "center",
-                padding: "40px",
-                backgroundColor: "#f8f9fa",
-                borderRadius: "8px",
-              }}>
-                <h3>顧客を選択してください</h3>
-                <p>日報入力タブから顧客と現場を選択すると、月次集計が表示されます。</p>
+              <div className="text-center p-10 bg-gray-50 rounded-lg">
+                <h3 className="text-xl font-semibold mb-4">顧客を選択してください</h3>
+                <p className="text-gray-600 mb-5">日報入力タブから顧客と現場を選択すると、月次集計が表示されます。</p>
                 
                 {/* クイック選択 */}
                 {customers && customers.length > 0 && (
-                  <div style={{ marginTop: "20px" }}>
-                    <h4>クイック選択</h4>
-                    <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                  <div className="mt-5">
+                    <h4 className="text-lg font-semibold mb-3">クイック選択</h4>
+                    <div className="flex gap-2.5 justify-center flex-wrap">
                       {customers.map(customer => (
                         <button
                           key={customer.id}
                           onClick={() => setSelectedCustomer({ id: customer.id, name: customer.name })}
-                          style={{
-                            padding: "10px 20px",
-                            backgroundColor: "#007bff",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
+                          className="px-5 py-2.5 bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600 transition-colors"
                         >
                           {customer.name}
                         </button>
@@ -189,14 +156,8 @@ function MainApp() {
       </main>
 
       {/* フッター */}
-      <footer style={{
-        marginTop: "40px",
-        padding: "20px",
-        backgroundColor: "#f8f9fa",
-        textAlign: "center",
-        borderTop: "1px solid #dee2e6",
-      }}>
-        <p style={{ margin: 0, color: "#6c757d" }}>
+      <footer className="mt-10 p-5 bg-gray-50 text-center border-t border-gray-300">
+        <p className="m-0 text-gray-500">
           MVP実装デモ - Rails API + React TypeScript + OpenAPI
         </p>
       </footer>
