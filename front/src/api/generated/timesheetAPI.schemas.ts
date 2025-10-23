@@ -16,3 +16,119 @@ export interface HealthResponse {
   time: string;
   message: string;
 }
+
+/**
+ * @nullable
+ */
+export type CustomerCustomerType =
+  | (typeof CustomerCustomerType)[keyof typeof CustomerCustomerType]
+  | null;
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerCustomerType = {
+  individual: "individual",
+  corporation: "corporation",
+} as const;
+
+export interface Customer {
+  id: string;
+  name: string;
+  /** @nullable */
+  customer_type?: CustomerCustomerType;
+  /** @nullable */
+  corporation_number?: string | null;
+  /** @nullable */
+  rate_percent?: number | null;
+  /** @nullable */
+  unit_rate?: number | null;
+}
+
+export interface Site {
+  id: string;
+  customer_id: string;
+  name: string;
+  /** @nullable */
+  note?: string | null;
+}
+
+export type ListCustomersParams = {
+  query?: string;
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+};
+
+export type ListSitesParams = {
+  customer_id: string;
+  query?: string;
+};
+
+export type CreateSiteBodySite = {
+  customer_id: string;
+  /** @maxLength 200 */
+  name: string;
+  /** @maxLength 500 */
+  note?: string;
+};
+
+export type CreateSiteBody = {
+  site: CreateSiteBodySite;
+};
+
+export type BulkCreateWorkEntriesBodyEntriesItem = {
+  client_entry_id: string;
+  daily_report_id: string;
+  user_id: string;
+  /** @maxLength 200 */
+  summary: string;
+  /** @minimum 0 */
+  minutes: number;
+};
+
+export type BulkCreateWorkEntriesBody = {
+  client_batch_id: string;
+  /** @minItems 1 */
+  entries: BulkCreateWorkEntriesBodyEntriesItem[];
+};
+
+export type BulkCreateWorkEntries200FailedItem = {
+  client_entry_id?: string;
+  reason?: string;
+};
+
+export type BulkCreateWorkEntries200 = {
+  accepted?: number;
+  failed?: BulkCreateWorkEntries200FailedItem[];
+};
+
+export type GetCustomerMonthSummaryParams = {
+  customer_id: string;
+  /**
+   * @pattern ^[0-9]{4}-[0-9]{2}$
+   */
+  yyyymm: string;
+  rate_toggle?: GetCustomerMonthSummaryRateToggle;
+};
+
+export type GetCustomerMonthSummaryRateToggle =
+  (typeof GetCustomerMonthSummaryRateToggle)[keyof typeof GetCustomerMonthSummaryRateToggle];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetCustomerMonthSummaryRateToggle = {
+  on: "on",
+  off: "off",
+} as const;
+
+export type GetCustomerMonthSummary200RowsItem = {
+  date?: string;
+  summary?: string;
+  hours?: number;
+};
+
+export type GetCustomerMonthSummary200 = {
+  rows: GetCustomerMonthSummary200RowsItem[];
+  total_hours: number;
+  amount_jpy: number;
+};

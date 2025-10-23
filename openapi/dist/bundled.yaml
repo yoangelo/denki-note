@@ -18,6 +18,213 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+  /customers:
+    get:
+      operationId: list_customers
+      tags:
+        - Customers
+      summary: Incremental search customers
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
+  /sites:
+    get:
+      operationId: list_sites
+      tags:
+        - Sites
+      summary: Search sites by customer
+      parameters:
+        - in: query
+          name: customer_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Site'
+    post:
+      operationId: create_site
+      tags:
+        - Sites
+      summary: Create new site under a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - site
+              type: object
+              properties:
+                site:
+                  type: object
+                  required:
+                    - customer_id
+                    - name
+                  properties:
+                    customer_id:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                      maxLength: 200
+                    note:
+                      type: string
+                      maxLength: 500
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+  /work_entries/bulk:
+    post:
+      operationId: bulk_create_work_entries
+      tags:
+        - WorkEntries
+      summary: Bulk upsert work entries for offline queue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - client_batch_id
+                - entries
+              type: object
+              properties:
+                client_batch_id:
+                  type: string
+                entries:
+                  type: array
+                  minItems: 1
+                  items:
+                    required:
+                      - client_entry_id
+                      - daily_report_id
+                      - user_id
+                      - summary
+                      - minutes
+                    type: object
+                    properties:
+                      client_entry_id:
+                        type: string
+                      daily_report_id:
+                        type: string
+                        format: uuid
+                      user_id:
+                        type: string
+                        format: uuid
+                      summary:
+                        type: string
+                        maxLength: 200
+                      minutes:
+                        type: integer
+                        multipleOf: 15
+                        minimum: 0
+      responses:
+        '200':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: integer
+                  failed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        client_entry_id:
+                          type: string
+                        reason:
+                          type: string
+  /summaries/customer-month:
+    get:
+      operationId: get_customer_month_summary
+      tags:
+        - Summaries
+      summary: Get monthly hours & amount by customer
+      parameters:
+        - in: query
+          name: customer_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: yyyymm
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+        - in: query
+          name: rate_toggle
+          schema:
+            type: string
+            enum:
+              - 'on'
+              - 'off'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                required:
+                  - rows
+                  - total_hours
+                  - amount_jpy
+                type: object
+                properties:
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        summary:
+                          type: string
+                        hours:
+                          type: number
+                  total_hours:
+                    type: number
+                  amount_jpy:
+                    type: integer
 components:
   schemas:
     HealthResponse:
@@ -36,3 +243,47 @@ components:
           format: date-time
         message:
           type: string
+    Customer:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        customer_type:
+          type: string
+          enum:
+            - individual
+            - corporation
+          nullable: true
+        corporation_number:
+          type: string
+          nullable: true
+        rate_percent:
+          type: integer
+          nullable: true
+        unit_rate:
+          type: number
+          nullable: true
+    Site:
+      type: object
+      required:
+        - id
+        - name
+        - customer_id
+      properties:
+        id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        note:
+          type: string
+          nullable: true
