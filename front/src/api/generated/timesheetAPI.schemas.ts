@@ -51,6 +51,12 @@ export interface Site {
   note?: string | null;
 }
 
+export interface User {
+  id: string;
+  display_name: string;
+  is_active: boolean;
+}
+
 export type ListCustomersParams = {
   query?: string;
   /**
@@ -101,6 +107,10 @@ export type BulkCreateWorkEntries200FailedItem = {
 export type BulkCreateWorkEntries200 = {
   accepted?: number;
   failed?: BulkCreateWorkEntries200FailedItem[];
+};
+
+export type ListUsersParams = {
+  is_active?: boolean;
 };
 
 export type GetCustomerMonthSummaryParams = {

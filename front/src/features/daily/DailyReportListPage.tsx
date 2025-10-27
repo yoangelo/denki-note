@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { DailyReportList } from "./DailyReportList";
-import { mockWorkers } from "@/data/mockWorkers";
+import { useListUsers } from "@/api/generated/users/users";
 
 // モックデータ型
 type WorkRow = {
@@ -13,7 +13,7 @@ type WorkRow = {
 };
 
 // モックデータ生成
-const generateMockData = (): Record<string, WorkRow[]> => {
+const generateMockData = (workers: Array<{ id: string; display_name: string }>): Record<string, WorkRow[]> => {
   const data: Record<string, WorkRow[]> = {};
   const customers = ["㈱ABC建設", "㈱DEF組", "GHI様", "JKL㈱"];
   const sites = ["〇〇市役所", "△△倉庫", "GHI様宅", "□□プール"];
@@ -42,10 +42,13 @@ const generateMockData = (): Record<string, WorkRow[]> => {
 
     for (let i = 0; i < rowCount; i++) {
       const workerHours: Record<string, number> = {};
-      mockWorkers.forEach((worker) => {
-        if (Math.random() > 0.3) {
-          workerHours[worker.id] = Math.floor(Math.random() * 4 + 1) * 0.5;
-        }
+      // ランダムに作業者を選択
+      const selectedWorkerCount = Math.floor(Math.random() * Math.min(3, workers.length)) + 1;
+      const shuffled = [...workers].sort(() => 0.5 - Math.random());
+      const selectedWorkers = shuffled.slice(0, selectedWorkerCount);
+      
+      selectedWorkers.forEach((worker) => {
+        workerHours[worker.id] = Math.floor(Math.random() * 4 + 1) * 0.5;
       });
 
       rows.push({
@@ -69,8 +72,14 @@ export function DailyReportListPage() {
     return format(now, "yyyy-MM");
   });
 
+  // APIから作業者一覧を取得
+  const { data: users = [] } = useListUsers({ query: { is_active: true } });
+
   // モックデータ
-  const allData = useMemo(() => generateMockData(), []);
+  const allData = useMemo(() => {
+    if (users.length === 0) return {};
+    return generateMockData(users);
+  }, [users]);
 
   // 選択月の日付リストを生成
   const monthDays = useMemo(() => {
@@ -99,6 +108,15 @@ export function DailyReportListPage() {
     // 実際のアプリケーションではここでAPIを呼び出して削除
   };
 
+  // Worker型に変換（display_nameとnameを統一）
+  const workersForList = useMemo(() => {
+    return users.map(user => ({
+      id: user.id,
+      name: user.display_name,
+      display_name: user.display_name
+    }));
+  }, [users]);
+
   return (
     <div className="p-4 max-w-full">
       <h2 className="text-2xl font-bold mb-4">日報一覧</h2>
@@ -126,7 +144,7 @@ export function DailyReportListPage() {
                   key={dateKey}
                   workDate={date}
                   workRows={rows}
-                  workers={mockWorkers}
+                  workers={workersForList}
                   onDeleteRow={(id) => handleDeleteRow(dateKey, id)}
                 />
               );

@@ -57,8 +57,6 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
 
   return (
     <div className="p-5 font-sans">
-      <h2 className="text-2xl font-bold mb-5">日報入力</h2>
-
       {/* 顧客検索 */}
       <div className="mb-5">
         <h3 className="text-lg font-semibold mb-3">1. 顧客を選択</h3>

@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
 type Worker = {
   id: string;
   name: string;
+  display_name?: string;
 };
 
 type WorkRow = {
@@ -28,6 +29,19 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
   workers,
   onDeleteRow,
 }) => {
+  // 作業データに含まれる作業者のみを抽出
+  const activeWorkers = useMemo(() => {
+    const workerIds = new Set<string>();
+    workRows.forEach((row) => {
+      Object.keys(row.workerHours).forEach((workerId) => {
+        if (row.workerHours[workerId] > 0) {
+          workerIds.add(workerId);
+        }
+      });
+    });
+    return workers.filter((worker) => workerIds.has(worker.id));
+  }, [workRows, workers]);
+
   const calculateRowTotal = (workerHours: Record<string, number>): number => {
     return Object.values(workerHours).reduce((sum, hours) => sum + hours, 0);
   };
@@ -49,12 +63,12 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
               <th className="border border-gray-300 px-2 py-2 text-left text-sm">お客様名</th>
               <th className="border border-gray-300 px-2 py-2 text-left text-sm">現場名</th>
               <th className="border border-gray-300 px-2 py-2 text-left text-sm">概要</th>
-              {workers.map((worker) => (
+              {activeWorkers.map((worker) => (
                 <th
                   key={worker.id}
                   className="border border-gray-300 px-2 py-2 text-center text-sm min-w-[80px]"
                 >
-                  {worker.name}
+                  {worker.display_name || worker.name}
                 </th>
               ))}
               <th className="border border-gray-300 px-2 py-2 text-center text-sm">合計</th>
@@ -67,7 +81,7 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
                 <td className="border border-gray-300 px-2 py-1 text-sm">{row.customerName}</td>
                 <td className="border border-gray-300 px-2 py-1 text-sm">{row.siteName}</td>
                 <td className="border border-gray-300 px-2 py-1 text-sm">{row.summary}</td>
-                {workers.map((worker) => (
+                {activeWorkers.map((worker) => (
                   <td
                     key={worker.id}
                     className="border border-gray-300 px-2 py-1 text-center text-sm"
@@ -91,7 +105,7 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
             {workRows.length === 0 && (
               <tr>
                 <td
-                  colSpan={workers.length + 5}
+                  colSpan={activeWorkers.length + 5}
                   className="border border-gray-300 px-4 py-8 text-center text-gray-500"
                 >
                   作業データがありません
@@ -103,7 +117,7 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
                 <td colSpan={3} className="border border-gray-300 px-2 py-2 text-right">
                   日計
                 </td>
-                {workers.map((worker) => {
+                {activeWorkers.map((worker) => {
                   const workerTotal = workRows.reduce(
                     (sum, row) => sum + (row.workerHours[worker.id] || 0),
                     0

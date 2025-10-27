@@ -171,6 +171,26 @@ paths:
                           type: string
                         reason:
                           type: string
+  /users:
+    get:
+      operationId: list_users
+      tags:
+        - Users
+      summary: Get users list
+      parameters:
+        - in: query
+          name: is_active
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
   /summaries/customer-month:
     get:
       operationId: get_customer_month_summary
@@ -287,3 +307,17 @@ components:
         note:
           type: string
           nullable: true
+    User:
+      type: object
+      required:
+        - id
+        - display_name
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        is_active:
+          type: boolean

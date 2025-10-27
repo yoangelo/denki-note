@@ -4,8 +4,9 @@ import { SelectCustomerAndSite } from "./SelectCustomerAndSite";
 import { TimeInput } from "@/components/TimeInput";
 import { Toast } from "@/components/Toast";
 import { useToast } from "@/hooks/useToast";
-import { mockWorkers } from "@/data/mockWorkers";
+import { WorkerSelect } from "@/components/WorkerSelect";
 import { useBulkCreateWorkEntries } from "@/api/generated/work-entries/work-entries";
+import { useListUsers } from "@/api/generated/users/users";
 
 export function DailyReportEntry() {
   const [workDate, setWorkDate] = useState(() => {
@@ -16,10 +17,12 @@ export function DailyReportEntry() {
   const [customerId, setCustomerId] = useState<string>("");
   const [siteId, setSiteId] = useState<string>("");
   const [summary, setSummary] = useState<string>("");
+  const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
   const [workerHours, setWorkerHours] = useState<Record<string, number>>({});
 
   const { toasts, showToast, removeToast } = useToast();
   const queryClient = useQueryClient();
+  const { data: users = [] } = useListUsers({ query: { is_active: true } });
 
   const bulkCreate = useBulkCreateWorkEntries({
     mutation: {
@@ -29,6 +32,7 @@ export function DailyReportEntry() {
         setCustomerId("");
         setSiteId("");
         setSummary("");
+        setSelectedWorkers([]);
         setWorkerHours({});
         queryClient.invalidateQueries({ queryKey: ["/summaries/customer-month"] });
       },
@@ -42,6 +46,21 @@ export function DailyReportEntry() {
   const handleCustomerSiteSelect = useCallback((ids: { customerId: string; siteId: string }) => {
     setCustomerId(ids.customerId);
     setSiteId(ids.siteId);
+  }, []);
+
+  // 作業者選択更新
+  const handleWorkersChange = useCallback((workers: string[]) => {
+    setSelectedWorkers(workers);
+    // 選択解除された作業者の時間をクリア
+    setWorkerHours((prev) => {
+      const newHours = { ...prev };
+      Object.keys(newHours).forEach((workerId) => {
+        if (!workers.includes(workerId)) {
+          delete newHours[workerId];
+        }
+      });
+      return newHours;
+    });
   }, []);
 
   // 時間入力更新
@@ -136,24 +155,36 @@ export function DailyReportEntry() {
           />
         </div>
 
-        {/* 作業者時間入力 */}
+        {/* 作業者選択 */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">作業時間（0.25h単位）</label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {mockWorkers.map((worker) => (
-              <div key={worker.id} className="flex items-center justify-between">
-                <span className="text-sm font-medium mr-2">{worker.name}:</span>
-                <TimeInput
-                  value={workerHours[worker.id] || 0}
-                  onChange={(value) => updateWorkerHours(worker.id, value)}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 text-right">
-            <span className="text-sm font-semibold">合計: {calculateTotal()}h</span>
-          </div>
+          <WorkerSelect
+            selectedWorkers={selectedWorkers}
+            onWorkersChange={handleWorkersChange}
+          />
         </div>
+
+        {/* 作業者時間入力 */}
+        {selectedWorkers.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">作業時間（0.25h単位）</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {users
+                .filter((user) => selectedWorkers.includes(user.id))
+                .map((user) => (
+                  <div key={user.id} className="flex items-center justify-between">
+                    <span className="text-sm font-medium mr-2">{user.display_name}:</span>
+                    <TimeInput
+                      value={workerHours[user.id] || 0}
+                      onChange={(value) => updateWorkerHours(user.id, value)}
+                    />
+                  </div>
+                ))}
+            </div>
+            <div className="mt-2 text-right">
+              <span className="text-sm font-semibold">合計: {calculateTotal()}h</span>
+            </div>
+          </div>
+        )}
 
         {/* 保存ボタン */}
         <div className="flex justify-end gap-2">
