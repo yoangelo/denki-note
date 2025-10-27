@@ -8,8 +8,8 @@ interface CustomerMonthProps {
 
 export function CustomerMonth({ customerId, customerName }: CustomerMonthProps) {
   const today = new Date();
-  const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  
+  const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
   const [yyyymm, setYyyymm] = useState(currentYearMonth);
   const [rateToggle, setRateToggle] = useState<"on" | "off">("on");
 
@@ -28,7 +28,7 @@ export function CustomerMonth({ customerId, customerName }: CustomerMonthProps) 
   };
 
   const handleRateToggle = () => {
-    setRateToggle(prev => prev === "on" ? "off" : "on");
+    setRateToggle((prev) => (prev === "on" ? "off" : "on"));
   };
 
   if (!customerId) {
@@ -39,7 +39,7 @@ export function CustomerMonth({ customerId, customerName }: CustomerMonthProps) 
     <div className="p-5 font-sans">
       <h2 className="text-2xl font-bold mb-3">月次集計</h2>
       {customerName && <h3 className="text-lg mb-4">顧客: {customerName}</h3>}
-      
+
       {/* 月選択 */}
       <div className="mb-5">
         <label className="mr-2.5">対象月:</label>
@@ -76,27 +76,17 @@ export function CustomerMonth({ customerId, customerName }: CustomerMonthProps) 
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="p-2.5 text-left border-b-2 border-gray-300">
-                    日付
-                  </th>
-                  <th className="p-2.5 text-left border-b-2 border-gray-300">
-                    概要
-                  </th>
-                  <th className="p-2.5 text-right border-b-2 border-gray-300">
-                    工数
-                  </th>
+                  <th className="p-2.5 text-left border-b-2 border-gray-300">日付</th>
+                  <th className="p-2.5 text-left border-b-2 border-gray-300">概要</th>
+                  <th className="p-2.5 text-right border-b-2 border-gray-300">工数</th>
                 </tr>
               </thead>
               <tbody>
                 {data.rows && data.rows.length > 0 ? (
                   data.rows.map((row, index) => (
                     <tr key={index}>
-                      <td className="p-2.5 border-b border-gray-300">
-                        {row.date}
-                      </td>
-                      <td className="p-2.5 border-b border-gray-300">
-                        {row.summary || "-"}
-                      </td>
+                      <td className="p-2.5 border-b border-gray-300">{row.date}</td>
+                      <td className="p-2.5 border-b border-gray-300">{row.summary || "-"}</td>
                       <td className="p-2.5 text-right border-b border-gray-300 font-bold">
                         {row.hours?.toFixed(2)}h
                       </td>
@@ -133,7 +123,7 @@ export function CustomerMonth({ customerId, customerName }: CustomerMonthProps) 
                   ¥{data.amount_jpy.toLocaleString()}
                 </p>
               </div>
-              
+
               {/* 掛率トグル */}
               <div>
                 <label className="flex items-center cursor-pointer p-2.5 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors">

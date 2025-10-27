@@ -49,7 +49,7 @@ export function BulkSave({ entries, onSuccess }: BulkSaveProps) {
   return (
     <div className="p-5">
       <h3 className="text-lg font-semibold mb-4">作業エントリのバルク保存</h3>
-      
+
       <div className="mb-4">
         <p className="text-gray-700">保存待ちエントリ数: {entries.length}件</p>
       </div>
@@ -94,7 +94,8 @@ export function BulkSave({ entries, onSuccess }: BulkSaveProps) {
 
       {/* オフライン対応のヒント */}
       <div className="mt-5 p-4 bg-yellow-50 text-yellow-800 border border-yellow-300 rounded text-sm">
-        💡 ヒント: オフライン時はローカルストレージに保存され、オンライン復帰時に自動同期されます（今後実装予定）
+        💡 ヒント:
+        オフライン時はローカルストレージに保存され、オンライン復帰時に自動同期されます（今後実装予定）
       </div>
     </div>
   );

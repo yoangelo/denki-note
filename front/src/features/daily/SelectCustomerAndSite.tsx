@@ -15,18 +15,19 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
   const queryClient = useQueryClient();
 
   // 顧客検索
-  const { data: customers, isLoading: customersLoading } = useListCustomers(
-    { query: query || undefined, limit: 20 }
-  );
+  const { data: customers, isLoading: customersLoading } = useListCustomers({
+    query: query || undefined,
+    limit: 20,
+  });
 
   // 選択された顧客の現場一覧
   const { data: sites, isLoading: sitesLoading } = useListSites(
     { customer_id: selectedCustomerId || "" },
-    { 
-      query: { 
+    {
+      query: {
         enabled: !!selectedCustomerId,
-        queryKey: [`/sites`, { customer_id: selectedCustomerId || "" }] 
-      } 
+        queryKey: [`/sites`, { customer_id: selectedCustomerId || "" }],
+      },
     }
   );
 
@@ -48,7 +49,7 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
           site: {
             customer_id: selectedCustomerId,
             name: newSiteName.trim(),
-          }
+          },
         },
       });
     }
@@ -57,7 +58,7 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
   return (
     <div className="p-5 font-sans">
       <h2 className="text-2xl font-bold mb-5">日報入力</h2>
-      
+
       {/* 顧客検索 */}
       <div className="mb-5">
         <h3 className="text-lg font-semibold mb-3">1. 顧客を選択</h3>
@@ -68,9 +69,9 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
           placeholder="顧客名で検索..."
           className="p-2 w-full max-w-sm text-base border border-gray-300 rounded"
         />
-        
+
         {customersLoading && <p className="mt-2 text-gray-600">読み込み中...</p>}
-        
+
         <div className="mt-2.5">
           {customers?.map((customer) => (
             <button
@@ -80,16 +81,17 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
                 setShowNewSiteForm(false);
               }}
               className={`block p-2.5 my-1 w-full max-w-md text-left border rounded cursor-pointer transition-colors ${
-                selectedCustomerId === customer.id 
-                  ? "bg-blue-500 text-white border-blue-500" 
+                selectedCustomerId === customer.id
+                  ? "bg-blue-500 text-white border-blue-500"
                   : "bg-gray-100 text-black border-gray-300 hover:bg-gray-200"
               }`}
             >
               {customer.name}
               {customer.customer_type === "corporation" && <span className="text-sm"> (法人)</span>}
               {customer.customer_type === "individual" && <span className="text-sm"> (個人)</span>}
-              {customer.rate_percent && customer.rate_percent !== 100 && 
-                <span className="text-sm"> - 掛率: {customer.rate_percent}%</span>}
+              {customer.rate_percent && customer.rate_percent !== 100 && (
+                <span className="text-sm"> - 掛率: {customer.rate_percent}%</span>
+              )}
             </button>
           ))}
         </div>
@@ -99,24 +101,26 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
       {selectedCustomerId && (
         <div className="mb-5">
           <h3 className="text-lg font-semibold mb-3">2. 現場を選択</h3>
-          
+
           {sitesLoading && <p className="text-gray-600">読み込み中...</p>}
-          
+
           <div className="mt-2.5">
             {sites?.map((site) => (
               <button
                 key={site.id}
-                onClick={() => onSelect({ 
-                  customerId: selectedCustomerId, 
-                  siteId: site.id 
-                })}
+                onClick={() =>
+                  onSelect({
+                    customerId: selectedCustomerId,
+                    siteId: site.id,
+                  })
+                }
                 className="block p-2.5 my-1 w-full max-w-md text-left bg-blue-50 border border-blue-500 rounded cursor-pointer hover:bg-blue-100 transition-colors"
               >
                 {site.name}
                 {site.note && <span className="text-xs text-gray-600"> - {site.note}</span>}
               </button>
             ))}
-            
+
             {/* 現場追加ボタン */}
             {!showNewSiteForm && (
               <button
@@ -126,7 +130,7 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
                 + 新しい現場を追加
               </button>
             )}
-            
+
             {/* 現場追加フォーム */}
             {showNewSiteForm && (
               <div className="mt-2.5 p-4 bg-gray-50 rounded">
@@ -141,8 +145,8 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
                   onClick={handleCreateSite}
                   disabled={!newSiteName.trim() || createSite.isPending}
                   className={`px-4 py-2 bg-blue-500 text-white border-none rounded transition-opacity ${
-                    newSiteName.trim() 
-                      ? "cursor-pointer hover:bg-blue-600" 
+                    newSiteName.trim()
+                      ? "cursor-pointer hover:bg-blue-600"
                       : "cursor-not-allowed opacity-50"
                   }`}
                 >
