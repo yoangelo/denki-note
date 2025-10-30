@@ -16,12 +16,12 @@ type WorkRow = {
   workerHours: Record<string, number>;
 };
 
-interface DailyReportListProps {
+type DailyReportListProps = {
   workDate: Date;
   workRows: WorkRow[];
   workers: Worker[];
   onDeleteRow: (id: string) => void;
-}
+};
 
 export const DailyReportList: React.FC<DailyReportListProps> = ({
   workDate,

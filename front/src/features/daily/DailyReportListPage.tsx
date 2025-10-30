@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { DailyReportList } from "./DailyReportList";
 import { useListUsers } from "@/api/generated/users/users";
@@ -13,7 +13,9 @@ type WorkRow = {
 };
 
 // モックデータ生成
-const generateMockData = (workers: Array<{ id: string; display_name: string }>): Record<string, WorkRow[]> => {
+const generateMockData = (
+  workers: Array<{ id: string; display_name: string }>
+): Record<string, WorkRow[]> => {
   const data: Record<string, WorkRow[]> = {};
   const customers = ["㈱ABC建設", "㈱DEF組", "GHI様", "JKL㈱"];
   const sites = ["〇〇市役所", "△△倉庫", "GHI様宅", "□□プール"];
@@ -46,7 +48,7 @@ const generateMockData = (workers: Array<{ id: string; display_name: string }>):
       const selectedWorkerCount = Math.floor(Math.random() * Math.min(3, workers.length)) + 1;
       const shuffled = [...workers].sort(() => 0.5 - Math.random());
       const selectedWorkers = shuffled.slice(0, selectedWorkerCount);
-      
+
       selectedWorkers.forEach((worker) => {
         workerHours[worker.id] = Math.floor(Math.random() * 4 + 1) * 0.5;
       });
@@ -73,7 +75,7 @@ export function DailyReportListPage() {
   });
 
   // APIから作業者一覧を取得
-  const { data: users = [] } = useListUsers({ query: { is_active: true } });
+  const { data: users = [] } = useListUsers({ is_active: true });
 
   // モックデータ
   const allData = useMemo(() => {
@@ -110,10 +112,10 @@ export function DailyReportListPage() {
 
   // Worker型に変換（display_nameとnameを統一）
   const workersForList = useMemo(() => {
-    return users.map(user => ({
+    return users.map((user) => ({
       id: user.id,
       name: user.display_name,
-      display_name: user.display_name
+      display_name: user.display_name,
     }));
   }, [users]);
 

@@ -1,9 +1,9 @@
 // 作業者マスタのモックデータ
-export interface Worker {
+export type Worker = {
   id: string;
   name: string;
   isActive: boolean;
-}
+};
 
 export const mockWorkers: Worker[] = [
   { id: "worker_1", name: "田中", isActive: true },

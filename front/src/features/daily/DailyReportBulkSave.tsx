@@ -1,17 +1,17 @@
 import { useBulkCreateWorkEntries } from "@/api/generated/work-entries/work-entries";
 
-interface WorkEntry {
+type WorkEntry = {
   client_entry_id: string;
   daily_report_id: string;
   user_id: string;
   summary: string;
   minutes: number;
-}
+};
 
-interface BulkSaveProps {
+type BulkSaveProps = {
   entries: WorkEntry[];
   onSuccess?: () => void;
-}
+};
 
 export function BulkSave({ entries, onSuccess }: BulkSaveProps) {
   const bulkCreate = useBulkCreateWorkEntries({

@@ -1,218 +1,257 @@
-import { useState, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { SelectCustomerAndSite } from "./SelectCustomerAndSite";
+import { SelectCustomerAndSite } from "@/components/SelectCustomerAndSite";
 import { TimeInput } from "@/components/TimeInput";
-import { Toast } from "@/components/Toast";
-import { useToast } from "@/hooks/useToast";
 import { WorkerSelect } from "@/components/WorkerSelect";
-import { useBulkCreateWorkEntries } from "@/api/generated/work-entries/work-entries";
 import { useListUsers } from "@/api/generated/users/users";
 
-export function DailyReportEntry() {
-  const [workDate, setWorkDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  });
+// 作業内容の入力行
+export type WorkRow = {
+  id: string;
+  customerId: string;
+  siteId: string;
+  summary: string;
+  selectedWorkers: string[];
+  workerHours: Record<string, number>;
+};
 
-  const [customerId, setCustomerId] = useState<string>("");
-  const [siteId, setSiteId] = useState<string>("");
-  const [summary, setSummary] = useState<string>("");
-  const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
-  const [workerHours, setWorkerHours] = useState<Record<string, number>>({});
+type DailyReportEntryProps = {
+  workDate: string;
+  showWorkArea: boolean;
+  workRows: WorkRow[];
+  onStartReport: () => void;
+  addRow: () => void;
+  deleteRow: (rowId: string) => void;
+  updateRow: (rowId: string, updates: Partial<WorkRow>) => void;
+  handleCustomerSiteSelect: (rowId: string, ids: { customerId: string; siteId: string }) => void;
+  handleWorkersChange: (rowId: string, workers: string[]) => void;
+  updateWorkerHours: (rowId: string, workerId: string, hours: number) => void;
+  calculateRowTotal: (row: WorkRow) => number;
+  calculateTotalHours: () => number;
+  handleSave: () => void;
+  isRowValid: (row: WorkRow) => boolean;
+  bulkCreateIsPending: boolean;
+};
 
-  const { toasts, showToast, removeToast } = useToast();
-  const queryClient = useQueryClient();
-  const { data: users = [] } = useListUsers({ query: { is_active: true } });
-
-  const bulkCreate = useBulkCreateWorkEntries({
-    mutation: {
-      onSuccess: (data) => {
-        showToast(`${data.accepted}件の作業を保存しました`, "success");
-        // 保存成功後、フォームをクリア
-        setCustomerId("");
-        setSiteId("");
-        setSummary("");
-        setSelectedWorkers([]);
-        setWorkerHours({});
-        queryClient.invalidateQueries({ queryKey: ["/summaries/customer-month"] });
-      },
-      onError: () => {
-        showToast("保存に失敗しました", "error");
-      },
-    },
-  });
-
-  // 顧客・現場選択ハンドラ
-  const handleCustomerSiteSelect = useCallback((ids: { customerId: string; siteId: string }) => {
-    setCustomerId(ids.customerId);
-    setSiteId(ids.siteId);
-  }, []);
-
-  // 作業者選択更新
-  const handleWorkersChange = useCallback((workers: string[]) => {
-    setSelectedWorkers(workers);
-    // 選択解除された作業者の時間をクリア
-    setWorkerHours((prev) => {
-      const newHours = { ...prev };
-      Object.keys(newHours).forEach((workerId) => {
-        if (!workers.includes(workerId)) {
-          delete newHours[workerId];
-        }
-      });
-      return newHours;
-    });
-  }, []);
-
-  // 時間入力更新
-  const updateWorkerHours = useCallback((workerId: string, hours: number) => {
-    setWorkerHours((prev) => ({
-      ...prev,
-      [workerId]: hours,
-    }));
-  }, []);
-
-  // 合計時間を計算
-  const calculateTotal = useCallback(() => {
-    return Object.values(workerHours).reduce((sum, h) => sum + h, 0);
-  }, [workerHours]);
-
-  // 保存処理
-  const handleSave = useCallback(() => {
-    if (!customerId || !siteId) {
-      showToast("顧客と現場を選択してください", "error");
-      return;
-    }
-
-    const totalHours = calculateTotal();
-    if (totalHours === 0) {
-      showToast("作業時間を入力してください", "error");
-      return;
-    }
-
-    // APIに送信するデータを作成
-    const entries: {
-      client_entry_id: string;
-      daily_report_id: string;
-      user_id: string;
-      summary: string;
-      minutes: number;
-    }[] = [];
-    Object.entries(workerHours).forEach(([workerId, hours]) => {
-      if (hours > 0) {
-        entries.push({
-          client_entry_id: `${Date.now()}_${workerId}`,
-          daily_report_id: `report_${workDate}_${siteId}`,
-          user_id: workerId,
-          summary: summary,
-          minutes: Math.round(hours * 60),
-        });
-      }
-    });
-
-    const clientBatchId = `batch_${Date.now()}`;
-    bulkCreate.mutate({
-      data: {
-        client_batch_id: clientBatchId,
-        entries,
-      },
-    });
-  }, [customerId, siteId, workerHours, summary, workDate, calculateTotal, bulkCreate, showToast]);
+export function DailyReportEntry({
+  workDate,
+  showWorkArea,
+  workRows,
+  onStartReport,
+  addRow,
+  deleteRow,
+  updateRow,
+  handleCustomerSiteSelect,
+  handleWorkersChange,
+  updateWorkerHours,
+  calculateRowTotal,
+  calculateTotalHours,
+  handleSave,
+  isRowValid,
+  bulkCreateIsPending,
+}: DailyReportEntryProps) {
+  const { data: users = [] } = useListUsers({ is_active: true });
 
   return (
-    <div className="p-4 max-w-full">
-      <h2 className="text-2xl font-bold mb-4">日報入力</h2>
-
-      {/* 日付選択 */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">作業日</label>
-        <input
-          type="date"
-          value={workDate}
-          onChange={(e) => setWorkDate(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md"
-        />
-      </div>
-
-      {/* 入力フォーム */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-4">
-        <h3 className="text-lg font-semibold mb-3">作業内容</h3>
-
-        {/* 顧客・現場選択 */}
-        <div className="mb-4">
-          <SelectCustomerAndSite onSelect={handleCustomerSiteSelect} />
-        </div>
-
-        {/* 概要入力 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">概要（任意）</label>
-          <input
-            type="text"
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            placeholder="作業内容を入力（最大200文字）"
-            maxLength={200}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
-        </div>
-
-        {/* 作業者選択 */}
-        <div className="mb-4">
-          <WorkerSelect
-            selectedWorkers={selectedWorkers}
-            onWorkersChange={handleWorkersChange}
-          />
-        </div>
-
-        {/* 作業者時間入力 */}
-        {selectedWorkers.length > 0 && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">作業時間（0.25h単位）</label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {users
-                .filter((user) => selectedWorkers.includes(user.id))
-                .map((user) => (
-                  <div key={user.id} className="flex items-center justify-between">
-                    <span className="text-sm font-medium mr-2">{user.display_name}:</span>
-                    <TimeInput
-                      value={workerHours[user.id] || 0}
-                      onChange={(value) => updateWorkerHours(user.id, value)}
-                    />
-                  </div>
-                ))}
-            </div>
-            <div className="mt-2 text-right">
-              <span className="text-sm font-semibold">合計: {calculateTotal()}h</span>
-            </div>
-          </div>
-        )}
-
-        {/* 保存ボタン */}
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={handleSave}
-            disabled={bulkCreate.isPending}
-            className={`px-6 py-2 text-white rounded ${
-              bulkCreate.isPending
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-500 hover:bg-blue-600"
-            }`}
+    <>
+      {/* 作業内容入力エリア or 日報作成ボタン */}
+      {!showWorkArea ? (
+        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
           >
-            {bulkCreate.isPending ? "保存中..." : "保存"}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{workDate}の日報</h3>
+          <p className="text-sm text-gray-500 mb-6">
+            作業内容を入力するには「日報を作成する」をクリックしてください
+          </p>
+          <button
+            onClick={onStartReport}
+            className="px-6 py-3 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors shadow-lg hover:shadow-xl"
+          >
+            日報を作成する
           </button>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4">
+          {workRows.map((row, index) => (
+            <div
+              key={row.id}
+              className={`bg-white rounded-lg shadow-sm overflow-hidden transition-all ${
+                isRowValid(row) ? "ring-2 ring-green-500" : ""
+              }`}
+            >
+              {/* 行ヘッダー */}
+              <div className="bg-gray-50 px-4 py-3 border-b flex justify-between items-center">
+                <h3 className="font-medium text-gray-700">
+                  作業 {index + 1}
+                  {isRowValid(row) && <span className="ml-2 text-green-600">✓</span>}
+                </h3>
+                {workRows.length > 1 && (
+                  <button
+                    onClick={() => deleteRow(row.id)}
+                    className="text-red-500 hover:text-red-700 text-sm font-medium"
+                  >
+                    削除
+                  </button>
+                )}
+              </div>
 
-      {/* トースト表示 */}
-      <div className="fixed top-0 right-0 z-50">
-        {toasts.map((toast) => (
-          <Toast
-            key={toast.id}
-            message={toast.message}
-            type={toast.type}
-            onClose={() => removeToast(toast.id)}
-          />
-        ))}
-      </div>
-    </div>
+              <div className="p-4 space-y-4">
+                {/* 顧客・現場選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    顧客・現場
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <SelectCustomerAndSite
+                    onSelect={(ids) => handleCustomerSiteSelect(row.id, ids)}
+                  />
+                </div>
+
+                {/* 概要入力 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">作業概要</label>
+                  <textarea
+                    value={row.summary}
+                    onChange={(e) => updateRow(row.id, { summary: e.target.value })}
+                    placeholder="例: エアコン設置工事、配線作業"
+                    maxLength={200}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{row.summary.length}/200文字</p>
+                </div>
+
+                {/* 作業者選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    作業者
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <WorkerSelect
+                    selectedWorkers={row.selectedWorkers}
+                    onWorkersChange={(workers) => handleWorkersChange(row.id, workers)}
+                  />
+                </div>
+
+                {/* 作業時間入力 */}
+                {row.selectedWorkers.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      作業時間（0.25h単位）
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {users
+                          .filter((user) => row.selectedWorkers.includes(user.id))
+                          .map((user) => (
+                            <div
+                              key={user.id}
+                              className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-gray-200"
+                            >
+                              <span className="font-medium text-gray-700">{user.display_name}</span>
+                              <TimeInput
+                                value={row.workerHours[user.id] || 0}
+                                onChange={(value) => updateWorkerHours(row.id, user.id, value)}
+                              />
+                            </div>
+                          ))}
+                      </div>
+                      <div className="mt-4 flex justify-end">
+                        <div className="bg-blue-50 px-4 py-2 rounded-lg">
+                          <span className="text-sm text-gray-600">合計: </span>
+                          <span className="text-lg font-bold text-blue-600">
+                            {calculateRowTotal(row)}h
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 日報追加ボタン（作業エリア表示中のみ） */}
+      {showWorkArea && (
+        <div className="mt-4">
+          <button
+            onClick={addRow}
+            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+          >
+            + 日報を追加
+          </button>
+        </div>
+      )}
+
+      {/* フッター（合計と保存ボタン）（作業エリア表示中のみ） */}
+      {showWorkArea && (
+        <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-6">
+              <div>
+                <span className="text-sm text-gray-600">作業件数</span>
+                <p className="text-2xl font-bold text-gray-900">
+                  {workRows.filter(isRowValid).length}件
+                </p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600">総工数</span>
+                <p className="text-2xl font-bold text-blue-600">{calculateTotalHours()}h</p>
+              </div>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={bulkCreateIsPending || !workRows.some(isRowValid)}
+              className={`px-8 py-3 rounded-lg font-medium text-white transition-all ${
+                bulkCreateIsPending || !workRows.some(isRowValid)
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl"
+              }`}
+            >
+              {bulkCreateIsPending ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  保存中...
+                </span>
+              ) : (
+                "保存"
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

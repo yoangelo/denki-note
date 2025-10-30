@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 
-interface ToastProps {
+type ToastProps = {
   message: string;
   type?: "success" | "error" | "info";
   duration?: number;
   onClose?: () => void;
-}
+};
 
 export function Toast({ message, type = "success", duration = 3000, onClose }: ToastProps) {
   const [visible, setVisible] = useState(true);

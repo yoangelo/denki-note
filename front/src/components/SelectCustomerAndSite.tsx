@@ -3,13 +3,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useListCustomers } from "@/api/generated/customers/customers";
 import { useListSites, useCreateSite } from "@/api/generated/sites/sites";
 
-interface SelectCustomerAndSiteProps {
+type SelectCustomerAndSiteProps = {
   onSelect: (ids: { customerId: string; siteId: string }) => void;
-}
+};
 
 export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) {
   const [query, setQuery] = useState("");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [newSiteName, setNewSiteName] = useState("");
   const [showNewSiteForm, setShowNewSiteForm] = useState(false);
   const queryClient = useQueryClient();
@@ -34,8 +35,19 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
   // 現場作成
   const createSite = useCreateSite({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["listSites"] });
+      onSuccess: (data) => {
+        // 作成した現場の顧客IDに対応するクエリを無効化して再フェッチ
+        queryClient.invalidateQueries({
+          queryKey: [`/sites`, { customer_id: selectedCustomerId || "" }],
+        });
+        // 作成した現場を自動選択
+        if (data?.id) {
+          setSelectedSiteId(data.id);
+          onSelect({
+            customerId: selectedCustomerId,
+            siteId: data.id,
+          });
+        }
         setNewSiteName("");
         setShowNewSiteForm(false);
       },
@@ -76,6 +88,7 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
               key={customer.id}
               onClick={() => {
                 setSelectedCustomerId(customer.id);
+                setSelectedSiteId(""); // 顧客を変更したら現場選択をリセット
                 setShowNewSiteForm(false);
               }}
               className={`block p-2.5 my-1 w-full max-w-md text-left border rounded cursor-pointer transition-colors ${
@@ -106,16 +119,26 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
             {sites?.map((site) => (
               <button
                 key={site.id}
-                onClick={() =>
+                onClick={() => {
+                  setSelectedSiteId(site.id);
                   onSelect({
                     customerId: selectedCustomerId,
                     siteId: site.id,
-                  })
-                }
-                className="block p-2.5 my-1 w-full max-w-md text-left bg-blue-50 border border-blue-500 rounded cursor-pointer hover:bg-blue-100 transition-colors"
+                  });
+                }}
+                className={`block p-2.5 my-1 w-full max-w-md text-left border rounded cursor-pointer transition-colors ${
+                  selectedSiteId === site.id
+                    ? "bg-blue-500 text-white border-blue-500"
+                    : "bg-gray-100 text-black border-gray-300 hover:bg-gray-200"
+                }`}
               >
                 {site.name}
-                {site.note && <span className="text-xs text-gray-600"> - {site.note}</span>}
+                {site.note && (
+                  <span className={selectedSiteId === site.id ? "text-blue-100" : "text-gray-600"}>
+                    {" "}
+                    - {site.note}
+                  </span>
+                )}
               </button>
             ))}
 
