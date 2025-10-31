@@ -12,7 +12,12 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { Customer, ListCustomersParams } from "../timesheetAPI.schemas";
+import type {
+  Customer,
+  GetRecentCustomersParams,
+  ListCustomersParams,
+  RecentCustomer,
+} from "../timesheetAPI.schemas";
 
 import { httpClient } from "../../mutator";
 
@@ -67,6 +72,67 @@ export function useListCustomers<
   options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof listCustomers>>, TError, TData> }
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListCustomersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Get recently used customers with sites
+ */
+export const getRecentCustomers = (params?: GetRecentCustomersParams, signal?: AbortSignal) => {
+  return httpClient<RecentCustomer[]>({ url: `/customers/recent`, method: "GET", params, signal });
+};
+
+export const getGetRecentCustomersQueryKey = (params?: GetRecentCustomersParams) => {
+  return [`/customers/recent`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetRecentCustomersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRecentCustomers>>,
+  TError = unknown,
+>(
+  params?: GetRecentCustomersParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getRecentCustomers>>, TError, TData>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetRecentCustomersQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecentCustomers>>> = ({ signal }) =>
+    getRecentCustomers(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentCustomers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRecentCustomersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRecentCustomers>>
+>;
+export type GetRecentCustomersQueryError = unknown;
+
+/**
+ * @summary Get recently used customers with sites
+ */
+
+export function useGetRecentCustomers<
+  TData = Awaited<ReturnType<typeof getRecentCustomers>>,
+  TError = unknown,
+>(
+  params?: GetRecentCustomersParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getRecentCustomers>>, TError, TData>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRecentCustomersQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

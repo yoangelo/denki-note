@@ -57,11 +57,52 @@ export interface User {
   is_active: boolean;
 }
 
+/**
+ * @nullable
+ */
+export type RecentCustomerCustomerType =
+  | (typeof RecentCustomerCustomerType)[keyof typeof RecentCustomerCustomerType]
+  | null;
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RecentCustomerCustomerType = {
+  individual: "individual",
+  corporation: "corporation",
+} as const;
+
+export type RecentCustomerSite = {
+  id: string;
+  name: string;
+};
+
+export interface RecentCustomer {
+  id: string;
+  name: string;
+  /** @nullable */
+  customer_type?: RecentCustomerCustomerType;
+  /** @nullable */
+  corporation_number?: string | null;
+  /** @nullable */
+  rate_percent?: number | null;
+  /** @nullable */
+  unit_rate?: number | null;
+  site: RecentCustomerSite;
+  last_used_at: string;
+}
+
 export type ListCustomersParams = {
   query?: string;
   /**
    * @minimum 1
    * @maximum 50
+   */
+  limit?: number;
+};
+
+export type GetRecentCustomersParams = {
+  /**
+   * @minimum 1
+   * @maximum 10
    */
   limit?: number;
 };
