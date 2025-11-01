@@ -145,30 +145,24 @@ export type BulkCreateDailyReportsBody = {
   daily_reports: BulkCreateDailyReportsBodyDailyReportsItem[];
 };
 
-export type BulkCreateDailyReports200Summary = {
+export type BulkCreateDailyReports422Summary = {
   reports_created?: number;
   entries_created?: number;
 };
 
-export type BulkCreateDailyReports200ReportsItem = {
-  id?: string;
-  site_id?: string;
-  work_date?: string;
-  summary?: string;
-  entries_count?: number;
-};
+export type BulkCreateDailyReports422ReportsItem = { [key: string]: unknown };
 
-export type BulkCreateDailyReports200ErrorsItem = {
+export type BulkCreateDailyReports422ErrorsItem = {
   report_index?: number;
   site_id?: string;
   error?: string;
 };
 
-export type BulkCreateDailyReports200 = {
+export type BulkCreateDailyReports422 = {
   success?: boolean;
-  summary?: BulkCreateDailyReports200Summary;
-  reports?: BulkCreateDailyReports200ReportsItem[];
-  errors?: BulkCreateDailyReports200ErrorsItem[];
+  summary?: BulkCreateDailyReports422Summary;
+  reports?: BulkCreateDailyReports422ReportsItem[];
+  errors?: BulkCreateDailyReports422ErrorsItem[];
 };
 
 export type ListUsersParams = {

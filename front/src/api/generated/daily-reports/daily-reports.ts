@@ -12,7 +12,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
-  BulkCreateDailyReports200,
+  BulkCreateDailyReports422,
   BulkCreateDailyReportsBody,
 } from "../timesheetAPI.schemas";
 
@@ -29,7 +29,7 @@ export const bulkCreateDailyReports = (
   bulkCreateDailyReportsBody: BulkCreateDailyReportsBody,
   signal?: AbortSignal
 ) => {
-  return httpClient<BulkCreateDailyReports200>({
+  return httpClient<void>({
     url: `/daily_reports/bulk`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -39,7 +39,7 @@ export const bulkCreateDailyReports = (
 };
 
 export const getBulkCreateDailyReportsMutationOptions = <
-  TError = unknown,
+  TError = BulkCreateDailyReports422,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -77,12 +77,15 @@ export type BulkCreateDailyReportsMutationResult = NonNullable<
   Awaited<ReturnType<typeof bulkCreateDailyReports>>
 >;
 export type BulkCreateDailyReportsMutationBody = BulkCreateDailyReportsBody;
-export type BulkCreateDailyReportsMutationError = unknown;
+export type BulkCreateDailyReportsMutationError = BulkCreateDailyReports422;
 
 /**
  * @summary Bulk create daily reports with work entries
  */
-export const useBulkCreateDailyReports = <TError = unknown, TContext = unknown>(options?: {
+export const useBulkCreateDailyReports = <
+  TError = BulkCreateDailyReports422,
+  TContext = unknown,
+>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof bulkCreateDailyReports>>,
     TError,

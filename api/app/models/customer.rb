@@ -24,14 +24,14 @@
 #
 class Customer < ApplicationRecord
   self.inheritance_column = :_type_disabled
-  
+
   belongs_to :tenant
   has_many :sites, dependent: :destroy
-  
+
   validates :name, presence: true
   validates :corporation_number, length: { is: 13 }, allow_blank: true
   validates :rate_percent, inclusion: { in: 0..300 }, allow_nil: true
   validates :customer_type, inclusion: { in: %w[individual corporation] }, allow_nil: true
-  
+
   scope :search_by_name, ->(query) { where("name ILIKE ?", "%#{query}%") if query.present? }
 end

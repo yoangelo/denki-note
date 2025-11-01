@@ -166,8 +166,6 @@ paths:
                     items:
                       type: object
                       properties:
-                        error: { type: string }
-                      properties:
                         report_index: { type: integer }
                         site_id: { type: string, format: uuid }
                         error: { type: string }

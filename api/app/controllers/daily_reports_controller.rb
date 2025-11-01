@@ -11,19 +11,6 @@ class DailyReportsController < ApplicationController
     render json: scope.order(work_date: :desc).limit(100)
   end
 
-  def create
-    # MVPではテナントIDを固定
-    tenant = Tenant.first
-    return render json: { error: "Tenant not found" }, status: :unprocessable_entity unless tenant
-
-    daily_report = DailyReport.new(daily_report_params.merge(tenant: tenant))
-
-    if daily_report.save
-      render json: daily_report, status: :created
-    else
-      render json: { error: daily_report.errors.full_messages.to_sentence }, status: :unprocessable_entity
-    end
-  end
 
   def bulk
     reports_created = 0
@@ -109,10 +96,6 @@ class DailyReportsController < ApplicationController
   end
 
   private
-
-  def daily_report_params
-    params.require(:daily_report).permit(:site_id, :work_date, :created_by, :summary)
-  end
 
   def bulk_params
     params.permit(

@@ -191,6 +191,8 @@ paths:
       responses:
         '200':
           description: Success
+        '422':
+          description: Unprocessable Entity
           content:
             application/json:
               schema:
@@ -209,20 +211,6 @@ paths:
                     type: array
                     items:
                       type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                        site_id:
-                          type: string
-                          format: uuid
-                        work_date:
-                          type: string
-                          format: date
-                        summary:
-                          type: string
-                        entries_count:
-                          type: integer
                   errors:
                     type: array
                     items:
