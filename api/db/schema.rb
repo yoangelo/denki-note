@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_21_225231) do
+ActiveRecord::Schema[7.1].define(version: 2025_11_01_211545) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
@@ -37,6 +37,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_21_225231) do
     t.uuid "created_by"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "summary", null: false
     t.index ["site_id"], name: "index_daily_reports_on_site_id"
     t.index ["tenant_id", "site_id", "work_date"], name: "index_daily_reports_on_tenant_id_and_site_id_and_work_date"
     t.index ["tenant_id"], name: "index_daily_reports_on_tenant_id"
@@ -85,13 +86,11 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_21_225231) do
     t.uuid "tenant_id", null: false
     t.uuid "daily_report_id", null: false
     t.uuid "user_id", null: false
-    t.string "summary"
+    t.text "summary"
     t.integer "minutes", null: false
-    t.string "client_entry_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["daily_report_id"], name: "index_work_entries_on_daily_report_id"
-    t.index ["tenant_id", "client_entry_id"], name: "index_work_entries_on_tenant_id_and_client_entry_id", unique: true
     t.index ["tenant_id", "daily_report_id", "user_id"], name: "idx_on_tenant_id_daily_report_id_user_id_0333b1538a"
     t.index ["tenant_id"], name: "index_work_entries_on_tenant_id"
     t.index ["user_id"], name: "index_work_entries_on_user_id"
