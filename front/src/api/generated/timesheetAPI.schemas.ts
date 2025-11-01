@@ -124,30 +124,51 @@ export type CreateSiteBody = {
   site: CreateSiteBodySite;
 };
 
-export type BulkCreateWorkEntriesBodyEntriesItem = {
-  client_entry_id: string;
-  daily_report_id: string;
+export type BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem = {
   user_id: string;
-  /** @maxLength 200 */
-  summary: string;
   /** @minimum 0 */
   minutes: number;
 };
 
-export type BulkCreateWorkEntriesBody = {
-  client_batch_id: string;
+export type BulkCreateDailyReportsBodyDailyReportsItem = {
+  tenant_id: string;
+  site_id: string;
+  work_date: string;
+  summary: string;
+  created_by: string;
   /** @minItems 1 */
-  entries: BulkCreateWorkEntriesBodyEntriesItem[];
+  work_entries: BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem[];
 };
 
-export type BulkCreateWorkEntries200FailedItem = {
-  client_entry_id?: string;
-  reason?: string;
+export type BulkCreateDailyReportsBody = {
+  /** @minItems 1 */
+  daily_reports: BulkCreateDailyReportsBodyDailyReportsItem[];
 };
 
-export type BulkCreateWorkEntries200 = {
-  accepted?: number;
-  failed?: BulkCreateWorkEntries200FailedItem[];
+export type BulkCreateDailyReports200Summary = {
+  reports_created?: number;
+  entries_created?: number;
+};
+
+export type BulkCreateDailyReports200ReportsItem = {
+  id?: string;
+  site_id?: string;
+  work_date?: string;
+  summary?: string;
+  entries_count?: number;
+};
+
+export type BulkCreateDailyReports200ErrorsItem = {
+  report_index?: number;
+  site_id?: string;
+  error?: string;
+};
+
+export type BulkCreateDailyReports200 = {
+  success?: boolean;
+  summary?: BulkCreateDailyReports200Summary;
+  reports?: BulkCreateDailyReports200ReportsItem[];
+  errors?: BulkCreateDailyReports200ErrorsItem[];
 };
 
 export type ListUsersParams = {

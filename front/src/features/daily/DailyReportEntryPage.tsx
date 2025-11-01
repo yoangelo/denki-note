@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DailyReportEntry, type WorkRow } from "./DailyReportEntry";
 import { Toast } from "@/components/Toast";
 import { useToast } from "@/hooks/useToast";
-import { useBulkCreateWorkEntries } from "@/api/generated/work-entries/work-entries";
+import { useBulkCreateDailyReports } from "@/api/generated/daily-reports/daily-reports";
 
 export function DailyReportEntryPage() {
   const [workDate, setWorkDate] = useState(() => {
@@ -17,10 +17,10 @@ export function DailyReportEntryPage() {
   const { toasts, showToast, removeToast } = useToast();
   const queryClient = useQueryClient();
 
-  const bulkCreate = useBulkCreateWorkEntries({
+  const bulkCreate = useBulkCreateDailyReports({
     mutation: {
       onSuccess: (data) => {
-        showToast(`${data.accepted}件の作業を保存しました`, "success");
+        showToast(`${data.summary?.entries_created}件の作業を保存しました`, "success");
         // 保存成功後、フォームをクリアして作業エリアを閉じる
         setWorkRows([]);
         setShowWorkArea(false);
@@ -133,34 +133,63 @@ export function DailyReportEntryPage() {
       return;
     }
 
-    // APIに送信するデータを作成
-    const entries: {
-      client_entry_id: string;
-      daily_report_id: string;
-      user_id: string;
-      summary: string;
-      minutes: number;
-    }[] = [];
+    // TODO: 認証機能実装後、ログインユーザー情報から動的に取得するように変更
+    const FIXED_TENANT_ID = "8a23e164-49d6-431a-8450-908f88c58d65"; // 現在DBに存在するテナントID
+    const FIXED_CREATED_BY = "eae49b7e-7511-4efb-af35-84b4476aa7cb"; // 現在DBに存在するユーザーID
 
+    // 現場ごとに日報をグループ化
+    const reportsBySite = new Map<string, WorkRow[]>();
     validRows.forEach((row) => {
-      Object.entries(row.workerHours).forEach(([workerId, hours]) => {
-        if (hours > 0) {
-          entries.push({
-            client_entry_id: `${Date.now()}_${workerId}_${row.id}`,
-            daily_report_id: `report_${workDate}_${row.siteId}`,
-            user_id: workerId,
-            summary: row.summary,
-            minutes: Math.round(hours * 60),
-          });
-        }
-      });
+      const key = `${row.siteId}_${row.summary}`;
+      if (!reportsBySite.has(key)) {
+        reportsBySite.set(key, []);
+      }
+      reportsBySite.get(key)!.push(row);
     });
 
-    const clientBatchId = `batch_${Date.now()}`;
+    // APIに送信するデータを作成
+    const daily_reports: Array<{
+      tenant_id: string;
+      site_id: string;
+      work_date: string;
+      summary: string;
+      created_by: string;
+      work_entries: Array<{
+        user_id: string;
+        minutes: number;
+      }>;
+    }> = [];
+
+    reportsBySite.forEach((rows, key) => {
+      const [siteId, summary] = key.split("_");
+      const work_entries: Array<{ user_id: string; minutes: number }> = [];
+
+      rows.forEach((row) => {
+        Object.entries(row.workerHours).forEach(([workerId, hours]) => {
+          if (hours > 0) {
+            work_entries.push({
+              user_id: workerId,
+              minutes: Math.round(hours * 60),
+            });
+          }
+        });
+      });
+
+      if (work_entries.length > 0) {
+        daily_reports.push({
+          tenant_id: FIXED_TENANT_ID,
+          site_id: siteId,
+          work_date: workDate,
+          summary: summary || "作業実施",
+          created_by: FIXED_CREATED_BY,
+          work_entries,
+        });
+      }
+    });
+
     bulkCreate.mutate({
       data: {
-        client_batch_id: clientBatchId,
-        entries,
+        daily_reports,
       },
     });
   }, [workRows, workDate, calculateRowTotal, bulkCreate, showToast]);

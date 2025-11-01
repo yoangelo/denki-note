@@ -130,69 +130,110 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Site'
-  /work_entries/bulk:
+  /daily_reports/bulk:
     post:
-      operationId: bulk_create_work_entries
+      operationId: bulk_create_daily_reports
       tags:
-        - WorkEntries
-      summary: Bulk upsert work entries for offline queue
+        - DailyReports
+      summary: Bulk create daily reports with work entries
       requestBody:
         required: true
         content:
           application/json:
             schema:
               required:
-                - client_batch_id
-                - entries
+                - daily_reports
               type: object
               properties:
-                client_batch_id:
-                  type: string
-                entries:
+                daily_reports:
                   type: array
                   minItems: 1
                   items:
                     required:
-                      - client_entry_id
-                      - daily_report_id
-                      - user_id
+                      - tenant_id
+                      - site_id
+                      - work_date
                       - summary
-                      - minutes
+                      - created_by
+                      - work_entries
                     type: object
                     properties:
-                      client_entry_id:
-                        type: string
-                      daily_report_id:
+                      tenant_id:
                         type: string
                         format: uuid
-                      user_id:
+                      site_id:
                         type: string
                         format: uuid
+                      work_date:
+                        type: string
+                        format: date
                       summary:
                         type: string
-                        maxLength: 200
-                      minutes:
-                        type: integer
-                        multipleOf: 15
-                        minimum: 0
+                      created_by:
+                        type: string
+                        format: uuid
+                      work_entries:
+                        type: array
+                        minItems: 1
+                        items:
+                          required:
+                            - user_id
+                            - minutes
+                          type: object
+                          properties:
+                            user_id:
+                              type: string
+                              format: uuid
+                            minutes:
+                              type: integer
+                              multipleOf: 15
+                              minimum: 0
       responses:
         '200':
-          description: Accepted
+          description: Success
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  accepted:
-                    type: integer
-                  failed:
+                  success:
+                    type: boolean
+                  summary:
+                    type: object
+                    properties:
+                      reports_created:
+                        type: integer
+                      entries_created:
+                        type: integer
+                  reports:
                     type: array
                     items:
                       type: object
                       properties:
-                        client_entry_id:
+                        id:
                           type: string
-                        reason:
+                          format: uuid
+                        site_id:
+                          type: string
+                          format: uuid
+                        work_date:
+                          type: string
+                          format: date
+                        summary:
+                          type: string
+                        entries_count:
+                          type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        report_index:
+                          type: integer
+                        site_id:
+                          type: string
+                          format: uuid
+                        error:
                           type: string
   /users:
     get:

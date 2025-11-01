@@ -31,8 +31,6 @@ class WorkEntry < ApplicationRecord
 
   validates :minutes, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validate :minutes_must_be_multiple_of_15
-  validates :client_entry_id, uniqueness: { scope: :tenant_id }, allow_blank: true
-  validates :summary, length: { maximum: 200 }
 
   private
 
