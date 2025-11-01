@@ -130,6 +130,147 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Site'
+  /daily_reports:
+    get:
+      operationId: list_daily_reports
+      tags:
+        - DailyReports
+      summary: Get daily reports list with work entries
+      parameters:
+        - in: query
+          name: year_month
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+          description: Filter by year-month (YYYY-MM format)
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          description: Filter by user ID
+        - in: query
+          name: customer_id
+          schema:
+            type: string
+            format: uuid
+          description: Filter by customer ID
+        - in: query
+          name: site_id
+          schema:
+            type: string
+            format: uuid
+          description: Filter by site ID
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+          description: Limit number of results
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - daily_reports
+                  - meta
+                properties:
+                  daily_reports:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - work_date
+                        - customer
+                        - site
+                        - summary
+                        - work_entries
+                        - total_minutes
+                        - created_at
+                        - updated_at
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        work_date:
+                          type: string
+                          format: date
+                        customer:
+                          type: object
+                          required:
+                            - id
+                            - name
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                        site:
+                          type: object
+                          required:
+                            - id
+                            - name
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                        summary:
+                          type: string
+                        work_entries:
+                          type: array
+                          items:
+                            type: object
+                            required:
+                              - id
+                              - user
+                              - minutes
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              user:
+                                type: object
+                                required:
+                                  - id
+                                  - display_name
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  display_name:
+                                    type: string
+                              minutes:
+                                type: integer
+                        total_minutes:
+                          type: integer
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                  meta:
+                    type: object
+                    required:
+                      - total_count
+                      - returned_count
+                      - year_month
+                    properties:
+                      total_count:
+                        type: integer
+                      returned_count:
+                        type: integer
+                      year_month:
+                        type: string
   /daily_reports/bulk:
     post:
       operationId: bulk_create_daily_reports
@@ -191,6 +332,36 @@ paths:
       responses:
         '200':
           description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - summary
+                  - reports
+                  - errors
+                properties:
+                  success:
+                    type: boolean
+                  summary:
+                    type: object
+                    required:
+                      - reports_created
+                      - entries_created
+                    properties:
+                      reports_created:
+                        type: integer
+                      entries_created:
+                        type: integer
+                  reports:
+                    type: array
+                    items:
+                      type: object
+                  errors:
+                    type: array
+                    items:
+                      type: object
         '422':
           description: Unprocessable Entity
           content:

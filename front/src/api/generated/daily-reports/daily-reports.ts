@@ -4,16 +4,23 @@
  * Timesheet API
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   MutationFunction,
+  QueryFunction,
+  QueryKey,
   UseMutationOptions,
   UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult,
 } from "@tanstack/react-query";
 
 import type {
+  BulkCreateDailyReports200,
   BulkCreateDailyReports422,
   BulkCreateDailyReportsBody,
+  ListDailyReports200,
+  ListDailyReportsParams,
 } from "../timesheetAPI.schemas";
 
 import { httpClient } from "../../mutator";
@@ -23,13 +30,68 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 /**
+ * @summary Get daily reports list with work entries
+ */
+export const listDailyReports = (params?: ListDailyReportsParams, signal?: AbortSignal) => {
+  return httpClient<ListDailyReports200>({ url: `/daily_reports`, method: "GET", params, signal });
+};
+
+export const getListDailyReportsQueryKey = (params?: ListDailyReportsParams) => {
+  return [`/daily_reports`, ...(params ? [params] : [])] as const;
+};
+
+export const getListDailyReportsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listDailyReports>>,
+  TError = unknown,
+>(
+  params?: ListDailyReportsParams,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof listDailyReports>>, TError, TData> }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListDailyReportsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listDailyReports>>> = ({ signal }) =>
+    listDailyReports(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listDailyReports>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListDailyReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listDailyReports>>>;
+export type ListDailyReportsQueryError = unknown;
+
+/**
+ * @summary Get daily reports list with work entries
+ */
+
+export function useListDailyReports<
+  TData = Awaited<ReturnType<typeof listDailyReports>>,
+  TError = unknown,
+>(
+  params?: ListDailyReportsParams,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof listDailyReports>>, TError, TData> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDailyReportsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
  * @summary Bulk create daily reports with work entries
  */
 export const bulkCreateDailyReports = (
   bulkCreateDailyReportsBody: BulkCreateDailyReportsBody,
   signal?: AbortSignal
 ) => {
-  return httpClient<void>({
+  return httpClient<BulkCreateDailyReports200>({
     url: `/daily_reports/bulk`,
     method: "POST",
     headers: { "Content-Type": "application/json" },

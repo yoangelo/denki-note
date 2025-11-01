@@ -1,71 +1,16 @@
 import { useState, useMemo } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { format } from "date-fns";
 import { DailyReportList } from "./DailyReportList";
 import { useListUsers } from "@/api/generated/users/users";
+import { useListDailyReports } from "@/api/generated/daily-reports/daily-reports";
 
-// モックデータ型
+// データ型定義
 type WorkRow = {
   id: string;
   customerName: string;
   siteName: string;
   summary: string;
   workerHours: Record<string, number>;
-};
-
-// モックデータ生成
-const generateMockData = (
-  workers: Array<{ id: string; display_name: string }>
-): Record<string, WorkRow[]> => {
-  const data: Record<string, WorkRow[]> = {};
-  const customers = ["㈱ABC建設", "㈱DEF組", "GHI様", "JKL㈱"];
-  const sites = ["〇〇市役所", "△△倉庫", "GHI様宅", "□□プール"];
-  const summaries = [
-    "エアコン外気復旧",
-    "電源盤取付、入線",
-    "エアコン取付工事",
-    "盤組立",
-    "仕上げ、後片付",
-  ];
-
-  // 現在の月の日付リストを生成
-  const now = new Date();
-  const monthDays = eachDayOfInterval({
-    start: startOfMonth(now),
-    end: endOfMonth(now),
-  });
-
-  // ランダムに数日分のデータを生成
-  const sampleDays = monthDays.slice(0, 5);
-
-  sampleDays.forEach((date) => {
-    const dateKey = format(date, "yyyy-MM-dd");
-    const rowCount = Math.floor(Math.random() * 3) + 1;
-    const rows: WorkRow[] = [];
-
-    for (let i = 0; i < rowCount; i++) {
-      const workerHours: Record<string, number> = {};
-      // ランダムに作業者を選択
-      const selectedWorkerCount = Math.floor(Math.random() * Math.min(3, workers.length)) + 1;
-      const shuffled = [...workers].sort(() => 0.5 - Math.random());
-      const selectedWorkers = shuffled.slice(0, selectedWorkerCount);
-
-      selectedWorkers.forEach((worker) => {
-        workerHours[worker.id] = Math.floor(Math.random() * 4 + 1) * 0.5;
-      });
-
-      rows.push({
-        id: `${dateKey}-${i}`,
-        customerName: customers[Math.floor(Math.random() * customers.length)],
-        siteName: sites[Math.floor(Math.random() * sites.length)],
-        summary: summaries[Math.floor(Math.random() * summaries.length)],
-        workerHours,
-      });
-    }
-
-    data[dateKey] = rows;
-  });
-
-  return data;
 };
 
 export function DailyReportListPage() {
@@ -77,33 +22,42 @@ export function DailyReportListPage() {
   // APIから作業者一覧を取得
   const { data: users = [] } = useListUsers({ is_active: true });
 
-  // モックデータ
-  const allData = useMemo(() => {
-    if (users.length === 0) return {};
-    return generateMockData(users);
-  }, [users]);
+  // APIから日報一覧を取得
+  const { data: dailyReportsData, isLoading } = useListDailyReports({
+    year_month: selectedMonth,
+    limit: 500,
+  });
 
-  // 選択月の日付リストを生成
-  const monthDays = useMemo(() => {
-    const [year, month] = selectedMonth.split("-").map(Number);
-    const monthStart = new Date(year, month - 1, 1);
-    return eachDayOfInterval({
-      start: startOfMonth(monthStart),
-      end: endOfMonth(monthStart),
-    });
-  }, [selectedMonth]);
-
-  // 選択月のデータをフィルタリング
+  // APIレスポンスを画面表示用の形式に変換
   const monthData = useMemo(() => {
-    const filtered: Record<string, WorkRow[]> = {};
-    monthDays.forEach((date) => {
-      const dateKey = format(date, "yyyy-MM-dd");
-      if (allData[dateKey]) {
-        filtered[dateKey] = allData[dateKey];
+    if (!dailyReportsData?.daily_reports) return {};
+
+    const grouped: Record<string, WorkRow[]> = {};
+
+    dailyReportsData.daily_reports.forEach((report) => {
+      const dateKey = report.work_date;
+
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
       }
+
+      // work_entriesをworker別にグループ化
+      const workerHours: Record<string, number> = {};
+      report.work_entries.forEach((entry) => {
+        workerHours[entry.user.id] = (workerHours[entry.user.id] || 0) + entry.minutes / 60;
+      });
+
+      grouped[dateKey].push({
+        id: report.id,
+        customerName: report.customer.name,
+        siteName: report.site.name,
+        summary: report.summary,
+        workerHours,
+      });
     });
-    return filtered;
-  }, [monthDays, allData]);
+
+    return grouped;
+  }, [dailyReportsData]);
 
   const handleDeleteRow = (dateKey: string, rowId: string) => {
     console.log(`削除: ${dateKey} - ${rowId}`);
@@ -134,8 +88,13 @@ export function DailyReportListPage() {
         />
       </div>
 
-      {/* 日報一覧 */}
-      {Object.keys(monthData).length > 0 ? (
+      {/* ローディング中 */}
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">読み込み中...</p>
+        </div>
+      ) : /* 日報一覧 */
+      Object.keys(monthData).length > 0 ? (
         <div className="space-y-6">
           {Object.entries(monthData)
             .sort(([a], [b]) => a.localeCompare(b))

@@ -124,6 +124,76 @@ export type CreateSiteBody = {
   site: CreateSiteBodySite;
 };
 
+export type ListDailyReportsParams = {
+  /**
+   * Filter by year-month (YYYY-MM format)
+   * @pattern ^[0-9]{4}-[0-9]{2}$
+   */
+  year_month?: string;
+  /**
+   * Filter by user ID
+   */
+  user_id?: string;
+  /**
+   * Filter by customer ID
+   */
+  customer_id?: string;
+  /**
+   * Filter by site ID
+   */
+  site_id?: string;
+  /**
+   * Limit number of results
+   * @minimum 1
+   * @maximum 500
+   */
+  limit?: number;
+};
+
+export type ListDailyReports200DailyReportsItemCustomer = {
+  id: string;
+  name: string;
+};
+
+export type ListDailyReports200DailyReportsItemSite = {
+  id: string;
+  name: string;
+};
+
+export type ListDailyReports200DailyReportsItemWorkEntriesItemUser = {
+  id: string;
+  display_name: string;
+};
+
+export type ListDailyReports200DailyReportsItemWorkEntriesItem = {
+  id: string;
+  user: ListDailyReports200DailyReportsItemWorkEntriesItemUser;
+  minutes: number;
+};
+
+export type ListDailyReports200DailyReportsItem = {
+  id: string;
+  work_date: string;
+  customer: ListDailyReports200DailyReportsItemCustomer;
+  site: ListDailyReports200DailyReportsItemSite;
+  summary: string;
+  work_entries: ListDailyReports200DailyReportsItemWorkEntriesItem[];
+  total_minutes: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ListDailyReports200Meta = {
+  total_count: number;
+  returned_count: number;
+  year_month: string;
+};
+
+export type ListDailyReports200 = {
+  daily_reports: ListDailyReports200DailyReportsItem[];
+  meta: ListDailyReports200Meta;
+};
+
 export type BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem = {
   user_id: string;
   /** @minimum 0 */
@@ -143,6 +213,22 @@ export type BulkCreateDailyReportsBodyDailyReportsItem = {
 export type BulkCreateDailyReportsBody = {
   /** @minItems 1 */
   daily_reports: BulkCreateDailyReportsBodyDailyReportsItem[];
+};
+
+export type BulkCreateDailyReports200Summary = {
+  reports_created: number;
+  entries_created: number;
+};
+
+export type BulkCreateDailyReports200ReportsItem = { [key: string]: unknown };
+
+export type BulkCreateDailyReports200ErrorsItem = { [key: string]: unknown };
+
+export type BulkCreateDailyReports200 = {
+  success: boolean;
+  summary: BulkCreateDailyReports200Summary;
+  reports: BulkCreateDailyReports200ReportsItem[];
+  errors: BulkCreateDailyReports200ErrorsItem[];
 };
 
 export type BulkCreateDailyReports422Summary = {
