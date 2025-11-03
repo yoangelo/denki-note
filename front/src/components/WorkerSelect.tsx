@@ -8,9 +8,12 @@ type WorkerSelectProps = {
 
 export function WorkerSelect({ selectedWorkers, onWorkersChange }: WorkerSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: users = [], isLoading } = useListUsers({
+  const { data, isLoading } = useListUsers({
     is_active: true,
   });
+
+  // APIから返されるデータが配列であることを保証
+  const users = Array.isArray(data) ? data : [];
 
   const handleToggleWorker = (workerId: string) => {
     if (selectedWorkers.includes(workerId)) {

@@ -1,5 +1,18 @@
 # 開発用の初期データ
 if Rails.env.development?
+  # ロール作成
+  admin_role = Role.find_or_create_by!(name: "admin") do |r|
+    r.display_name = "管理者"
+    r.description = "全ての操作が可能"
+  end
+  puts "ロール作成: #{admin_role.display_name}"
+
+  member_role = Role.find_or_create_by!(name: "member") do |r|
+    r.display_name = "メンバー"
+    r.description = "日報の作成・編集が可能"
+  end
+  puts "ロール作成: #{member_role.display_name}"
+
   # テナント作成
   tenant = Tenant.find_or_create_by!(name: "テスト会社")
   puts "テナント作成: #{tenant.name}"
@@ -80,16 +93,34 @@ if Rails.env.development?
   end
   puts "現場作成: #{site4.name}"
 
-  # 作業者作成
-  users = ["田中", "佐藤", "鈴木", "高橋", "山田"].map do |name|
-    User.find_or_create_by!(
-      tenant: tenant,
-      display_name: name
-    ) do |u|
+  # 作業者作成（管理者+メンバー）
+  users = []
+
+  # 管理者ユーザー
+  admin_user = User.find_or_create_by!(email: "admin@example.com") do |u|
+    u.tenant = tenant
+    u.display_name = "管理者"
+    u.password = "Password123!"
+    u.password_confirmation = "Password123!"
+    u.is_active = true
+  end
+  admin_user.add_role("admin")
+  users << admin_user
+  puts "管理者作成: #{admin_user.display_name} (#{admin_user.email})"
+
+  # メンバーユーザー
+  ["田中", "佐藤", "鈴木", "高橋", "山田"].each_with_index do |name, index|
+    user = User.find_or_create_by!(email: "test#{index+1}@example.com") do |u|
+      u.tenant = tenant
+      u.display_name = name
+      u.password = "Password123!"
+      u.password_confirmation = "Password123!"
       u.is_active = true
     end
+    user.add_role("member")
+    users << user
+    puts "メンバー作成: #{user.display_name} (#{user.email})"
   end
-  puts "作業者#{users.size}名作成"
 
   # サンプル日報とエントリ作成（今月分）
   today = Date.today
@@ -108,6 +139,7 @@ if Rails.env.development?
         work_date: date
       ) do |dr|
         dr.created_by = users.first.id
+        dr.summary = ["配線作業", "機器設置", "動作確認", "配管工事", "清掃・片付け"].sample
       end
 
       # 作業者ごとにエントリ作成
@@ -115,8 +147,7 @@ if Rails.env.development?
         WorkEntry.find_or_create_by!(
           tenant: tenant,
           daily_report: report1,
-          user: user,
-          client_entry_id: "#{date}-#{user.id}-1"
+          user: user
         ) do |we|
           we.summary = ["配線作業", "機器設置", "動作確認", "配管工事", "清掃・片付け"].sample
           we.minutes = [60, 90, 120, 180, 240].sample
@@ -132,14 +163,14 @@ if Rails.env.development?
         work_date: date
       ) do |dr|
         dr.created_by = users.first.id
+        dr.summary = ["照明取付", "配線工事", "スイッチ設置", "ブレーカー工事"].sample
       end
 
       users.sample(rand(1..3)).each do |user|
         WorkEntry.find_or_create_by!(
           tenant: tenant,
           daily_report: report2,
-          user: user,
-          client_entry_id: "#{date}-#{user.id}-2"
+          user: user
         ) do |we|
           we.summary = ["照明取付", "配線工事", "スイッチ設置", "ブレーカー工事"].sample
           we.minutes = [30, 45, 60, 90, 120].sample

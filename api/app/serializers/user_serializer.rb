@@ -42,44 +42,20 @@
 #
 #  fk_rails_...  (tenant_id => tenants.id)
 #
-class User < ApplicationRecord
-  # Include default devise modules
-  devise :database_authenticatable, :registerable,
-         :recoverable, :rememberable, :validatable, :trackable, :invitable
+class UserSerializer
+  include JSONAPI::Serializer
 
-  belongs_to :tenant
-  has_many :work_entries, dependent: :destroy
-  has_many :user_roles, dependent: :destroy
-  has_many :roles, through: :user_roles
+  attributes :id, :email, :display_name, :is_active, :tenant_id, :created_at
 
-  validates :display_name, presence: true
-  validates :is_active, inclusion: { in: [true, false] }
-
-  def admin?
-    roles.exists?(name: 'admin')
+  attribute :roles do |user|
+    user.roles.pluck(:name)
   end
 
-  def member?
-    roles.exists?(name: 'member')
+  attribute :is_admin do |user|
+    user.admin?
   end
 
-  def has_role?(role_name)
-    roles.exists?(name: role_name)
-  end
-
-  def add_role(role_name, assigned_by: nil)
-    role = Role.find_by(name: role_name)
-    return false unless role
-
-    user_roles.find_or_create_by(role: role) do |ur|
-      ur.assigned_by_id = assigned_by&.id
-    end
-  end
-
-  def remove_role(role_name)
-    role = Role.find_by(name: role_name)
-    return false unless role
-
-    user_roles.where(role: role).destroy_all
+  attribute :is_member do |user|
+    user.member?
   end
 end

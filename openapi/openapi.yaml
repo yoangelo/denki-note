@@ -18,6 +18,94 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
 
+  /auth/login:
+    post:
+      operationId: login
+      tags: [Authentication]
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email, password]
+                  properties:
+                    email: { type: string, format: email }
+                    password: { type: string }
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '401':
+          description: Invalid credentials
+
+  /auth/logout:
+    delete:
+      operationId: logout
+      tags: [Authentication]
+      summary: User logout
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '401':
+          description: No active session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /auth/signup:
+    post:
+      operationId: signup
+      tags: [Authentication]
+      summary: User registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email, password, display_name, tenant_id]
+                  properties:
+                    email: { type: string, format: email }
+                    password: { type: string, minLength: 6 }
+                    password_confirmation: { type: string }
+                    display_name: { type: string }
+                    tenant_id: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '422':
+          description: Validation errors
+
   /customers:
     get:
       operationId: list_customers
@@ -203,14 +291,12 @@ paths:
                   type: array
                   minItems: 1
                   items:
-                    required: [tenant_id, site_id, work_date, summary, created_by, work_entries]
+                    required: [site_id, work_date, summary, work_entries]
                     type: object
                     properties:
-                      tenant_id: { type: string, format: uuid }
                       site_id: { type: string, format: uuid }
                       work_date: { type: string, format: date }
                       summary: { type: string }
-                      created_by: { type: string, format: uuid }
                       work_entries:
                         type: array
                         minItems: 1
@@ -365,8 +451,16 @@ components:
       required: [id, display_name, is_active]
       properties:
         id: { type: string, format: uuid }
+        email: { type: string, format: email }
         display_name: { type: string }
         is_active: { type: boolean }
+        tenant_id: { type: string, format: uuid }
+        roles:
+          type: array
+          items: { type: string }
+        is_admin: { type: boolean }
+        is_member: { type: boolean }
+        created_at: { type: string, format: date-time }
 
     RecentCustomer:
       type: object

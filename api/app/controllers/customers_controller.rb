@@ -1,25 +1,20 @@
-class CustomersController < ApplicationController
+class CustomersController < AuthenticatedController
   def index
-    # MVPではテナントIDを固定（最初のテナント）
-    # 後にフロントからテナントの情報を受け取るように変更予定
-    tenant = Tenant.first
-    return render json: [] unless tenant
+    return render json: [] unless current_tenant
 
-    scope = Customer.where(tenant: tenant)
+    scope = Customer.where(tenant: current_tenant)
     scope = scope.search_by_name(index_params[:query]) if index_params[:query].present?
     limit = (index_params[:limit] || 20).to_i.clamp(1, 50)
     render json: scope.order(:name).limit(limit).select(:id, :name, :customer_type, :corporation_number, :rate_percent, :unit_rate)
   end
 
   def recent
-    # MVPではテナントIDを固定
-    tenant = Tenant.first
-    return render json: [] unless tenant
+    return render json: [] unless current_tenant
 
     # 直近の日報10件を取得
     recent_daily_reports = DailyReport
       .joins(:site)
-      .where(sites: { tenant: tenant })
+      .where(sites: { tenant: current_tenant })
       .order(created_at: :desc)
       .limit(10)
       .includes(site: :customer)

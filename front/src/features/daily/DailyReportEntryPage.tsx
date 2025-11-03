@@ -133,10 +133,6 @@ export function DailyReportEntryPage() {
       return;
     }
 
-    // TODO: 認証機能実装後、ログインユーザー情報から動的に取得するように変更
-    const FIXED_TENANT_ID = "8a23e164-49d6-431a-8450-908f88c58d65"; // 現在DBに存在するテナントID
-    const FIXED_CREATED_BY = "eae49b7e-7511-4efb-af35-84b4476aa7cb"; // 現在DBに存在するユーザーID
-
     // 現場ごとに日報をグループ化
     const reportsBySite = new Map<string, WorkRow[]>();
     validRows.forEach((row) => {
@@ -147,13 +143,11 @@ export function DailyReportEntryPage() {
       reportsBySite.get(key)!.push(row);
     });
 
-    // APIに送信するデータを作成
+    // APIに送信するデータを作成（tenant_idとcreated_byはサーバー側で自動設定）
     const daily_reports: Array<{
-      tenant_id: string;
       site_id: string;
       work_date: string;
       summary: string;
-      created_by: string;
       work_entries: Array<{
         user_id: string;
         minutes: number;
@@ -177,11 +171,9 @@ export function DailyReportEntryPage() {
 
       if (work_entries.length > 0) {
         daily_reports.push({
-          tenant_id: FIXED_TENANT_ID,
           site_id: siteId,
           work_date: workDate,
           summary: summary || "作業実施",
-          created_by: FIXED_CREATED_BY,
           work_entries,
         });
       }

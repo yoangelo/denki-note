@@ -1,11 +1,9 @@
-class DailyReportsController < ApplicationController
+class DailyReportsController < AuthenticatedController
   def index
-    # MVPではテナントIDを固定
-    tenant = Tenant.first
-    return render json: { daily_reports: [], meta: { total_count: 0, returned_count: 0, year_month: params[:year_month] || "" } } unless tenant
+    return render json: { daily_reports: [], meta: { total_count: 0, returned_count: 0, year_month: params[:year_month] || "" } } unless current_tenant
 
     # クエリパラメータの処理
-    scope = DailyReport.where(sites: { tenant: tenant })
+    scope = DailyReport.where(sites: { tenant: current_tenant })
                        .joins(:site)
                        .includes(:site => :customer, :work_entries => :user)
 
@@ -34,7 +32,7 @@ class DailyReportsController < ApplicationController
 
     # 取得件数の制限
     limit = (params[:limit] || 100).to_i.clamp(1, 500)
-    
+
     # 総件数を取得
     total_count = scope.distinct.count
 
@@ -88,15 +86,17 @@ class DailyReportsController < ApplicationController
     created_reports = []
     errors = []
 
+    return render json: { success: false, errors: [{ error: "Tenant not found" }] }, status: :unauthorized unless current_tenant
+
     ActiveRecord::Base.transaction do
       bulk_params[:daily_reports].each_with_index do |report_params, index|
         # 日報ヘッダの作成
         daily_report = DailyReport.new(
-          tenant_id: report_params[:tenant_id],
+          tenant_id: current_tenant.id,
           site_id: report_params[:site_id],
           work_date: report_params[:work_date],
           summary: report_params[:summary],
-          created_by: report_params[:created_by]
+          created_by: current_user.id
         )
 
         if daily_report.save
@@ -106,7 +106,7 @@ class DailyReportsController < ApplicationController
           # 作業エントリの作成
           report_params[:work_entries].each do |entry_params|
             work_entry = WorkEntry.new(
-              tenant_id: report_params[:tenant_id],
+              tenant_id: current_tenant.id,
               daily_report_id: daily_report.id,
               user_id: entry_params[:user_id],
               minutes: entry_params[:minutes],
@@ -170,11 +170,9 @@ class DailyReportsController < ApplicationController
   def bulk_params
     params.permit(
       daily_reports: [
-        :tenant_id,
         :site_id,
         :work_date,
         :summary,
-        :created_by,
         work_entries: [:user_id, :minutes]
       ]
     )

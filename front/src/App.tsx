@@ -3,6 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DailyReportEntryPage } from "./features/daily/DailyReportEntryPage";
 import { DailyReportListPage } from "./features/daily/DailyReportListPage";
 import { DailyReportCustomerMonthPage } from "./features/daily/DailyReportCustomerMonthPage";
+import { PrivateRoute } from "./components/PrivateRoute";
+import { useAuthStore } from "./stores/authStore";
+import { httpClient } from "./api/mutator";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,13 +20,42 @@ type ViewMode = "daily" | "list" | "summary";
 
 function MainApp() {
   const [viewMode, setViewMode] = useState<ViewMode>("daily");
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      await httpClient({
+        url: "/auth/logout",
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      logout();
+    }
+  };
 
   return (
     <div className="font-sans min-h-screen bg-gray-100">
       {/* ヘッダー */}
       <header className="bg-gray-800 text-white p-5 mb-5">
-        <h1 className="m-0 text-3xl font-bold">日報管理システム</h1>
-        <p className="mt-2.5 opacity-80">工数記録から請求予定額までをワンストップで管理</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="m-0 text-3xl font-bold">日報管理システム</h1>
+            <p className="mt-2.5 opacity-80">工数記録から請求予定額までをワンストップで管理</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm opacity-80">
+              {user?.display_name} ({user?.roles?.includes("admin") ? "管理者" : "メンバー"})
+            </span>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+            >
+              ログアウト
+            </button>
+          </div>
+        </div>
       </header>
 
       {/* ビューモード切替 */}
@@ -76,7 +108,9 @@ function MainApp() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <MainApp />
+      <PrivateRoute>
+        <MainApp />
+      </PrivateRoute>
     </QueryClientProvider>
   );
 }

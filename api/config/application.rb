@@ -41,17 +41,22 @@ module App
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
+    # Enable session and cookies for API authentication
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use ActionDispatch::Session::CookieStore, key: '_wakosha_session'
+
     # ① CORS: 最前に差し込む（OPTIONSはここで204を返す）
     config.middleware.insert_before 0, Rack::Cors do
       allow do
         # devはローカルフロントのみ。将来はENV化（例: CORS_ORIGINS）
         origins ENV.fetch("CORS_ORIGINS", "http://localhost:5173").split(",")
 
-        # credentials=true の場合は '*' は使えません（特定Origin必須）
+        # credentials=true でCookieを送受信可能にする
         resource "*",
           headers: :any,
           methods: [:get, :post, :put, :patch, :delete, :options, :head],
           credentials: true,
+          expose: ['Set-Cookie'],
           max_age: 86_400
       end
     end
