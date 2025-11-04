@@ -356,6 +356,365 @@ paths:
                         site_id: { type: string, format: uuid }
                         error: { type: string }
 
+  /auth/password:
+    post:
+      operationId: request_password_reset
+      tags: [Authentication]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email]
+                  properties:
+                    email: { type: string, format: email }
+      responses:
+        '200':
+          description: Password reset instructions sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '422':
+          description: Validation errors
+
+    put:
+      operationId: reset_password
+      tags: [Authentication]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [reset_password_token, password, password_confirmation]
+                  properties:
+                    reset_password_token: { type: string }
+                    password: { type: string, minLength: 8 }
+                    password_confirmation: { type: string }
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '422':
+          description: Validation errors
+
+  /auth/invitation:
+    post:
+      operationId: invite_user
+      tags: [Admin]
+      summary: Invite a new user (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email, display_name]
+                  properties:
+                    email: { type: string, format: email }
+                    display_name: { type: string }
+                    role_ids:
+                      type: array
+                      items: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation errors
+
+    put:
+      operationId: accept_invitation
+      tags: [Authentication]
+      summary: Accept invitation and set password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [invitation_token, password, password_confirmation]
+                  properties:
+                    invitation_token: { type: string }
+                    password: { type: string, minLength: 8 }
+                    password_confirmation: { type: string }
+      responses:
+        '200':
+          description: Password set successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '422':
+          description: Validation errors
+
+  /auth/invitations/pending:
+    get:
+      operationId: list_pending_invitations
+      tags: [Admin]
+      summary: Get pending invitations (admin only)
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string, format: uuid }
+                    email: { type: string, format: email }
+                    display_name: { type: string }
+                    invitation_sent_at: { type: string, format: date-time }
+                    invitation_created_at: { type: string, format: date-time }
+        '403':
+          description: Forbidden
+
+  /admin/users:
+    get:
+      operationId: admin_list_users
+      tags: [Admin]
+      summary: Get all users (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: query
+          schema: { type: string }
+        - in: query
+          name: role
+          schema: { type: string, enum: [admin, member] }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+                  meta:
+                    type: object
+                    properties:
+                      total_count: { type: integer }
+                      returned_count: { type: integer }
+        '403':
+          description: Forbidden
+
+  /admin/users/{id}:
+    get:
+      operationId: admin_get_user
+      tags: [Admin]
+      summary: Get user details (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+
+    put:
+      operationId: admin_update_user
+      tags: [Admin]
+      summary: Update user (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  properties:
+                    display_name: { type: string }
+                    is_active: { type: boolean }
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+        '422':
+          description: Validation errors
+
+    delete:
+      operationId: admin_delete_user
+      tags: [Admin]
+      summary: Delete user (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+        '422':
+          description: Cannot delete yourself
+
+  /admin/users/{id}/add_role:
+    post:
+      operationId: admin_add_role
+      tags: [Admin]
+      summary: Add role to user (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role_name]
+              properties:
+                role_name: { type: string, enum: [admin, member] }
+      responses:
+        '200':
+          description: Role added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '403':
+          description: Forbidden
+        '404':
+          description: User or role not found
+        '422':
+          description: Failed to add role
+
+  /admin/users/{id}/roles/{role_id}:
+    delete:
+      operationId: admin_remove_role
+      tags: [Admin]
+      summary: Remove role from user (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: role_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Role removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '403':
+          description: Forbidden
+        '404':
+          description: User or role not found
+        '422':
+          description: Failed to remove role
+
   /users:
     get:
       operationId: list_users
@@ -412,6 +771,12 @@ paths:
                   amount_jpy: { type: integer }
 
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: _wakosha_session
+
   schemas:
     HealthResponse:
       type: object

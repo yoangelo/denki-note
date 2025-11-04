@@ -5,10 +5,25 @@ Rails.application.routes.draw do
     registration: 'signup'
   }, controllers: {
     sessions: 'users/sessions',
-    registrations: 'users/registrations'
+    registrations: 'users/registrations',
+    invitations: 'users/invitations',
+    passwords: 'users/passwords'
   }
 
+  devise_scope :user do
+    get 'auth/invitations/pending', to: 'users/invitations#index'
+  end
+
   get "/health", to: "health#check"
+
+  namespace :admin do
+    resources :users, only: [:index, :show, :update, :destroy] do
+      member do
+        post :add_role
+        delete 'roles/:role_id', to: 'users#remove_role', as: :remove_role
+      end
+    end
+  end
 
   resources :customers, only: [:index] do
     collection do

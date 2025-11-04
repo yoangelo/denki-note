@@ -10,6 +10,7 @@ export interface User {
   roles: string[];
   is_admin: boolean;
   is_member: boolean;
+  created_at: string;
 }
 
 interface AuthState {

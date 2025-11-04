@@ -181,7 +181,7 @@ export function DailyReportEntryPage() {
 
     bulkCreate.mutate({
       data: {
-        daily_reports,
+        daily_reports: daily_reports as never,
       },
     });
   }, [workRows, workDate, calculateRowTotal, bulkCreate, showToast]);
