@@ -63,9 +63,14 @@ module App
 
     # OpenAPIFirst validation middleware
     # CORSミドルウェアの後に追加されるように、ここで設定
-    require 'openapi_first'
+    require_relative 'initializers/openapi_first'
     spec_path = File.expand_path('../../openapi/openapi.yaml', __dir__)
-    config.middleware.use OpenapiFirst::Middlewares::RequestValidation, spec: spec_path
-    config.middleware.use OpenapiFirst::Middlewares::ResponseValidation, spec: spec_path unless Rails.env.production?
+
+    if Rails.env.development?
+      config.middleware.use OpenapiSkippableRequestValidation, spec: spec_path
+      config.middleware.use OpenapiSkippableResponseValidation, spec: spec_path
+    else
+      config.middleware.use OpenapiFirst::Middlewares::RequestValidation, spec: spec_path
+    end
   end
 end
