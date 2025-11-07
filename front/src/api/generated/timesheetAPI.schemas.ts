@@ -53,8 +53,14 @@ export interface Site {
 
 export interface User {
   id: string;
+  email?: string;
   display_name: string;
   is_active: boolean;
+  tenant_id?: string;
+  roles?: string[];
+  is_admin?: boolean;
+  is_member?: boolean;
+  created_at?: string;
 }
 
 /**
@@ -89,6 +95,44 @@ export interface RecentCustomer {
   site: RecentCustomerSite;
   last_used_at: string;
 }
+
+export type LoginBodyUser = {
+  email: string;
+  password: string;
+};
+
+export type LoginBody = {
+  user: LoginBodyUser;
+};
+
+export type Login200 = {
+  user?: User;
+};
+
+export type Logout200 = {
+  message?: string;
+};
+
+export type Logout401 = {
+  message?: string;
+};
+
+export type SignupBodyUser = {
+  email: string;
+  /** @minLength 6 */
+  password: string;
+  password_confirmation?: string;
+  display_name: string;
+  tenant_id: string;
+};
+
+export type SignupBody = {
+  user: SignupBodyUser;
+};
+
+export type Signup201 = {
+  user?: User;
+};
 
 export type ListCustomersParams = {
   query?: string;
@@ -201,11 +245,9 @@ export type BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem = {
 };
 
 export type BulkCreateDailyReportsBodyDailyReportsItem = {
-  tenant_id: string;
   site_id: string;
   work_date: string;
   summary: string;
-  created_by: string;
   /** @minItems 1 */
   work_entries: BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem[];
 };
@@ -249,6 +291,146 @@ export type BulkCreateDailyReports422 = {
   summary?: BulkCreateDailyReports422Summary;
   reports?: BulkCreateDailyReports422ReportsItem[];
   errors?: BulkCreateDailyReports422ErrorsItem[];
+};
+
+export type RequestPasswordResetBodyUser = {
+  email: string;
+};
+
+export type RequestPasswordResetBody = {
+  user: RequestPasswordResetBodyUser;
+};
+
+export type RequestPasswordReset200 = {
+  message?: string;
+};
+
+export type ResetPasswordBodyUser = {
+  reset_password_token: string;
+  /** @minLength 8 */
+  password: string;
+  password_confirmation: string;
+};
+
+export type ResetPasswordBody = {
+  user: ResetPasswordBodyUser;
+};
+
+export type ResetPassword200 = {
+  message?: string;
+  user?: User;
+};
+
+export type InviteUserBodyUser = {
+  email: string;
+  display_name: string;
+  role_ids?: string[];
+};
+
+export type InviteUserBody = {
+  user: InviteUserBodyUser;
+};
+
+export type InviteUser201 = {
+  message?: string;
+  user?: User;
+};
+
+export type AcceptInvitationBodyUser = {
+  invitation_token: string;
+  /** @minLength 8 */
+  password: string;
+  password_confirmation: string;
+};
+
+export type AcceptInvitationBody = {
+  user: AcceptInvitationBodyUser;
+};
+
+export type AcceptInvitation200 = {
+  message?: string;
+  user?: User;
+};
+
+export type ListPendingInvitations200Item = {
+  id?: string;
+  email?: string;
+  display_name?: string;
+  invitation_sent_at?: string;
+  invitation_created_at?: string;
+};
+
+export type AdminListUsersParams = {
+  query?: string;
+  role?: AdminListUsersRole;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type AdminListUsersRole = (typeof AdminListUsersRole)[keyof typeof AdminListUsersRole];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminListUsersRole = {
+  admin: "admin",
+  member: "member",
+} as const;
+
+export type AdminListUsers200Meta = {
+  total_count?: number;
+  returned_count?: number;
+};
+
+export type AdminListUsers200 = {
+  users?: User[];
+  meta?: AdminListUsers200Meta;
+};
+
+export type AdminGetUser200 = {
+  user?: User;
+};
+
+export type AdminUpdateUserBodyUser = {
+  display_name?: string;
+  is_active?: boolean;
+};
+
+export type AdminUpdateUserBody = {
+  user: AdminUpdateUserBodyUser;
+};
+
+export type AdminUpdateUser200 = {
+  message?: string;
+  user?: User;
+};
+
+export type AdminDeleteUser200 = {
+  message?: string;
+};
+
+export type AdminAddRoleBodyRoleName =
+  (typeof AdminAddRoleBodyRoleName)[keyof typeof AdminAddRoleBodyRoleName];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminAddRoleBodyRoleName = {
+  admin: "admin",
+  member: "member",
+} as const;
+
+export type AdminAddRoleBody = {
+  role_name: AdminAddRoleBodyRoleName;
+};
+
+export type AdminAddRole200 = {
+  message?: string;
+  user?: User;
+};
+
+export type AdminRemoveRole200 = {
+  message?: string;
+  user?: User;
 };
 
 export type ListUsersParams = {

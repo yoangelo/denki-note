@@ -1,4 +1,6 @@
-import { defineConfig } from 'orval';
+import type { defineConfig as DefineConfig } from 'orval';
+
+const defineConfig: typeof DefineConfig = (config) => config;
 
 export default defineConfig({
   timesheet: {

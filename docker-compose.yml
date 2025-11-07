@@ -32,6 +32,7 @@ services:
       RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-5}
       FORCE_SSL: ${FORCE_SSL:-}
       TZ: ${TZ:-Asia/Tokyo}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     depends_on:
       db:
         condition: service_healthy

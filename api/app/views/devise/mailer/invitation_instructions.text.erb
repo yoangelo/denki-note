@@ -1,0 +1,13 @@
+<%= t("devise.mailer.invitation_instructions.hello", email: @resource.email) %>
+
+<%= @resource.invited_by.display_name %>さんから招待が届いています。
+
+以下のリンクからパスワードを設定してアカウントを有効化してください：
+
+<%= "#{ENV['FRONTEND_URL']}/accept-invitation?invitation_token=#{@token}" %>
+
+<% if @resource.invitation_due_at %>
+  <%= t("devise.mailer.invitation_instructions.accept_until", due_date: l(@resource.invitation_due_at, format: :'devise.mailer.invitation_instructions.accept_until_format')) %>
+<% end %>
+
+このメールに心当たりがない場合は、無視してください。

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
+import { AcceptInvitationPage } from "./pages/AcceptInvitationPage";
 import { DailyReportEntryPage } from "./features/daily/DailyReportEntryPage";
 import { DailyReportListPage } from "./features/daily/DailyReportListPage";
 import { DailyReportCustomerMonthPage } from "./features/daily/DailyReportCustomerMonthPage";
@@ -26,6 +27,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
           <Route
             path="/"
             element={
