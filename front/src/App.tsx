@@ -10,6 +10,8 @@ import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
 import { AdminUserInvitePage } from "./pages/admin/AdminUserInvitePage";
 import { AdminCustomersPage } from "./pages/admin/AdminCustomersPage";
 import { AdminCustomerCreatePage } from "./pages/admin/AdminCustomerCreatePage";
+import { AdminCustomerDetailPage } from "./pages/admin/AdminCustomerDetailPage";
+import { AdminCustomerEditPage } from "./pages/admin/AdminCustomerEditPage";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
@@ -81,6 +83,22 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminCustomerCreatePage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/customers/:id"
+              element={
+                <AdminRoute>
+                  <AdminCustomerDetailPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/customers/:id/edit"
+              element={
+                <AdminRoute>
+                  <AdminCustomerEditPage />
                 </AdminRoute>
               }
             />
