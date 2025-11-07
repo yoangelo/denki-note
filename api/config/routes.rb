@@ -29,6 +29,7 @@ Rails.application.routes.draw do
     resources :customers, only: [:index, :show, :update, :destroy] do
       collection do
         post :create_bulk
+        get :check_duplicate
       end
     end
   end

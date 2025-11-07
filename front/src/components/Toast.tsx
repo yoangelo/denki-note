@@ -11,19 +11,27 @@ export function Toast({ message, type = "success", duration = 3000, onClose }: T
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
+    // エラー時は自動で閉じない
+    if (type === "error") return;
+
     const timer = setTimeout(() => {
       setVisible(false);
-      setTimeout(() => onClose?.(), 300); // 0.3秒後に削除
+      setTimeout(() => onClose?.(), 300);
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onClose]);
+  }, [duration, onClose, type]);
 
   const bgColor = {
     success: "bg-green-500",
     error: "bg-red-500",
     info: "bg-blue-500",
   }[type];
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(() => onClose?.(), 300);
+  };
 
   if (!visible) return null;
 
@@ -38,6 +46,15 @@ export function Toast({ message, type = "success", duration = 3000, onClose }: T
         {type === "error" && <span>❌</span>}
         {type === "info" && <span>ℹ️</span>}
         <span>{message}</span>
+        {type === "error" && (
+          <button
+            onClick={handleClose}
+            className="ml-2 text-white hover:text-gray-200 font-bold"
+            aria-label="閉じる"
+          >
+            ✗
+          </button>
+        )}
       </div>
     </div>
   );

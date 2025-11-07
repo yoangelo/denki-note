@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { httpClient } from "../../api/mutator";
 import type { Customer } from "../../api/generated/timesheetAPI.schemas";
+import { useToast } from "../../hooks/useToast";
+import { Toast } from "../../components/Toast";
 
 interface CustomersResponse {
   customers: Customer[];
@@ -15,6 +17,7 @@ export function AdminCustomersPage() {
     open: false,
     customer: null,
   });
+  const { toasts, showToast, removeToast } = useToast();
 
   useEffect(() => {
     fetchCustomers();
@@ -45,9 +48,11 @@ export function AdminCustomersPage() {
         method: "DELETE",
       });
       setDeleteModal({ open: false, customer: null });
+      showToast("顧客を削除しました", "success");
       fetchCustomers();
     } catch (err) {
       setError("顧客の削除に失敗しました");
+      showToast("顧客の削除に失敗しました", "error");
       console.error(err);
     }
   };
@@ -58,6 +63,15 @@ export function AdminCustomersPage() {
 
   return (
     <div>
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客一覧</h2>
         <Link
@@ -75,60 +89,108 @@ export function AdminCustomersPage() {
       {loading ? (
         <div className="text-center py-8">読み込み中...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse bg-white shadow rounded">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-2 text-left">顧客名</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">企業区分</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">法人番号</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">掛率</th>
-                <th className="border border-gray-300 px-4 py-2 text-center">削除</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="border border-gray-300 px-4 py-8 text-center text-gray-500"
-                  >
-                    顧客が登録されていません
-                  </td>
+        <>
+          {/* PC・タブレット表示（768px以上） */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full border-collapse bg-white shadow rounded">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-4 py-2 text-left">顧客名</th>
+                  <th className="border border-gray-300 px-4 py-2 text-left">企業区分</th>
+                  <th className="border border-gray-300 px-4 py-2 text-left">法人番号</th>
+                  <th className="border border-gray-300 px-4 py-2 text-left">掛率</th>
+                  <th className="border border-gray-300 px-4 py-2 text-center">削除</th>
                 </tr>
-              ) : (
-                customers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2">
-                      <Link
-                        to={`/admin/customers/${customer.id}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {customer.name}
-                      </Link>
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {getCustomerTypeLabel(customer.customer_type)}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {customer.corporation_number || "-"}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">{customer.rate_percent}%</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">
-                      <button
-                        onClick={() => setDeleteModal({ open: true, customer })}
-                        className="text-red-600 hover:text-red-800 transition-colors"
-                        title="削除"
-                      >
-                        🗑
-                      </button>
+              </thead>
+              <tbody>
+                {customers.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="border border-gray-300 px-4 py-8 text-center text-gray-500"
+                    >
+                      顧客が登録されていません
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  customers.map((customer) => (
+                    <tr key={customer.id} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">
+                        <Link
+                          to={`/admin/customers/${customer.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {customer.name}
+                        </Link>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {getCustomerTypeLabel(customer.customer_type)}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {customer.corporation_number || "-"}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">{customer.rate_percent}%</td>
+                      <td className="border border-gray-300 px-4 py-2 text-center">
+                        <button
+                          onClick={() => setDeleteModal({ open: true, customer })}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                          title="削除"
+                          aria-label={`${customer.name}を削除`}
+                        >
+                          🗑
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* スマホ表示（767px以下） */}
+          <div className="md:hidden space-y-4">
+            {customers.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">顧客が登録されていません</div>
+            ) : (
+              customers.map((customer) => (
+                <div
+                  key={customer.id}
+                  className="bg-white shadow rounded-lg p-4 border border-gray-200"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <Link
+                      to={`/admin/customers/${customer.id}`}
+                      className="text-lg font-semibold text-blue-600 hover:underline"
+                    >
+                      {customer.name}
+                    </Link>
+                    <button
+                      onClick={() => setDeleteModal({ open: true, customer })}
+                      className="text-red-600 hover:text-red-800 transition-colors ml-2"
+                      aria-label={`${customer.name}を削除`}
+                    >
+                      🗑
+                    </button>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex">
+                      <span className="font-semibold w-24">企業区分:</span>
+                      <span>{getCustomerTypeLabel(customer.customer_type)}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="font-semibold w-24">法人番号:</span>
+                      <span>{customer.corporation_number || "-"}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="font-semibold w-24">掛率:</span>
+                      <span>{customer.rate_percent}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
       )}
 
       {/* 削除確認モーダル */}

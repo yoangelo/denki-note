@@ -12,6 +12,15 @@ class Admin::CustomersController < AuthenticatedController
     render json: { customers: customers }
   end
 
+  # GET /admin/customers/check_duplicate
+  def check_duplicate
+    name = params[:name]
+    return render json: { duplicate: false } if name.blank?
+
+    exists = current_tenant.customers.kept.where(name: name).exists?
+    render json: { duplicate: exists, name: name }
+  end
+
   # POST /admin/customers_bulk
   def create_bulk
     customer_params_data = params.require(:customer).permit(:name, :customer_type, :corporation_number, :rate_percent, :note)

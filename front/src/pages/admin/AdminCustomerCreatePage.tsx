@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { httpClient } from "../../api/mutator";
+import { useToast } from "../../hooks/useToast";
+import { Toast } from "../../components/Toast";
 
 interface Site {
   name: string;
@@ -20,6 +22,9 @@ export function AdminCustomerCreatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState("");
+  const { toasts, showToast, removeToast } = useToast();
+  const checkDuplicateTimeoutRef = useRef<number | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -31,6 +36,40 @@ export function AdminCustomerCreatePage() {
 
   const [sites, setSites] = useState<Site[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const checkDuplicateName = useCallback(async (name: string) => {
+    if (!name.trim()) {
+      setDuplicateWarning("");
+      return;
+    }
+
+    try {
+      const response = await httpClient<{ duplicate: boolean; name: string }>({
+        url: "/admin/customers/check_duplicate",
+        params: { name },
+      });
+      if (response.duplicate) {
+        setDuplicateWarning(`「${name}」は既に存在します。同名での登録も可能です。`);
+      } else {
+        setDuplicateWarning("");
+      }
+    } catch (err) {
+      console.error("Duplicate check error:", err);
+    }
+  }, []);
+
+  const handleNameChange = (value: string) => {
+    setFormData({ ...formData, name: value });
+    setDuplicateWarning("");
+
+    if (checkDuplicateTimeoutRef.current) {
+      clearTimeout(checkDuplicateTimeoutRef.current);
+    }
+
+    checkDuplicateTimeoutRef.current = setTimeout(() => {
+      checkDuplicateName(value);
+    }, 500);
+  };
 
   const validateCustomerName = (value: string): string | undefined => {
     if (!value.trim()) {
@@ -199,9 +238,13 @@ export function AdminCustomerCreatePage() {
         data: payload,
       });
 
-      navigate("/admin/customers");
+      showToast("顧客を作成しました", "success");
+      setTimeout(() => {
+        navigate("/admin/customers");
+      }, 500);
     } catch (err: unknown) {
       setError("顧客の作成に失敗しました");
+      showToast("顧客の作成に失敗しました", "error");
       console.error(err);
     } finally {
       setLoading(false);
@@ -217,6 +260,15 @@ export function AdminCustomerCreatePage() {
 
   return (
     <div>
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客の新規作成</h2>
       </div>
@@ -231,40 +283,67 @@ export function AdminCustomerCreatePage() {
           <h3 className="text-lg font-bold mb-4">顧客情報</h3>
 
           <div className="mb-4">
-            <label className="block mb-2">
-              顧客名 <span className="text-red-600">*</span>
+            <label className="block mb-2" htmlFor="customer-name">
+              顧客名{" "}
+              <span className="text-red-600" aria-label="必須">
+                *
+              </span>
             </label>
             <input
+              id="customer-name"
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => handleNameChange(e.target.value)}
               onBlur={() => handleCustomerFieldBlur("name")}
               className={`w-full px-4 py-2 border rounded ${
                 errors.name ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="例: ㈱ABC建設"
+              aria-required="true"
+              aria-invalid={!!errors.name}
+              aria-describedby={
+                errors.name ? "name-error" : duplicateWarning ? "name-warning" : undefined
+              }
             />
-            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+            {errors.name && (
+              <p id="name-error" className="mt-1 text-sm text-red-600" role="alert">
+                {errors.name}
+              </p>
+            )}
+            {!errors.name && duplicateWarning && (
+              <p id="name-warning" className="mt-1 text-sm text-yellow-600" role="alert">
+                ⚠️ {duplicateWarning}
+              </p>
+            )}
           </div>
 
           <div className="mb-4">
-            <label className="block mb-2">
-              企業区分 <span className="text-red-600">*</span>
+            <label className="block mb-2" htmlFor="customer-type">
+              企業区分{" "}
+              <span className="text-red-600" aria-label="必須">
+                *
+              </span>
             </label>
             <select
+              id="customer-type"
               value={formData.customer_type}
               onChange={(e) => setFormData({ ...formData, customer_type: e.target.value })}
               onBlur={() => handleCustomerFieldBlur("customer_type")}
               className={`w-full px-4 py-2 border rounded ${
                 errors.customer_type ? "border-red-500" : "border-gray-300"
               }`}
+              aria-required="true"
+              aria-invalid={!!errors.customer_type}
+              aria-describedby={errors.customer_type ? "customer-type-error" : undefined}
             >
               <option value="">選択</option>
               <option value="corporate">法人</option>
               <option value="individual">個人</option>
             </select>
             {errors.customer_type && (
-              <p className="mt-1 text-sm text-red-600">{errors.customer_type}</p>
+              <p id="customer-type-error" className="mt-1 text-sm text-red-600" role="alert">
+                {errors.customer_type}
+              </p>
             )}
           </div>
 
@@ -286,16 +365,22 @@ export function AdminCustomerCreatePage() {
           </div>
 
           <div className="mb-4">
-            <label className="block mb-2">
-              掛率 <span className="text-red-600">*</span>
+            <label className="block mb-2" htmlFor="rate-percent">
+              掛率{" "}
+              <span className="text-red-600" aria-label="必須">
+                *
+              </span>
               <span
+                id="rate-percent-help"
                 className="ml-2 text-blue-600 cursor-help"
                 title="請求金額計算時に適用される掛け率です（例: 90%の場合、請求額 = 工数×単価×0.9）"
+                role="tooltip"
               >
                 ℹ️
               </span>
             </label>
             <input
+              id="rate-percent"
               type="number"
               value={formData.rate_percent}
               onChange={(e) => setFormData({ ...formData, rate_percent: e.target.value })}
@@ -305,9 +390,14 @@ export function AdminCustomerCreatePage() {
               }`}
               min="0"
               max="300"
+              aria-required="true"
+              aria-invalid={!!errors.rate_percent}
+              aria-describedby={`rate-percent-help ${errors.rate_percent ? "rate-percent-error" : ""}`}
             />
             {errors.rate_percent && (
-              <p className="mt-1 text-sm text-red-600">{errors.rate_percent}</p>
+              <p id="rate-percent-error" className="mt-1 text-sm text-red-600" role="alert">
+                {errors.rate_percent}
+              </p>
             )}
           </div>
 
