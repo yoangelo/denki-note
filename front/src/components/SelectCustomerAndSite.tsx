@@ -35,7 +35,6 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
         customer_type: rc.customer_type,
         corporation_number: rc.corporation_number,
         rate_percent: rc.rate_percent,
-        unit_rate: rc.unit_rate,
       }));
 
   const customersLoading = query ? searchLoading : recentCustomersLoading;

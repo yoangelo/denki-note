@@ -7,7 +7,6 @@
 #  customer_type      :string
 #  name               :string           not null
 #  rate_percent       :integer          default(100)
-#  unit_rate          :integer
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  tenant_id          :uuid             not null

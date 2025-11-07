@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_11_03_062323) do
+ActiveRecord::Schema[7.1].define(version: 2025_11_07_053458) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
@@ -22,7 +22,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_11_03_062323) do
     t.string "customer_type"
     t.string "corporation_number"
     t.integer "rate_percent", default: 100
-    t.integer "unit_rate"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["corporation_number"], name: "index_customers_on_corporation_number"

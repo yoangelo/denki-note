@@ -39,8 +39,6 @@ export interface Customer {
   corporation_number?: string | null;
   /** @nullable */
   rate_percent?: number | null;
-  /** @nullable */
-  unit_rate?: number | null;
 }
 
 export interface Site {
@@ -90,8 +88,6 @@ export interface RecentCustomer {
   corporation_number?: string | null;
   /** @nullable */
   rate_percent?: number | null;
-  /** @nullable */
-  unit_rate?: number | null;
   site: RecentCustomerSite;
   last_used_at: string;
 }

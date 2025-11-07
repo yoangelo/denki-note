@@ -1060,9 +1060,6 @@ components:
         rate_percent:
           type: integer
           nullable: true
-        unit_rate:
-          type: number
-          nullable: true
     Site:
       type: object
       required:
@@ -1136,9 +1133,6 @@ components:
           nullable: true
         rate_percent:
           type: integer
-          nullable: true
-        unit_rate:
-          type: number
           nullable: true
         site:
           type: object

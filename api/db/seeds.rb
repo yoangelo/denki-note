@@ -33,7 +33,6 @@ if Rails.env.development?
     c.customer_type = "corporation"
     c.corporation_number = "1234567890123"
     c.rate_percent = 120
-    c.unit_rate = 3500
   end
   puts "顧客作成: #{customer1.name}"
 
@@ -52,7 +51,6 @@ if Rails.env.development?
   ) do |c|
     c.customer_type = "individual"
     c.rate_percent = 110
-    c.unit_rate = 4000
   end
   puts "顧客作成: #{customer3.name}"
 

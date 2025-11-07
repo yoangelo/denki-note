@@ -790,7 +790,7 @@ components:
           format: date-time
         message:
           type: string
-          
+
     Customer:
       type: object
       required: [id, name]
@@ -800,8 +800,7 @@ components:
         customer_type: { type: string, enum: [individual, corporation], nullable: true }
         corporation_number: { type: string, nullable: true }
         rate_percent: { type: integer, nullable: true }
-        unit_rate: { type: number, nullable: true }
-        
+
     Site:
       type: object
       required: [id, name, customer_id]
@@ -836,7 +835,6 @@ components:
         customer_type: { type: string, enum: [individual, corporation], nullable: true }
         corporation_number: { type: string, nullable: true }
         rate_percent: { type: integer, nullable: true }
-        unit_rate: { type: number, nullable: true }
         site:
           type: object
           required: [id, name]

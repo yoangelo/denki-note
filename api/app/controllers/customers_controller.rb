@@ -5,7 +5,7 @@ class CustomersController < AuthenticatedController
     scope = Customer.where(tenant: current_tenant)
     scope = scope.search_by_name(index_params[:query]) if index_params[:query].present?
     limit = (index_params[:limit] || 20).to_i.clamp(1, 50)
-    render json: scope.order(:name).limit(limit).select(:id, :name, :customer_type, :corporation_number, :rate_percent, :unit_rate)
+    render json: scope.order(:name).limit(limit).select(:id, :name, :customer_type, :corporation_number, :rate_percent)
   end
 
   def recent
@@ -47,7 +47,6 @@ class CustomersController < AuthenticatedController
           customer_type: item[:customer].customer_type,
           corporation_number: item[:customer].corporation_number,
           rate_percent: item[:customer].rate_percent,
-          unit_rate: item[:customer].unit_rate,
           site: {
             id: item[:site].id,
             name: item[:site].name

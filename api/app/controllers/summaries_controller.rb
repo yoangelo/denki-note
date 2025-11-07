@@ -41,9 +41,9 @@ class SummariesController < AuthenticatedController
     customer = Customer.find_by(id: summary_params[:customer_id], tenant: current_tenant)
     tenant_setting = TenantSetting.find_by(tenant: current_tenant)
 
-    unit_rate = customer&.unit_rate || tenant_setting&.default_unit_rate || 0
+    default_unit_rate = tenant_setting&.default_unit_rate || 0
     rate_percent = (summary_params[:rate_toggle] == "on") ? (customer&.rate_percent || 100) : 100
-    amount_jpy = (total_hours * unit_rate * (rate_percent / 100.0)).round
+    amount_jpy = (total_hours * default_unit_rate * (rate_percent / 100.0)).round
 
     render json: { rows: rows, total_hours: total_hours, amount_jpy: amount_jpy }
   end
