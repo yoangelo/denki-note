@@ -99,7 +99,10 @@ export function AcceptInvitationPage() {
           </div>
 
           <div>
-            <label htmlFor="passwordConfirmation" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="passwordConfirmation"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               パスワード（確認）
             </label>
             <input

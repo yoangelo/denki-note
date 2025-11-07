@@ -25,6 +25,12 @@ Rails.application.routes.draw do
         delete 'roles/:role_id', to: 'users#remove_role', as: :remove_role
       end
     end
+
+    resources :customers, only: [:index, :show, :update, :destroy] do
+      collection do
+        post :create_bulk
+      end
+    end
   end
 
   resources :customers, only: [:index] do

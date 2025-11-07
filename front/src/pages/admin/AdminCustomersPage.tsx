@@ -1,0 +1,172 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { httpClient } from "../../api/mutator";
+import type { Customer } from "../../api/generated/timesheetAPI.schemas";
+
+interface CustomersResponse {
+  customers: Customer[];
+}
+
+export function AdminCustomersPage() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; customer: Customer | null }>({
+    open: false,
+    customer: null,
+  });
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await httpClient<CustomersResponse>({
+        url: "/admin/customers",
+      });
+      setCustomers(response.customers);
+    } catch (err) {
+      setError("顧客一覧の取得に失敗しました");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteModal.customer) return;
+
+    try {
+      await httpClient({
+        url: `/admin/customers/${deleteModal.customer.id}`,
+        method: "DELETE",
+      });
+      setDeleteModal({ open: false, customer: null });
+      fetchCustomers();
+    } catch (err) {
+      setError("顧客の削除に失敗しました");
+      console.error(err);
+    }
+  };
+
+  const getCustomerTypeLabel = (type: string) => {
+    return type === "corporate" ? "法人" : "個人";
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">顧客一覧</h2>
+        <Link
+          to="/admin/customers/new"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors no-underline"
+        >
+          + 新規作成
+        </Link>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded">{error}</div>
+      )}
+
+      {loading ? (
+        <div className="text-center py-8">読み込み中...</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse bg-white shadow rounded">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-4 py-2 text-left">顧客名</th>
+                <th className="border border-gray-300 px-4 py-2 text-left">企業区分</th>
+                <th className="border border-gray-300 px-4 py-2 text-left">法人番号</th>
+                <th className="border border-gray-300 px-4 py-2 text-left">掛率</th>
+                <th className="border border-gray-300 px-4 py-2 text-center">削除</th>
+              </tr>
+            </thead>
+            <tbody>
+              {customers.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="border border-gray-300 px-4 py-8 text-center text-gray-500"
+                  >
+                    顧客が登録されていません
+                  </td>
+                </tr>
+              ) : (
+                customers.map((customer) => (
+                  <tr key={customer.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-300 px-4 py-2">
+                      <Link
+                        to={`/admin/customers/${customer.id}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {customer.name}
+                      </Link>
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {getCustomerTypeLabel(customer.customer_type)}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {customer.corporation_number || "-"}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">{customer.rate_percent}%</td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      <button
+                        onClick={() => setDeleteModal({ open: true, customer })}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                        title="削除"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* 削除確認モーダル */}
+      {deleteModal.open && deleteModal.customer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">顧客の削除</h3>
+              <button
+                onClick={() => setDeleteModal({ open: false, customer: null })}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✗
+              </button>
+            </div>
+            <p className="mb-4">「{deleteModal.customer.name}」を削除しますか？</p>
+            <p className="mb-4 text-sm text-gray-600">
+              ※紐づく現場も削除されます。
+              <br />
+              ※削除後も日報データは保持されます。
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteModal({ open: false, customer: null })}
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+              >
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

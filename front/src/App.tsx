@@ -8,6 +8,7 @@ import { DailyReportCustomerMonthPage } from "./features/daily/DailyReportCustom
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
 import { AdminUserInvitePage } from "./pages/admin/AdminUserInvitePage";
+import { AdminCustomersPage } from "./pages/admin/AdminCustomersPage";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
@@ -63,6 +64,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminUserDetailPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/customers"
+              element={
+                <AdminRoute>
+                  <AdminCustomersPage />
                 </AdminRoute>
               }
             />

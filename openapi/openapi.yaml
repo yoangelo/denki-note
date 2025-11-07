@@ -770,6 +770,187 @@ paths:
                   total_hours: { type: number }
                   amount_jpy: { type: integer }
 
+  /admin/customers:
+    get:
+      operationId: getAdminCustomers
+      tags: [Admin, Customers]
+      summary: Get all customers (admin only)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Customer'
+        '403':
+          description: Forbidden
+
+  /admin/customers/create_bulk:
+    post:
+      operationId: createCustomerBulk
+      tags: [Admin, Customers]
+      summary: Create customer with sites (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customer]
+              properties:
+                customer:
+                  type: object
+                  required: [name, customer_type, rate_percent]
+                  properties:
+                    name: { type: string }
+                    customer_type: { type: string, enum: [individual, corporate] }
+                    corporation_number: { type: string }
+                    rate_percent: { type: integer, minimum: 0, maximum: 300 }
+                    note: { type: string }
+                sites:
+                  type: array
+                  items:
+                    type: object
+                    required: [name]
+                    properties:
+                      name: { type: string }
+                      note: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    $ref: '#/components/schemas/Customer'
+                  sites:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Site'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        '403':
+          description: Forbidden
+
+  /admin/customers/{id}:
+    get:
+      operationId: getAdminCustomer
+      tags: [Admin, Customers]
+      summary: Get customer detail (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    $ref: '#/components/schemas/Customer'
+                  sites:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Site'
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    patch:
+      operationId: updateAdminCustomer
+      tags: [Admin, Customers]
+      summary: Update customer (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customer]
+              properties:
+                customer:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    customer_type: { type: string, enum: [individual, corporate] }
+                    corporation_number: { type: string }
+                    rate_percent: { type: integer, minimum: 0, maximum: 300 }
+                    note: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    $ref: '#/components/schemas/Customer'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    delete:
+      operationId: deleteAdminCustomer
+      tags: [Admin, Customers]
+      summary: Delete customer (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
 components:
   securitySchemes:
     cookieAuth:
@@ -793,13 +974,16 @@ components:
 
     Customer:
       type: object
-      required: [id, name]
+      required: [id, name, customer_type, rate_percent]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        customer_type: { type: string, enum: [individual, corporation], nullable: true }
+        customer_type: { type: string, enum: [individual, corporate] }
         corporation_number: { type: string, nullable: true }
-        rate_percent: { type: integer, nullable: true }
+        rate_percent: { type: integer, default: 100 }
+        note: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
 
     Site:
       type: object
@@ -809,6 +993,8 @@ components:
         customer_id: { type: string, format: uuid }
         name: { type: string }
         note: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
 
     User:
       type: object

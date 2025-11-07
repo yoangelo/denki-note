@@ -25,9 +25,17 @@ import type {
   AdminRemoveRole200,
   AdminUpdateUser200,
   AdminUpdateUserBody,
+  CreateCustomerBulk201,
+  CreateCustomerBulk422,
+  CreateCustomerBulkBody,
+  GetAdminCustomer200,
+  GetAdminCustomers200,
   InviteUser201,
   InviteUserBody,
   ListPendingInvitations200Item,
+  UpdateAdminCustomer200,
+  UpdateAdminCustomer422,
+  UpdateAdminCustomerBody,
 } from "../timesheetAPI.schemas";
 
 import { httpClient } from "../../mutator";
@@ -559,6 +567,343 @@ export const useAdminRemoveRole = <TError = void | void | void, TContext = unkno
   TContext
 > => {
   const mutationOptions = getAdminRemoveRoleMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get all customers (admin only)
+ */
+export const getAdminCustomers = (signal?: AbortSignal) => {
+  return httpClient<GetAdminCustomers200>({ url: `/admin/customers`, method: "GET", signal });
+};
+
+export const getGetAdminCustomersQueryKey = () => {
+  return [`/admin/customers`] as const;
+};
+
+export const getGetAdminCustomersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminCustomers>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getAdminCustomers>>, TError, TData>;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminCustomersQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminCustomers>>> = ({ signal }) =>
+    getAdminCustomers(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminCustomers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminCustomersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminCustomers>>
+>;
+export type GetAdminCustomersQueryError = void;
+
+/**
+ * @summary Get all customers (admin only)
+ */
+
+export function useGetAdminCustomers<
+  TData = Awaited<ReturnType<typeof getAdminCustomers>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getAdminCustomers>>, TError, TData>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminCustomersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Create customer with sites (admin only)
+ */
+export const createCustomerBulk = (
+  createCustomerBulkBody: CreateCustomerBulkBody,
+  signal?: AbortSignal
+) => {
+  return httpClient<CreateCustomerBulk201>({
+    url: `/admin/customers/create_bulk`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: createCustomerBulkBody,
+    signal,
+  });
+};
+
+export const getCreateCustomerBulkMutationOptions = <
+  TError = void | CreateCustomerBulk422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCustomerBulk>>,
+    TError,
+    { data: CreateCustomerBulkBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createCustomerBulk>>,
+  TError,
+  { data: CreateCustomerBulkBody },
+  TContext
+> => {
+  const mutationKey = ["createCustomerBulk"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createCustomerBulk>>,
+    { data: CreateCustomerBulkBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createCustomerBulk(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateCustomerBulkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createCustomerBulk>>
+>;
+export type CreateCustomerBulkMutationBody = CreateCustomerBulkBody;
+export type CreateCustomerBulkMutationError = void | CreateCustomerBulk422;
+
+/**
+ * @summary Create customer with sites (admin only)
+ */
+export const useCreateCustomerBulk = <
+  TError = void | CreateCustomerBulk422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCustomerBulk>>,
+    TError,
+    { data: CreateCustomerBulkBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createCustomerBulk>>,
+  TError,
+  { data: CreateCustomerBulkBody },
+  TContext
+> => {
+  const mutationOptions = getCreateCustomerBulkMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get customer detail (admin only)
+ */
+export const getAdminCustomer = (id: string, signal?: AbortSignal) => {
+  return httpClient<GetAdminCustomer200>({ url: `/admin/customers/${id}`, method: "GET", signal });
+};
+
+export const getGetAdminCustomerQueryKey = (id?: string) => {
+  return [`/admin/customers/${id}`] as const;
+};
+
+export const getGetAdminCustomerQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminCustomer>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getAdminCustomer>>, TError, TData> }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminCustomerQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminCustomer>>> = ({ signal }) =>
+    getAdminCustomer(id, signal);
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminCustomer>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminCustomerQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminCustomer>>>;
+export type GetAdminCustomerQueryError = void | void;
+
+/**
+ * @summary Get customer detail (admin only)
+ */
+
+export function useGetAdminCustomer<
+  TData = Awaited<ReturnType<typeof getAdminCustomer>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getAdminCustomer>>, TError, TData> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminCustomerQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Update customer (admin only)
+ */
+export const updateAdminCustomer = (
+  id: string,
+  updateAdminCustomerBody: UpdateAdminCustomerBody
+) => {
+  return httpClient<UpdateAdminCustomer200>({
+    url: `/admin/customers/${id}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: updateAdminCustomerBody,
+  });
+};
+
+export const getUpdateAdminCustomerMutationOptions = <
+  TError = void | void | UpdateAdminCustomer422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminCustomer>>,
+    TError,
+    { id: string; data: UpdateAdminCustomerBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAdminCustomer>>,
+  TError,
+  { id: string; data: UpdateAdminCustomerBody },
+  TContext
+> => {
+  const mutationKey = ["updateAdminCustomer"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAdminCustomer>>,
+    { id: string; data: UpdateAdminCustomerBody }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateAdminCustomer(id, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAdminCustomerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAdminCustomer>>
+>;
+export type UpdateAdminCustomerMutationBody = UpdateAdminCustomerBody;
+export type UpdateAdminCustomerMutationError = void | void | UpdateAdminCustomer422;
+
+/**
+ * @summary Update customer (admin only)
+ */
+export const useUpdateAdminCustomer = <
+  TError = void | void | UpdateAdminCustomer422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminCustomer>>,
+    TError,
+    { id: string; data: UpdateAdminCustomerBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAdminCustomer>>,
+  TError,
+  { id: string; data: UpdateAdminCustomerBody },
+  TContext
+> => {
+  const mutationOptions = getUpdateAdminCustomerMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Delete customer (admin only)
+ */
+export const deleteAdminCustomer = (id: string) => {
+  return httpClient<void>({ url: `/admin/customers/${id}`, method: "DELETE" });
+};
+
+export const getDeleteAdminCustomerMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAdminCustomer>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteAdminCustomer>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deleteAdminCustomer"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteAdminCustomer>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteAdminCustomer(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteAdminCustomerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteAdminCustomer>>
+>;
+
+export type DeleteAdminCustomerMutationError = void | void;
+
+/**
+ * @summary Delete customer (admin only)
+ */
+export const useDeleteAdminCustomer = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAdminCustomer>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteAdminCustomer>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getDeleteAdminCustomerMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

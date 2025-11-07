@@ -17,28 +17,25 @@ export interface HealthResponse {
   message: string;
 }
 
-/**
- * @nullable
- */
-export type CustomerCustomerType =
-  | (typeof CustomerCustomerType)[keyof typeof CustomerCustomerType]
-  | null;
+export type CustomerCustomerType = (typeof CustomerCustomerType)[keyof typeof CustomerCustomerType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CustomerCustomerType = {
   individual: "individual",
-  corporation: "corporation",
+  corporate: "corporate",
 } as const;
 
 export interface Customer {
   id: string;
   name: string;
-  /** @nullable */
-  customer_type?: CustomerCustomerType;
+  customer_type: CustomerCustomerType;
   /** @nullable */
   corporation_number?: string | null;
+  rate_percent: number;
   /** @nullable */
-  rate_percent?: number | null;
+  note?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Site {
@@ -47,6 +44,8 @@ export interface Site {
   name: string;
   /** @nullable */
   note?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface User {
@@ -461,4 +460,86 @@ export type GetCustomerMonthSummary200 = {
   rows: GetCustomerMonthSummary200RowsItem[];
   total_hours: number;
   amount_jpy: number;
+};
+
+export type GetAdminCustomers200 = {
+  customers?: Customer[];
+};
+
+export type CreateCustomerBulkBodyCustomerCustomerType =
+  (typeof CreateCustomerBulkBodyCustomerCustomerType)[keyof typeof CreateCustomerBulkBodyCustomerCustomerType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateCustomerBulkBodyCustomerCustomerType = {
+  individual: "individual",
+  corporate: "corporate",
+} as const;
+
+export type CreateCustomerBulkBodyCustomer = {
+  name: string;
+  customer_type: CreateCustomerBulkBodyCustomerCustomerType;
+  corporation_number?: string;
+  /**
+   * @minimum 0
+   * @maximum 300
+   */
+  rate_percent: number;
+  note?: string;
+};
+
+export type CreateCustomerBulkBodySitesItem = {
+  name: string;
+  note?: string;
+};
+
+export type CreateCustomerBulkBody = {
+  customer: CreateCustomerBulkBodyCustomer;
+  sites?: CreateCustomerBulkBodySitesItem[];
+};
+
+export type CreateCustomerBulk201 = {
+  customer?: Customer;
+  sites?: Site[];
+};
+
+export type CreateCustomerBulk422 = {
+  errors?: string[];
+};
+
+export type GetAdminCustomer200 = {
+  customer?: Customer;
+  sites?: Site[];
+};
+
+export type UpdateAdminCustomerBodyCustomerCustomerType =
+  (typeof UpdateAdminCustomerBodyCustomerCustomerType)[keyof typeof UpdateAdminCustomerBodyCustomerCustomerType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateAdminCustomerBodyCustomerCustomerType = {
+  individual: "individual",
+  corporate: "corporate",
+} as const;
+
+export type UpdateAdminCustomerBodyCustomer = {
+  name?: string;
+  customer_type?: UpdateAdminCustomerBodyCustomerCustomerType;
+  corporation_number?: string;
+  /**
+   * @minimum 0
+   * @maximum 300
+   */
+  rate_percent?: number;
+  note?: string;
+};
+
+export type UpdateAdminCustomerBody = {
+  customer: UpdateAdminCustomerBodyCustomer;
+};
+
+export type UpdateAdminCustomer200 = {
+  customer?: Customer;
+};
+
+export type UpdateAdminCustomer422 = {
+  errors?: string[];
 };

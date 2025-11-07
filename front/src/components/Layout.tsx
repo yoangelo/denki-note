@@ -72,14 +72,24 @@ export function Layout() {
         </Link>
 
         {user?.is_admin && (
-          <Link
-            to="/admin/users"
-            className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
-              isActive("/admin") ? "bg-green-600" : "bg-green-700 hover:bg-green-800"
-            }`}
-          >
-            ユーザー管理
-          </Link>
+          <>
+            <Link
+              to="/admin/customers"
+              className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
+                isActive("/admin/customers") ? "bg-green-600" : "bg-green-700 hover:bg-green-800"
+              }`}
+            >
+              顧客管理
+            </Link>
+            <Link
+              to="/admin/users"
+              className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
+                isActive("/admin/users") ? "bg-green-600" : "bg-green-700 hover:bg-green-800"
+              }`}
+            >
+              ユーザー管理
+            </Link>
+          </>
         )}
       </div>
 

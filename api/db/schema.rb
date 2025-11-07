@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_11_07_053458) do
+ActiveRecord::Schema[7.1].define(version: 2025_11_07_223848) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
@@ -24,7 +24,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_11_07_053458) do
     t.integer "rate_percent", default: 100
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "note"
+    t.datetime "discarded_at"
     t.index ["corporation_number"], name: "index_customers_on_corporation_number"
+    t.index ["discarded_at"], name: "index_customers_on_discarded_at"
     t.index ["tenant_id", "name"], name: "index_customers_on_tenant_id_and_name"
     t.index ["tenant_id"], name: "index_customers_on_tenant_id"
   end
@@ -58,7 +61,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_11_07_053458) do
     t.text "note"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "discarded_at"
     t.index ["customer_id"], name: "index_sites_on_customer_id"
+    t.index ["discarded_at"], name: "index_sites_on_discarded_at"
     t.index ["tenant_id", "customer_id", "name"], name: "index_sites_on_tenant_id_and_customer_id_and_name", unique: true
     t.index ["tenant_id"], name: "index_sites_on_tenant_id"
   end

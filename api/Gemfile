@@ -28,6 +28,9 @@ gem "devise"
 gem "devise_invitable"
 gem "cancancan"
 
+# Soft delete
+gem "discard", "~> 1.3"
+
 # Serializers
 gem "jsonapi-serializer"
 
