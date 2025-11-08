@@ -3,7 +3,7 @@ import type { defineConfig as DefineConfig } from 'orval';
 const defineConfig: typeof DefineConfig = (config) => config;
 
 export default defineConfig({
-  timesheet: {
+  denkiNote: {
     input: './dist/bundled.yaml', // ← Redoclyでバンドル後を読む
     output: {
       mode: 'tags-split',                      // ファイル分割生成

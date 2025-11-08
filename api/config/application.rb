@@ -43,7 +43,7 @@ module App
 
     # Enable session and cookies for API authentication
     config.middleware.use ActionDispatch::Cookies
-    config.middleware.use ActionDispatch::Session::CookieStore, key: '_wakosha_session'
+    config.middleware.use ActionDispatch::Session::CookieStore, key: '_denki_note_session'
 
     # ① CORS: 最前に差し込む（OPTIONSはここで204を返す）
     config.middleware.insert_before 0, Rack::Cors do

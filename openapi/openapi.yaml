@@ -956,7 +956,7 @@ components:
     cookieAuth:
       type: apiKey
       in: cookie
-      name: _wakosha_session
+      name: _denki_note_session
 
   schemas:
     HealthResponse:

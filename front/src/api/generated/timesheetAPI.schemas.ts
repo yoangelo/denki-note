@@ -70,7 +70,7 @@ export type RecentCustomerCustomerType =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RecentCustomerCustomerType = {
   individual: "individual",
-  corporation: "corporation",
+  corporate: "corporate",
 } as const;
 
 export type RecentCustomerSite = {
