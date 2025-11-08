@@ -5,7 +5,7 @@ class SitesController < AuthenticatedController
 
     return render json: [] unless current_tenant
 
-    scope = Site.where(tenant: current_tenant, customer_id: customer_id)
+    scope = Site.kept.where(tenant: current_tenant, customer_id: customer_id)
     scope = scope.where("name ILIKE ?", "%#{q}%") if q.present?
     render json: scope.order(:name).select(:id, :name, :note, :customer_id)
   end

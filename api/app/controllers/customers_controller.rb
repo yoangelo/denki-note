@@ -2,7 +2,7 @@ class CustomersController < AuthenticatedController
   def index
     return render json: [] unless current_tenant
 
-    scope = Customer.where(tenant: current_tenant)
+    scope = Customer.kept.where(tenant: current_tenant)
     scope = scope.search_by_name(index_params[:query]) if index_params[:query].present?
     limit = (index_params[:limit] || 20).to_i.clamp(1, 50)
     render json: scope.order(:name).limit(limit).select(:id, :name, :customer_type, :corporation_number, :rate_percent)
@@ -21,16 +21,19 @@ class CustomersController < AuthenticatedController
 
     # 日報に紐づく顧客と現場の情報を集計
     customer_site_map = {}
-    
+
     recent_daily_reports.each do |daily_report|
-      customer = daily_report.site.customer
-      next unless customer
-      
+      site = daily_report.site
+      customer = site.customer
+
+      # 削除済みの顧客または現場はスキップ
+      next unless customer&.discarded_at.nil? && site.discarded_at.nil?
+
       # 各顧客について、最後に使用した現場と使用日時を記録
       if !customer_site_map[customer.id] || customer_site_map[customer.id][:last_used_at] < daily_report.created_at
         customer_site_map[customer.id] = {
           customer: customer,
-          site: daily_report.site,
+          site: site,
           last_used_at: daily_report.created_at
         }
       end

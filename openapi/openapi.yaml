@@ -1018,7 +1018,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        customer_type: { type: string, enum: [individual, corporation], nullable: true }
+        customer_type: { type: string, enum: [individual, corporate], nullable: true }
         corporation_number: { type: string, nullable: true }
         rate_percent: { type: integer, nullable: true }
         site:

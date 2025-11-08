@@ -1356,7 +1356,7 @@ components:
           type: string
           enum:
             - individual
-            - corporation
+            - corporate
           nullable: true
         corporation_number:
           type: string
