@@ -7,9 +7,10 @@ class Admin::CustomersController < AuthenticatedController
     customers = current_tenant.customers
                               .kept
                               .order(created_at: :desc)
-                              .select(:id, :name, :customer_type, :corporation_number, :rate_percent, :created_at, :updated_at)
 
-    render json: { customers: customers }
+    render json: {
+      customers: customers.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :created_at, :updated_at])
+    }
   end
 
   # GET /admin/customers/check_duplicate
@@ -59,11 +60,11 @@ class Admin::CustomersController < AuthenticatedController
 
   # GET /admin/customers/:id
   def show
-    sites = @customer.sites.kept.select(:id, :name, :note, :created_at, :updated_at)
+    sites = @customer.sites.kept
 
     render json: {
       customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :created_at, :updated_at]),
-      sites: sites
+      sites: sites.as_json(only: [:id, :customer_id, :name, :note, :created_at, :updated_at])
     }
   end
 

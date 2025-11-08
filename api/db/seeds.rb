@@ -30,7 +30,7 @@ if Rails.env.development?
     tenant: tenant,
     name: "株式会社ABC建設"
   ) do |c|
-    c.customer_type = "corporation"
+    c.customer_type = "corporate"
     c.corporation_number = "1234567890123"
     c.rate_percent = 120
   end
@@ -40,7 +40,7 @@ if Rails.env.development?
     tenant: tenant,
     name: "DEF商事"
   ) do |c|
-    c.customer_type = "corporation"
+    c.customer_type = "corporate"
     c.rate_percent = 100
   end
   puts "顧客作成: #{customer2.name}"
