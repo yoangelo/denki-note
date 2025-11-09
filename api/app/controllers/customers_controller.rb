@@ -11,10 +11,11 @@ class CustomersController < AuthenticatedController
   def recent
     return render json: [] unless current_tenant
 
-    # 直近の日報10件を取得
+    # 直近の日報10件を取得（削除済みの顧客・現場は除外）
     recent_daily_reports = DailyReport
-      .joins(:site)
-      .where(sites: { tenant: current_tenant })
+      .joins(site: :customer)
+      .where(sites: { tenant: current_tenant, discarded_at: nil })
+      .where(customers: { discarded_at: nil })
       .order(created_at: :desc)
       .limit(10)
       .includes(site: :customer)
@@ -25,9 +26,6 @@ class CustomersController < AuthenticatedController
     recent_daily_reports.each do |daily_report|
       site = daily_report.site
       customer = site.customer
-
-      # 削除済みの顧客または現場はスキップ
-      next unless customer&.discarded_at.nil? && site.discarded_at.nil?
 
       # 各顧客について、最後に使用した現場と使用日時を記録
       if !customer_site_map[customer.id] || customer_site_map[customer.id][:last_used_at] < daily_report.created_at
