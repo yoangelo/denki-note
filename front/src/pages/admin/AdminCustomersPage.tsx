@@ -20,6 +20,7 @@ export function AdminCustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"created_at" | "name" | "rate_percent">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [showDiscarded, setShowDiscarded] = useState(false);
   const { toasts, showToast, removeToast } = useToast();
 
   const fetchCustomers = useCallback(
@@ -31,6 +32,7 @@ export function AdminCustomersPage() {
         if (search) params.append("search", search);
         params.append("sort_by", sortBy);
         params.append("sort_order", sortOrder);
+        if (showDiscarded) params.append("show_discarded", "true");
 
         const response = await httpClient<CustomersResponse>({
           url: `/admin/customers?${params.toString()}`,
@@ -43,7 +45,7 @@ export function AdminCustomersPage() {
         setLoading(false);
       }
     },
-    [sortBy, sortOrder]
+    [sortBy, sortOrder, showDiscarded]
   );
 
   useEffect(() => {
@@ -148,6 +150,19 @@ export function AdminCustomersPage() {
         </div>
       </div>
 
+      {/* 削除済み表示切り替え */}
+      <div className="mb-4">
+        <label className="flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showDiscarded}
+            onChange={(e) => setShowDiscarded(e.target.checked)}
+            className="mr-2 w-4 h-4 cursor-pointer"
+          />
+          <span className="text-sm">削除済みを表示</span>
+        </label>
+      </div>
+
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded">{error}</div>
       )}
@@ -179,35 +194,51 @@ export function AdminCustomersPage() {
                     </td>
                   </tr>
                 ) : (
-                  customers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-2">
-                        <Link
-                          to={`/admin/customers/${customer.id}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {customer.name}
-                        </Link>
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {getCustomerTypeLabel(customer.customer_type)}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {customer.corporation_number || "-"}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">{customer.rate_percent}%</td>
-                      <td className="border border-gray-300 px-4 py-2 text-center">
-                        <button
-                          onClick={() => setDeleteModal({ open: true, customer })}
-                          className="text-red-600 hover:text-red-800 transition-colors"
-                          title="削除"
-                          aria-label={`${customer.name}を削除`}
-                        >
-                          🗑
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  customers.map((customer) => {
+                    const isDiscarded = !!customer.discarded_at;
+                    return (
+                      <tr
+                        key={customer.id}
+                        className={isDiscarded ? "bg-gray-200" : "hover:bg-gray-50"}
+                      >
+                        <td className="border border-gray-300 px-4 py-2">
+                          {isDiscarded ? (
+                            <span className="text-gray-600">🗑 {customer.name}</span>
+                          ) : (
+                            <Link
+                              to={`/admin/customers/${customer.id}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {customer.name}
+                            </Link>
+                          )}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2">
+                          {getCustomerTypeLabel(customer.customer_type)}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2">
+                          {customer.corporation_number || "-"}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2">
+                          {customer.rate_percent}%
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2 text-center">
+                          {isDiscarded ? (
+                            <span className="text-gray-600 text-sm">削除済</span>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteModal({ open: true, customer })}
+                              className="text-red-600 hover:text-red-800 transition-colors"
+                              title="削除"
+                              aria-label={`${customer.name}を削除`}
+                            >
+                              🗑
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -218,42 +249,57 @@ export function AdminCustomersPage() {
             {customers.length === 0 ? (
               <div className="text-center py-8 text-gray-500">顧客が登録されていません</div>
             ) : (
-              customers.map((customer) => (
-                <div
-                  key={customer.id}
-                  className="bg-white shadow rounded-lg p-4 border border-gray-200"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <Link
-                      to={`/admin/customers/${customer.id}`}
-                      className="text-lg font-semibold text-blue-600 hover:underline"
-                    >
-                      {customer.name}
-                    </Link>
-                    <button
-                      onClick={() => setDeleteModal({ open: true, customer })}
-                      className="text-red-600 hover:text-red-800 transition-colors ml-2"
-                      aria-label={`${customer.name}を削除`}
-                    >
-                      🗑
-                    </button>
+              customers.map((customer) => {
+                const isDiscarded = !!customer.discarded_at;
+                return (
+                  <div
+                    key={customer.id}
+                    className={`shadow rounded-lg p-4 border ${
+                      isDiscarded ? "bg-gray-200 border-gray-300" : "bg-white border-gray-200"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      {isDiscarded ? (
+                        <span className="text-lg font-semibold text-gray-600">
+                          🗑 {customer.name}
+                        </span>
+                      ) : (
+                        <Link
+                          to={`/admin/customers/${customer.id}`}
+                          className="text-lg font-semibold text-blue-600 hover:underline"
+                        >
+                          {customer.name}
+                        </Link>
+                      )}
+                      {isDiscarded ? (
+                        <span className="text-gray-600 text-sm ml-2">削除済</span>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteModal({ open: true, customer })}
+                          className="text-red-600 hover:text-red-800 transition-colors ml-2"
+                          aria-label={`${customer.name}を削除`}
+                        >
+                          🗑
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex">
+                        <span className="font-semibold w-24">企業区分:</span>
+                        <span>{getCustomerTypeLabel(customer.customer_type)}</span>
+                      </div>
+                      <div className="flex">
+                        <span className="font-semibold w-24">法人番号:</span>
+                        <span>{customer.corporation_number || "-"}</span>
+                      </div>
+                      <div className="flex">
+                        <span className="font-semibold w-24">掛率:</span>
+                        <span>{customer.rate_percent}%</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex">
-                      <span className="font-semibold w-24">企業区分:</span>
-                      <span>{getCustomerTypeLabel(customer.customer_type)}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="font-semibold w-24">法人番号:</span>
-                      <span>{customer.corporation_number || "-"}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="font-semibold w-24">掛率:</span>
-                      <span>{customer.rate_percent}%</span>
-                    </div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </>

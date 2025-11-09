@@ -33,6 +33,7 @@ export function AdminCustomerDetailPage() {
   });
   const [siteFormData, setSiteFormData] = useState<SiteFormData>({ name: "", note: "" });
   const [siteFormError, setSiteFormError] = useState("");
+  const [showDiscardedSites, setShowDiscardedSites] = useState(false);
   const { toasts, showToast, removeToast } = useToast();
 
   const fetchCustomerDetail = useCallback(async () => {
@@ -41,8 +42,11 @@ export function AdminCustomerDetailPage() {
     setLoading(true);
     setError("");
     try {
+      const params = new URLSearchParams();
+      if (showDiscardedSites) params.append("show_discarded", "true");
+
       const response = await httpClient<CustomerDetailResponse>({
-        url: `/admin/customers/${id}`,
+        url: `/admin/customers/${id}?${params.toString()}`,
       });
       setCustomer(response.customer);
       setSites(response.sites);
@@ -52,7 +56,7 @@ export function AdminCustomerDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, showDiscardedSites]);
 
   useEffect(() => {
     fetchCustomerDetail();
@@ -223,6 +227,20 @@ export function AdminCustomerDetailPage() {
               + 現場を追加
             </button>
           </div>
+
+          {/* 削除済み現場表示切り替え */}
+          <div className="mb-4">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showDiscardedSites}
+                onChange={(e) => setShowDiscardedSites(e.target.checked)}
+                className="mr-2 w-4 h-4 cursor-pointer"
+              />
+              <span className="text-sm">削除済みの現場を表示</span>
+            </label>
+          </div>
+
           {sites.length === 0 ? (
             <div className="text-center py-8 text-gray-500">現場が登録されていません</div>
           ) : (
@@ -236,30 +254,48 @@ export function AdminCustomerDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sites.map((site) => (
-                    <tr key={site.id} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-2">{site.name}</td>
-                      <td className="border border-gray-300 px-4 py-2">{site.note || "-"}</td>
-                      <td className="border border-gray-300 px-4 py-2 text-center">
-                        <button
-                          onClick={() => openEditSiteModal(site)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors mr-3"
-                          title="編集"
-                          aria-label={`${site.name}を編集`}
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => setDeleteSiteModal({ open: true, site })}
-                          className="text-red-600 hover:text-red-800 transition-colors"
-                          title="削除"
-                          aria-label={`${site.name}を削除`}
-                        >
-                          🗑
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {sites.map((site) => {
+                    const isDiscarded = !!site.discarded_at;
+                    return (
+                      <tr
+                        key={site.id}
+                        className={isDiscarded ? "bg-gray-200" : "hover:bg-gray-50"}
+                      >
+                        <td className="border border-gray-300 px-4 py-2">
+                          {isDiscarded ? (
+                            <span className="text-gray-600">🗑 {site.name}</span>
+                          ) : (
+                            site.name
+                          )}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2">{site.note || "-"}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-center">
+                          {isDiscarded ? (
+                            <span className="text-gray-600 text-sm">削除済</span>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => openEditSiteModal(site)}
+                                className="text-blue-600 hover:text-blue-800 transition-colors mr-3"
+                                title="編集"
+                                aria-label={`${site.name}を編集`}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => setDeleteSiteModal({ open: true, site })}
+                                className="text-red-600 hover:text-red-800 transition-colors"
+                                title="削除"
+                                aria-label={`${site.name}を削除`}
+                              >
+                                🗑
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

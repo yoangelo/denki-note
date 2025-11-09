@@ -75,11 +75,12 @@ class Admin::CustomersController < AuthenticatedController
 
   # GET /admin/customers/:id
   def show
-    sites = @customer.sites.kept
+    # 削除済み現場表示切り替え
+    sites = params[:show_discarded] == "true" ? @customer.sites.with_discarded : @customer.sites.kept
 
     render json: {
       customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :created_at, :updated_at]),
-      sites: sites.as_json(only: [:id, :customer_id, :name, :note, :created_at, :updated_at])
+      sites: sites.as_json(only: [:id, :customer_id, :name, :note, :discarded_at, :created_at, :updated_at])
     }
   end
 
