@@ -5,11 +5,26 @@ class Admin::CustomersController < AuthenticatedController
   # GET /admin/customers
   def index
     customers = current_tenant.customers
-                              .kept
-                              .order(created_at: :desc)
+
+    # 削除済み表示切り替え
+    customers = params[:show_discarded] == "true" ? customers.with_discarded : customers.kept
+
+    # 検索
+    customers = customers.search_by_name(params[:search]) if params[:search].present?
+
+    # ソート
+    sort_by = params[:sort_by].presence || "created_at"
+    sort_order = params[:sort_order].presence || "desc"
+
+    # ソートキーのバリデーション
+    allowed_sort_columns = %w[created_at name rate_percent]
+    sort_by = "created_at" unless allowed_sort_columns.include?(sort_by)
+    sort_order = "desc" unless %w[asc desc].include?(sort_order)
+
+    customers = customers.order("#{sort_by} #{sort_order}")
 
     render json: {
-      customers: customers.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :created_at, :updated_at])
+      customers: customers.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :discarded_at, :created_at, :updated_at])
     }
   end
 
@@ -60,11 +75,12 @@ class Admin::CustomersController < AuthenticatedController
 
   # GET /admin/customers/:id
   def show
-    sites = @customer.sites.kept
+    # 削除済み現場表示切り替え
+    sites = params[:show_discarded] == "true" ? @customer.sites.with_discarded : @customer.sites.kept
 
     render json: {
       customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :created_at, :updated_at]),
-      sites: sites.as_json(only: [:id, :customer_id, :name, :note, :created_at, :updated_at])
+      sites: sites.as_json(only: [:id, :customer_id, :name, :note, :discarded_at, :created_at, :updated_at])
     }
   end
 

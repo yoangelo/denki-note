@@ -138,7 +138,7 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
                 <div className="flex justify-between items-center">
                   <div>
                     {customer.name}
-                    {customer.customer_type === "corporation" && (
+                    {customer.customer_type === "corporate" && (
                       <span className="text-sm"> (法人)</span>
                     )}
                     {customer.customer_type === "individual" && (

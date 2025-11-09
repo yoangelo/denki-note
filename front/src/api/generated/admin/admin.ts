@@ -25,17 +25,26 @@ import type {
   AdminRemoveRole200,
   AdminUpdateUser200,
   AdminUpdateUserBody,
+  CheckDuplicateCustomer200,
+  CheckDuplicateCustomerParams,
+  CreateAdminSite201,
+  CreateAdminSite422,
+  CreateAdminSiteBody,
   CreateCustomerBulk201,
   CreateCustomerBulk422,
   CreateCustomerBulkBody,
   GetAdminCustomer200,
   GetAdminCustomers200,
+  GetAdminCustomersParams,
   InviteUser201,
   InviteUserBody,
   ListPendingInvitations200Item,
   UpdateAdminCustomer200,
   UpdateAdminCustomer422,
   UpdateAdminCustomerBody,
+  UpdateAdminSite200,
+  UpdateAdminSite422,
+  UpdateAdminSiteBody,
 } from "../timesheetAPI.schemas";
 
 import { httpClient } from "../../mutator";
@@ -573,26 +582,34 @@ export const useAdminRemoveRole = <TError = void | void | void, TContext = unkno
 /**
  * @summary Get all customers (admin only)
  */
-export const getAdminCustomers = (signal?: AbortSignal) => {
-  return httpClient<GetAdminCustomers200>({ url: `/admin/customers`, method: "GET", signal });
+export const getAdminCustomers = (params?: GetAdminCustomersParams, signal?: AbortSignal) => {
+  return httpClient<GetAdminCustomers200>({
+    url: `/admin/customers`,
+    method: "GET",
+    params,
+    signal,
+  });
 };
 
-export const getGetAdminCustomersQueryKey = () => {
-  return [`/admin/customers`] as const;
+export const getGetAdminCustomersQueryKey = (params?: GetAdminCustomersParams) => {
+  return [`/admin/customers`, ...(params ? [params] : [])] as const;
 };
 
 export const getGetAdminCustomersQueryOptions = <
   TData = Awaited<ReturnType<typeof getAdminCustomers>>,
   TError = void,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getAdminCustomers>>, TError, TData>;
-}) => {
+>(
+  params?: GetAdminCustomersParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getAdminCustomers>>, TError, TData>;
+  }
+) => {
   const { query: queryOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetAdminCustomersQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getGetAdminCustomersQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminCustomers>>> = ({ signal }) =>
-    getAdminCustomers(signal);
+    getAdminCustomers(params, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof getAdminCustomers>>,
@@ -613,10 +630,13 @@ export type GetAdminCustomersQueryError = void;
 export function useGetAdminCustomers<
   TData = Awaited<ReturnType<typeof getAdminCustomers>>,
   TError = void,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getAdminCustomers>>, TError, TData>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetAdminCustomersQueryOptions(options);
+>(
+  params?: GetAdminCustomersParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getAdminCustomers>>, TError, TData>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminCustomersQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -904,6 +924,296 @@ export const useDeleteAdminCustomer = <TError = void | void, TContext = unknown>
   TContext
 > => {
   const mutationOptions = getDeleteAdminCustomerMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Check if customer name already exists
+ */
+export const checkDuplicateCustomer = (
+  params: CheckDuplicateCustomerParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<CheckDuplicateCustomer200>({
+    url: `/admin/customers/check_duplicate`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getCheckDuplicateCustomerQueryKey = (params?: CheckDuplicateCustomerParams) => {
+  return [`/admin/customers/check_duplicate`, ...(params ? [params] : [])] as const;
+};
+
+export const getCheckDuplicateCustomerQueryOptions = <
+  TData = Awaited<ReturnType<typeof checkDuplicateCustomer>>,
+  TError = unknown,
+>(
+  params: CheckDuplicateCustomerParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof checkDuplicateCustomer>>, TError, TData>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCheckDuplicateCustomerQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof checkDuplicateCustomer>>> = ({ signal }) =>
+    checkDuplicateCustomer(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof checkDuplicateCustomer>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type CheckDuplicateCustomerQueryResult = NonNullable<
+  Awaited<ReturnType<typeof checkDuplicateCustomer>>
+>;
+export type CheckDuplicateCustomerQueryError = unknown;
+
+/**
+ * @summary Check if customer name already exists
+ */
+
+export function useCheckDuplicateCustomer<
+  TData = Awaited<ReturnType<typeof checkDuplicateCustomer>>,
+  TError = unknown,
+>(
+  params: CheckDuplicateCustomerParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof checkDuplicateCustomer>>, TError, TData>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getCheckDuplicateCustomerQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Create site (admin only)
+ */
+export const createAdminSite = (createAdminSiteBody: CreateAdminSiteBody, signal?: AbortSignal) => {
+  return httpClient<CreateAdminSite201>({
+    url: `/admin/sites`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: createAdminSiteBody,
+    signal,
+  });
+};
+
+export const getCreateAdminSiteMutationOptions = <
+  TError = void | void | CreateAdminSite422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAdminSite>>,
+    TError,
+    { data: CreateAdminSiteBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAdminSite>>,
+  TError,
+  { data: CreateAdminSiteBody },
+  TContext
+> => {
+  const mutationKey = ["createAdminSite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAdminSite>>,
+    { data: CreateAdminSiteBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createAdminSite(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateAdminSiteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAdminSite>>
+>;
+export type CreateAdminSiteMutationBody = CreateAdminSiteBody;
+export type CreateAdminSiteMutationError = void | void | CreateAdminSite422;
+
+/**
+ * @summary Create site (admin only)
+ */
+export const useCreateAdminSite = <
+  TError = void | void | CreateAdminSite422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAdminSite>>,
+    TError,
+    { data: CreateAdminSiteBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createAdminSite>>,
+  TError,
+  { data: CreateAdminSiteBody },
+  TContext
+> => {
+  const mutationOptions = getCreateAdminSiteMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Update site (admin only)
+ */
+export const updateAdminSite = (id: string, updateAdminSiteBody: UpdateAdminSiteBody) => {
+  return httpClient<UpdateAdminSite200>({
+    url: `/admin/sites/${id}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: updateAdminSiteBody,
+  });
+};
+
+export const getUpdateAdminSiteMutationOptions = <
+  TError = void | void | UpdateAdminSite422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminSite>>,
+    TError,
+    { id: string; data: UpdateAdminSiteBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAdminSite>>,
+  TError,
+  { id: string; data: UpdateAdminSiteBody },
+  TContext
+> => {
+  const mutationKey = ["updateAdminSite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAdminSite>>,
+    { id: string; data: UpdateAdminSiteBody }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateAdminSite(id, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAdminSiteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAdminSite>>
+>;
+export type UpdateAdminSiteMutationBody = UpdateAdminSiteBody;
+export type UpdateAdminSiteMutationError = void | void | UpdateAdminSite422;
+
+/**
+ * @summary Update site (admin only)
+ */
+export const useUpdateAdminSite = <
+  TError = void | void | UpdateAdminSite422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminSite>>,
+    TError,
+    { id: string; data: UpdateAdminSiteBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAdminSite>>,
+  TError,
+  { id: string; data: UpdateAdminSiteBody },
+  TContext
+> => {
+  const mutationOptions = getUpdateAdminSiteMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Delete site (admin only)
+ */
+export const deleteAdminSite = (id: string) => {
+  return httpClient<void>({ url: `/admin/sites/${id}`, method: "DELETE" });
+};
+
+export const getDeleteAdminSiteMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAdminSite>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteAdminSite>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deleteAdminSite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteAdminSite>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteAdminSite(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteAdminSiteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteAdminSite>>
+>;
+
+export type DeleteAdminSiteMutationError = void | void;
+
+/**
+ * @summary Delete site (admin only)
+ */
+export const useDeleteAdminSite = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAdminSite>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteAdminSite>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getDeleteAdminSiteMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
