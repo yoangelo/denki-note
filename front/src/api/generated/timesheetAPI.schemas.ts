@@ -34,6 +34,8 @@ export interface Customer {
   rate_percent: number;
   /** @nullable */
   note?: string | null;
+  /** @nullable */
+  discarded_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -41,9 +43,12 @@ export interface Customer {
 export interface Site {
   id: string;
   customer_id: string;
+  tenant_id?: string;
   name: string;
   /** @nullable */
   note?: string | null;
+  /** @nullable */
+  discarded_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -462,6 +467,44 @@ export type GetCustomerMonthSummary200 = {
   amount_jpy: number;
 };
 
+export type GetAdminCustomersParams = {
+  /**
+   * Search by customer name (partial match)
+   */
+  search?: string;
+  /**
+   * Sort by field
+   */
+  sort_by?: GetAdminCustomersSortBy;
+  /**
+   * Sort order
+   */
+  sort_order?: GetAdminCustomersSortOrder;
+  /**
+   * Include discarded customers
+   */
+  show_discarded?: boolean;
+};
+
+export type GetAdminCustomersSortBy =
+  (typeof GetAdminCustomersSortBy)[keyof typeof GetAdminCustomersSortBy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetAdminCustomersSortBy = {
+  created_at: "created_at",
+  name: "name",
+  rate_percent: "rate_percent",
+} as const;
+
+export type GetAdminCustomersSortOrder =
+  (typeof GetAdminCustomersSortOrder)[keyof typeof GetAdminCustomersSortOrder];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetAdminCustomersSortOrder = {
+  asc: "asc",
+  desc: "desc",
+} as const;
+
 export type GetAdminCustomers200 = {
   customers?: Customer[];
 };
@@ -541,5 +584,49 @@ export type UpdateAdminCustomer200 = {
 };
 
 export type UpdateAdminCustomer422 = {
+  errors?: string[];
+};
+
+export type CheckDuplicateCustomerParams = {
+  name: string;
+};
+
+export type CheckDuplicateCustomer200 = {
+  duplicate?: boolean;
+  name?: string;
+};
+
+export type CreateAdminSiteBodySite = {
+  customer_id: string;
+  name: string;
+  note?: string;
+};
+
+export type CreateAdminSiteBody = {
+  site: CreateAdminSiteBodySite;
+};
+
+export type CreateAdminSite201 = {
+  site?: Site;
+};
+
+export type CreateAdminSite422 = {
+  errors?: string[];
+};
+
+export type UpdateAdminSiteBodySite = {
+  name?: string;
+  note?: string;
+};
+
+export type UpdateAdminSiteBody = {
+  site: UpdateAdminSiteBodySite;
+};
+
+export type UpdateAdminSite200 = {
+  site?: Site;
+};
+
+export type UpdateAdminSite422 = {
   errors?: string[];
 };

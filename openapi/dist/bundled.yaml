@@ -1021,6 +1021,37 @@ paths:
         - Admin
         - Customers
       summary: Get all customers (admin only)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by customer name (partial match)
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum:
+              - created_at
+              - name
+              - rate_percent
+            default: created_at
+          description: Sort by field
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+          description: Sort order
+        - in: query
+          name: show_discarded
+          schema:
+            type: boolean
+            default: false
+          description: Include discarded customers
       responses:
         '200':
           description: OK
@@ -1228,6 +1259,160 @@ paths:
           description: Forbidden
         '404':
           description: Not Found
+  /admin/customers/check_duplicate:
+    get:
+      operationId: checkDuplicateCustomer
+      tags:
+        - Admin
+        - Customers
+      summary: Check if customer name already exists
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  duplicate:
+                    type: boolean
+                  name:
+                    type: string
+  /admin/sites:
+    post:
+      operationId: createAdminSite
+      tags:
+        - Admin
+        - Sites
+      summary: Create site (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - site
+              properties:
+                site:
+                  type: object
+                  required:
+                    - customer_id
+                    - name
+                  properties:
+                    customer_id:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                    note:
+                      type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  site:
+                    $ref: '#/components/schemas/Site'
+        '403':
+          description: Forbidden
+        '404':
+          description: Customer Not Found
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+  /admin/sites/{id}:
+    patch:
+      operationId: updateAdminSite
+      tags:
+        - Admin
+        - Sites
+      summary: Update site (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - site
+              properties:
+                site:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    note:
+                      type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  site:
+                    $ref: '#/components/schemas/Site'
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+    delete:
+      operationId: deleteAdminSite
+      tags:
+        - Admin
+        - Sites
+      summary: Delete site (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
 components:
   securitySchemes:
     cookieAuth:
@@ -1278,6 +1463,10 @@ components:
         note:
           type: string
           nullable: true
+        discarded_at:
+          type: string
+          format: date-time
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -1297,10 +1486,17 @@ components:
         customer_id:
           type: string
           format: uuid
+        tenant_id:
+          type: string
+          format: uuid
         name:
           type: string
         note:
           type: string
+          nullable: true
+        discarded_at:
+          type: string
+          format: date-time
           nullable: true
         created_at:
           type: string

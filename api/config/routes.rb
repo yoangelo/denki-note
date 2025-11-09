@@ -32,6 +32,8 @@ Rails.application.routes.draw do
         get :check_duplicate
       end
     end
+
+    resources :sites, only: [:create, :update, :destroy]
   end
 
   resources :customers, only: [:index] do
