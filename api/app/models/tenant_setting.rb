@@ -20,8 +20,26 @@
 #
 class TenantSetting < ApplicationRecord
   belongs_to :tenant
-  
-  validates :default_unit_rate, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :time_increment_minutes, presence: true, inclusion: { in: [15, 30, 60] }
-  validates :money_rounding, presence: true, inclusion: { in: %w[round ceil floor] }
+
+  validates :default_unit_rate,
+    presence: { message: '基本時間単価を入力してください' },
+    numericality: {
+      only_integer: true,
+      greater_than_or_equal_to: 0,
+      message: '基本時間単価は0以上の整数で入力してください'
+    }
+
+  validates :time_increment_minutes,
+    presence: { message: '時間刻みを選択してください' },
+    inclusion: {
+      in: [1, 5, 10, 15, 20, 30, 60],
+      message: '時間刻みは1分 5分 10分 15分 20分 30分 60分のいずれかを選択してください'
+    }
+
+  validates :money_rounding,
+    presence: { message: '金額丸め方式を選択してください' },
+    inclusion: {
+      in: %w[round ceil floor],
+      message: '金額丸め方式は四捨五入、切り上げ、切り捨てのいずれかを選択してください'
+    }
 end

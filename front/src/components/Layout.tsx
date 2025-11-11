@@ -89,6 +89,14 @@ export function Layout() {
             >
               ユーザー管理
             </Link>
+            <Link
+              to="/admin/settings"
+              className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
+                isActive("/admin/settings") ? "bg-green-600" : "bg-green-700 hover:bg-green-800"
+              }`}
+            >
+              自社設定
+            </Link>
           </>
         )}
       </div>

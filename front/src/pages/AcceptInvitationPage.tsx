@@ -62,9 +62,8 @@ export function AcceptInvitationPage() {
 
       setUser(response.user);
       navigate("/daily");
-    } catch (err: any) {
+    } catch (err) {
       const errorMessage =
-        err?.response?.data?.errors?.[0] ||
         "招待の承認に失敗しました。トークンが無効または期限切れの可能性があります。";
       setError(errorMessage);
       console.error("Accept invitation error:", err);
