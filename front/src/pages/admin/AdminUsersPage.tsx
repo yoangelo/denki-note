@@ -2,6 +2,21 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { httpClient } from "../../api/mutator";
 import type { User } from "../../stores/authStore";
+import {
+  Button,
+  Input,
+  Select,
+  Badge,
+  Alert,
+  PageHeader,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableEmptyState,
+} from "../../components/ui";
 
 interface UsersResponse {
   users: User[];
@@ -51,111 +66,94 @@ export function AdminUsersPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">ユーザー管理</h2>
-        <Link
-          to="/admin/users/invite"
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors no-underline"
-        >
-          ユーザーを招待
-        </Link>
-      </div>
+      <PageHeader
+        title="ユーザー管理"
+        action={
+          <Link to="/admin/users/invite" className="no-underline">
+            <Button>ユーザーを招待</Button>
+          </Link>
+        }
+      />
 
-      <form onSubmit={handleSearch} className="mb-6 flex gap-4">
-        <input
+      <form onSubmit={handleSearch} className="mb-6 flex gap-3">
+        <Input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="名前またはメールアドレスで検索"
-          className="flex-1 px-4 py-2 border border-gray-300 rounded"
+          className="w-80"
         />
-        <select
+        <Select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "member")}
-          className="px-4 py-2 border border-gray-300 rounded"
+          className="w-48"
         >
           <option value="all">すべてのロール</option>
           <option value="admin">管理者</option>
           <option value="member">メンバー</option>
-        </select>
-        <button
-          type="submit"
-          className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
-        >
+        </Select>
+        <Button type="submit" variant="secondary">
           検索
-        </button>
+        </Button>
       </form>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded">{error}</div>
+        <Alert variant="error" className="mb-6">
+          {error}
+        </Alert>
       )}
 
       {loading ? (
-        <div className="text-center py-8">読み込み中...</div>
+        <div className="text-center py-12 text-gray-500">読み込み中...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse bg-white shadow rounded">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-2 text-left">表示名</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">メールアドレス</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">ロール</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">ステータス</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">登録日</th>
-                <th className="border border-gray-300 px-4 py-2 text-center">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-2">{user.display_name}</td>
-                  <td className="border border-gray-300 px-4 py-2">{user.email}</td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {user.roles.map((role) => (
-                      <span
-                        key={role}
-                        className={`inline-block px-2 py-1 text-xs rounded mr-1 ${
-                          role === "admin"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {role === "admin" ? "管理者" : "メンバー"}
-                      </span>
-                    ))}
-                    {user.roles.length === 0 && (
-                      <span className="text-gray-400 text-sm">ロールなし</span>
-                    )}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    <span
-                      className={`inline-block px-2 py-1 text-xs rounded ${
-                        user.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
+        <Table>
+          <TableHeader>
+            <TableHead>表示名</TableHead>
+            <TableHead>メールアドレス</TableHead>
+            <TableHead>ロール</TableHead>
+            <TableHead>ステータス</TableHead>
+            <TableHead>登録日</TableHead>
+            <TableHead align="center">操作</TableHead>
+          </TableHeader>
+          <TableBody>
+            {users.length === 0 ? (
+              <TableEmptyState message="ユーザーが見つかりませんでした" colSpan={6} />
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.display_name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {user.roles.map((role) => (
+                        <Badge key={role} variant={role === "admin" ? "info" : "primary"} size="sm">
+                          {role === "admin" ? "管理者" : "メンバー"}
+                        </Badge>
+                      ))}
+                      {user.roles.length === 0 && (
+                        <span className="text-gray-400 text-sm">ロールなし</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.is_active ? "success" : "gray"} size="sm">
                       {user.is_active ? "有効" : "無効"}
-                    </span>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {new Date(user.created_at).toLocaleDateString("ja-JP")}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{new Date(user.created_at).toLocaleDateString("ja-JP")}</TableCell>
+                  <TableCell align="center">
                     <Link
                       to={`/admin/users/${user.id}`}
-                      className="text-blue-600 hover:text-blue-800 no-underline"
+                      className="text-blue-600 hover:text-blue-800 no-underline font-medium"
                     >
                       詳細
                     </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {users.length === 0 && (
-            <div className="text-center py-8 text-gray-500">ユーザーが見つかりませんでした</div>
-          )}
-        </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       )}
     </div>
   );
