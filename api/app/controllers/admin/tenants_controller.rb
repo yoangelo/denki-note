@@ -26,7 +26,7 @@ class Admin::TenantsController < AuthenticatedController
 
     ActiveRecord::Base.transaction do
       # テナント基本情報の更新
-      if tenant_params[:name].present?
+      if tenant_params.key?(:name)
         unless tenant.update(name: tenant_params[:name])
           render json: { errors: tenant.errors.messages }, status: :unprocessable_entity
           raise ActiveRecord::Rollback
@@ -49,6 +49,7 @@ class Admin::TenantsController < AuthenticatedController
           default_unit_rate: tenant_setting.default_unit_rate,
           time_increment_minutes: tenant_setting.time_increment_minutes,
           money_rounding: tenant_setting.money_rounding,
+          created_at: tenant.created_at,
           updated_at: tenant.updated_at
         }
       }
