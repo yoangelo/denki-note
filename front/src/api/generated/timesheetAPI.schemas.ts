@@ -96,6 +96,40 @@ export interface RecentCustomer {
   last_used_at: string;
 }
 
+export type TenantSettingsTimeIncrementMinutes =
+  (typeof TenantSettingsTimeIncrementMinutes)[keyof typeof TenantSettingsTimeIncrementMinutes];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TenantSettingsTimeIncrementMinutes = {
+  NUMBER_1: 1,
+  NUMBER_5: 5,
+  NUMBER_10: 10,
+  NUMBER_15: 15,
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_60: 60,
+} as const;
+
+export type TenantSettingsMoneyRounding =
+  (typeof TenantSettingsMoneyRounding)[keyof typeof TenantSettingsMoneyRounding];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TenantSettingsMoneyRounding = {
+  round: "round",
+  ceil: "ceil",
+  floor: "floor",
+} as const;
+
+export interface TenantSettings {
+  id: string;
+  name: string;
+  default_unit_rate: number;
+  time_increment_minutes: TenantSettingsTimeIncrementMinutes;
+  money_rounding: TenantSettingsMoneyRounding;
+  created_at: string;
+  updated_at: string;
+}
+
 export type LoginBodyUser = {
   email: string;
   password: string;
@@ -629,4 +663,54 @@ export type UpdateAdminSite200 = {
 
 export type UpdateAdminSite422 = {
   errors?: string[];
+};
+
+export type AdminGetTenant200 = {
+  tenant?: TenantSettings;
+};
+
+export type AdminUpdateTenantBodyTenantTimeIncrementMinutes =
+  (typeof AdminUpdateTenantBodyTenantTimeIncrementMinutes)[keyof typeof AdminUpdateTenantBodyTenantTimeIncrementMinutes];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminUpdateTenantBodyTenantTimeIncrementMinutes = {
+  NUMBER_1: 1,
+  NUMBER_5: 5,
+  NUMBER_10: 10,
+  NUMBER_15: 15,
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_60: 60,
+} as const;
+
+export type AdminUpdateTenantBodyTenantMoneyRounding =
+  (typeof AdminUpdateTenantBodyTenantMoneyRounding)[keyof typeof AdminUpdateTenantBodyTenantMoneyRounding];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminUpdateTenantBodyTenantMoneyRounding = {
+  round: "round",
+  ceil: "ceil",
+  floor: "floor",
+} as const;
+
+export type AdminUpdateTenantBodyTenant = {
+  name?: string;
+  /** @minimum 0 */
+  default_unit_rate?: number;
+  time_increment_minutes?: AdminUpdateTenantBodyTenantTimeIncrementMinutes;
+  money_rounding?: AdminUpdateTenantBodyTenantMoneyRounding;
+};
+
+export type AdminUpdateTenantBody = {
+  tenant: AdminUpdateTenantBodyTenant;
+};
+
+export type AdminUpdateTenant200 = {
+  tenant?: TenantSettings;
+};
+
+export type AdminUpdateTenant422Errors = { [key: string]: string[] };
+
+export type AdminUpdateTenant422 = {
+  errors?: AdminUpdateTenant422Errors;
 };

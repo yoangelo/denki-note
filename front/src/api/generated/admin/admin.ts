@@ -19,10 +19,14 @@ import type {
   AdminAddRole200,
   AdminAddRoleBody,
   AdminDeleteUser200,
+  AdminGetTenant200,
   AdminGetUser200,
   AdminListUsers200,
   AdminListUsersParams,
   AdminRemoveRole200,
+  AdminUpdateTenant200,
+  AdminUpdateTenant422,
+  AdminUpdateTenantBody,
   AdminUpdateUser200,
   AdminUpdateUserBody,
   CheckDuplicateCustomer200,
@@ -1214,6 +1218,135 @@ export const useDeleteAdminSite = <TError = void | void, TContext = unknown>(opt
   TContext
 > => {
   const mutationOptions = getDeleteAdminSiteMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get tenant settings (admin only)
+ */
+export const adminGetTenant = (signal?: AbortSignal) => {
+  return httpClient<AdminGetTenant200>({ url: `/admin/tenant`, method: "GET", signal });
+};
+
+export const getAdminGetTenantQueryKey = () => {
+  return [`/admin/tenant`] as const;
+};
+
+export const getAdminGetTenantQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetTenant>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetTenant>>, TError, TData>;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetTenantQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetTenant>>> = ({ signal }) =>
+    adminGetTenant(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetTenant>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetTenantQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetTenant>>>;
+export type AdminGetTenantQueryError = void;
+
+/**
+ * @summary Get tenant settings (admin only)
+ */
+
+export function useAdminGetTenant<
+  TData = Awaited<ReturnType<typeof adminGetTenant>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetTenant>>, TError, TData>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetTenantQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Update tenant settings (admin only)
+ */
+export const adminUpdateTenant = (adminUpdateTenantBody: AdminUpdateTenantBody) => {
+  return httpClient<AdminUpdateTenant200>({
+    url: `/admin/tenant`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: adminUpdateTenantBody,
+  });
+};
+
+export const getAdminUpdateTenantMutationOptions = <
+  TError = void | AdminUpdateTenant422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateTenant>>,
+    TError,
+    { data: AdminUpdateTenantBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateTenant>>,
+  TError,
+  { data: AdminUpdateTenantBody },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateTenant"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateTenant>>,
+    { data: AdminUpdateTenantBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminUpdateTenant(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateTenantMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateTenant>>
+>;
+export type AdminUpdateTenantMutationBody = AdminUpdateTenantBody;
+export type AdminUpdateTenantMutationError = void | AdminUpdateTenant422;
+
+/**
+ * @summary Update tenant settings (admin only)
+ */
+export const useAdminUpdateTenant = <
+  TError = void | AdminUpdateTenant422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateTenant>>,
+    TError,
+    { data: AdminUpdateTenantBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateTenant>>,
+  TError,
+  { data: AdminUpdateTenantBody },
+  TContext
+> => {
+  const mutationOptions = getAdminUpdateTenantMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
