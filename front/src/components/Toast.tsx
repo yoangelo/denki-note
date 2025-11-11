@@ -42,17 +42,17 @@ export function Toast({ message, type = "success", duration = 3000, onClose }: T
       }`}
     >
       <div className="flex items-center gap-2">
-        {type === "success" && <span>✅</span>}
-        {type === "error" && <span>❌</span>}
-        {type === "info" && <span>ℹ️</span>}
+        {type === "success" && <div className="i-heroicons-check-circle-solid w-5 h-5" />}
+        {type === "error" && <div className="i-heroicons-x-circle-solid w-5 h-5" />}
+        {type === "info" && <div className="i-heroicons-information-circle-solid w-5 h-5" />}
         <span>{message}</span>
         {type === "error" && (
           <button
             onClick={handleClose}
-            className="ml-2 text-white hover:text-gray-200 font-bold"
+            className="ml-2 text-white hover:text-gray-200"
             aria-label="閉じる"
           >
-            ✗
+            <div className="i-heroicons-x-mark w-5 h-5" />
           </button>
         )}
       </div>

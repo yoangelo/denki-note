@@ -82,7 +82,7 @@ export function AdminTenantSettingsPage() {
             <h1 className="text-2xl font-bold text-gray-900">自社設定</h1>
             <button
               onClick={() => navigate("/admin/settings/edit")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
             >
               編集
             </button>

@@ -264,7 +264,7 @@ export function AdminTenantSettingsEditPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     onBlur={() => handleBlur("name")}
-                    className={`w-full px-3 py-2 border rounded-md ${
+                    className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.name ? "border-red-500" : "border-gray-300"
                     }`}
                   />
@@ -282,12 +282,10 @@ export function AdminTenantSettingsEditPage() {
                     className="flex items-center text-sm font-medium text-gray-700 mb-1"
                   >
                     基本時間単価 <span className="text-red-500 ml-1">*</span>
-                    <span
-                      className="ml-2 text-gray-400 cursor-help"
+                    <div
+                      className="i-heroicons-information-circle ml-2 w-4 h-4 text-gray-400 cursor-help"
                       title="日報入力時の単価初期値として使用されます。作業者ごとに異なる単価を設定することも可能です。"
-                    >
-                      ℹ️
-                    </span>
+                    />
                   </label>
                   <div className="flex items-center">
                     <input
@@ -298,7 +296,7 @@ export function AdminTenantSettingsEditPage() {
                         setFormData({ ...formData, default_unit_rate: e.target.value })
                       }
                       onBlur={() => handleBlur("default_unit_rate")}
-                      className={`w-full px-3 py-2 border rounded-md ${
+                      className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.default_unit_rate ? "border-red-500" : "border-gray-300"
                       }`}
                     />
@@ -315,12 +313,10 @@ export function AdminTenantSettingsEditPage() {
                     className="flex items-center text-sm font-medium text-gray-700 mb-1"
                   >
                     時間刻み <span className="text-red-500 ml-1">*</span>
-                    <span
-                      className="ml-2 text-gray-400 cursor-help"
+                    <div
+                      className="i-heroicons-information-circle ml-2 w-4 h-4 text-gray-400 cursor-help"
                       title="日報入力時の時間選択の刻み幅です。例: 15分刻みの場合、0:00、0:15、0:30、0:45...と選択できます。1分刻みから60分刻みまで選択可能です。"
-                    >
-                      ℹ️
-                    </span>
+                    />
                   </label>
                   <select
                     id="time_increment_minutes"
@@ -328,7 +324,7 @@ export function AdminTenantSettingsEditPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, time_increment_minutes: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {TIME_INCREMENT_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -344,18 +340,16 @@ export function AdminTenantSettingsEditPage() {
                     className="flex items-center text-sm font-medium text-gray-700 mb-1"
                   >
                     金額丸め方式 <span className="text-red-500 ml-1">*</span>
-                    <span
-                      className="ml-2 text-gray-400 cursor-help"
+                    <div
+                      className="i-heroicons-information-circle ml-2 w-4 h-4 text-gray-400 cursor-help"
                       title="請求金額計算時の端数処理方法です。&#10;・四捨五入: 0.5未満切り捨て、0.5以上切り上げ&#10;・切り上げ: 常に切り上げ&#10;・切り捨て: 常に切り捨て"
-                    >
-                      ℹ️
-                    </span>
+                    />
                   </label>
                   <select
                     id="money_rounding"
                     value={formData.money_rounding}
                     onChange={(e) => setFormData({ ...formData, money_rounding: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {MONEY_ROUNDING_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -370,14 +364,14 @@ export function AdminTenantSettingsEditPage() {
             <div className="pt-6 flex justify-end gap-3">
               <button
                 onClick={() => navigate("/admin/settings")}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleSubmitClick}
                 disabled={!hasChanges() || hasErrors()}
-                className={`px-4 py-2 rounded-md text-white ${
+                className={`px-4 py-2 rounded text-white transition-colors ${
                   !hasChanges() || hasErrors()
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700"
@@ -393,14 +387,8 @@ export function AdminTenantSettingsEditPage() {
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">設定の更新確認</h3>
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✗
-              </button>
             </div>
 
             <div className="p-6">
@@ -422,13 +410,13 @@ export function AdminTenantSettingsEditPage() {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
               >
-                戻る
+                キャンセル
               </button>
               <button
                 onClick={handleConfirmUpdate}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
               >
                 更新する
               </button>
