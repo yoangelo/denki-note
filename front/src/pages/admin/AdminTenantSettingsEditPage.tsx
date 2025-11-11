@@ -207,7 +207,9 @@ export function AdminTenantSettingsEditPage() {
       });
       showToast("設定を更新しました", "success");
       setShowConfirmModal(false);
-      navigate("/admin/settings");
+      setTimeout(() => {
+        navigate("/admin/settings");
+      }, 1000);
     } catch (err: unknown) {
       if (err && typeof err === "object" && "response" in err) {
         const response = (err as { response?: { data?: { errors?: Record<string, string[]> } } })
