@@ -91,14 +91,14 @@ export function AdminTenantSettingsEditPage() {
       }
     } else if (field === "default_unit_rate") {
       if (!value.trim()) {
-        return "デフォルト単価を入力してください";
+        return "基本時間単価を入力してください";
       }
       const numValue = Number(value);
       if (isNaN(numValue) || numValue < 0) {
-        return "デフォルト単価は0以上で入力してください";
+        return "基本時間単価は0以上で入力してください";
       }
       if (!Number.isInteger(numValue)) {
-        return "デフォルト単価は整数で入力してください";
+        return "基本時間単価は整数で入力してください";
       }
     }
     return undefined;
@@ -138,7 +138,7 @@ export function AdminTenantSettingsEditPage() {
 
     if (Number(formData.default_unit_rate) !== originalTenant.default_unit_rate) {
       changeList.push({
-        field: "デフォルト単価",
+        field: "基本時間単価",
         from: `${new Intl.NumberFormat("ja-JP").format(originalTenant.default_unit_rate)}円`,
         to: `${new Intl.NumberFormat("ja-JP").format(Number(formData.default_unit_rate))}円`,
       });
@@ -279,7 +279,7 @@ export function AdminTenantSettingsEditPage() {
                     htmlFor="default_unit_rate"
                     className="flex items-center text-sm font-medium text-gray-700 mb-1"
                   >
-                    デフォルト単価 <span className="text-red-500 ml-1">*</span>
+                    基本時間単価 <span className="text-red-500 ml-1">*</span>
                     <span
                       className="ml-2 text-gray-400 cursor-help"
                       title="日報入力時の単価初期値として使用されます。作業者ごとに異なる単価を設定することも可能です。"

@@ -103,7 +103,7 @@ export function AdminTenantSettingsPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">業務設定</h2>
               <div className="space-y-3">
                 <div className="flex">
-                  <dt className="w-40 text-sm font-medium text-gray-500">デフォルト単価:</dt>
+                  <dt className="w-40 text-sm font-medium text-gray-500">基本時間単価:</dt>
                   <dd className="text-sm text-gray-900">
                     {formatCurrency(tenant.default_unit_rate)}円/時間
                   </dd>

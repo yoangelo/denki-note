@@ -22,11 +22,11 @@ class TenantSetting < ApplicationRecord
   belongs_to :tenant
 
   validates :default_unit_rate,
-    presence: { message: '基本単価を入力してください' },
+    presence: { message: '基本時間単価を入力してください' },
     numericality: {
       only_integer: true,
       greater_than_or_equal_to: 0,
-      message: '基本単価は0以上の整数で入力してください'
+      message: '基本時間単価は0以上の整数で入力してください'
     }
 
   validates :time_increment_minutes,
