@@ -1117,6 +1117,73 @@ paths:
         '403':
           description: Forbidden
 
+  /admin/tenant:
+    get:
+      operationId: admin_get_tenant
+      tags: [Admin, Tenant]
+      summary: Get tenant settings (admin only)
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenant:
+                    $ref: '#/components/schemas/TenantSettings'
+        '403':
+          description: Forbidden
+
+    patch:
+      operationId: admin_update_tenant
+      tags: [Admin, Tenant]
+      summary: Update tenant settings (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant]
+              properties:
+                tenant:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    default_unit_rate: { type: integer, minimum: 0 }
+                    time_increment_minutes: { type: integer, enum: [1, 5, 10, 15, 20, 30, 60] }
+                    money_rounding: { type: string, enum: [round, ceil, floor] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenant:
+                    $ref: '#/components/schemas/TenantSettings'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+        '403':
+          description: Forbidden
+
 components:
   securitySchemes:
     cookieAuth:
@@ -1197,3 +1264,15 @@ components:
             id: { type: string, format: uuid }
             name: { type: string }
         last_used_at: { type: string, format: date-time }
+
+    TenantSettings:
+      type: object
+      required: [id, name, default_unit_rate, time_increment_minutes, money_rounding, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        default_unit_rate: { type: integer }
+        time_increment_minutes: { type: integer, enum: [1, 5, 10, 15, 20, 30, 60] }
+        money_rounding: { type: string, enum: [round, ceil, floor] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

@@ -34,6 +34,8 @@ Rails.application.routes.draw do
     end
 
     resources :sites, only: [:create, :update, :destroy]
+
+    resource :tenant, only: [:show, :update]
   end
 
   resources :customers, only: [:index] do

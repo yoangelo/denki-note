@@ -19,5 +19,6 @@ class Tenant < ApplicationRecord
   has_many :work_entries, dependent: :destroy
   has_one :tenant_setting, dependent: :destroy
   
-  validates :name, presence: true, uniqueness: true
+  validates :name, presence: { message: '自社名を入力してください' }
+  validates :name, uniqueness: { message: 'この自社名は既に使用されています' }
 end
