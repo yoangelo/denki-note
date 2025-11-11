@@ -203,7 +203,10 @@ export function AdminCustomersPage() {
                       >
                         <td className="border border-gray-300 px-4 py-2">
                           {isDiscarded ? (
-                            <span className="text-gray-600">🗑 {customer.name}</span>
+                            <span className="text-gray-600 flex items-center gap-1">
+                              <div className="i-heroicons-trash w-4 h-4" />
+                              {customer.name}
+                            </span>
                           ) : (
                             <Link
                               to={`/admin/customers/${customer.id}`}
@@ -232,7 +235,7 @@ export function AdminCustomersPage() {
                               title="削除"
                               aria-label={`${customer.name}を削除`}
                             >
-                              🗑
+                              <div className="i-heroicons-trash w-5 h-5" />
                             </button>
                           )}
                         </td>
@@ -260,8 +263,9 @@ export function AdminCustomersPage() {
                   >
                     <div className="flex justify-between items-start mb-3">
                       {isDiscarded ? (
-                        <span className="text-lg font-semibold text-gray-600">
-                          🗑 {customer.name}
+                        <span className="text-lg font-semibold text-gray-600 flex items-center gap-1">
+                          <div className="i-heroicons-trash w-5 h-5" />
+                          {customer.name}
                         </span>
                       ) : (
                         <Link
@@ -279,7 +283,7 @@ export function AdminCustomersPage() {
                           className="text-red-600 hover:text-red-800 transition-colors ml-2"
                           aria-label={`${customer.name}を削除`}
                         >
-                          🗑
+                          <div className="i-heroicons-trash w-5 h-5" />
                         </button>
                       )}
                     </div>
@@ -315,7 +319,7 @@ export function AdminCustomersPage() {
                 onClick={() => setDeleteModal({ open: false, customer: null })}
                 className="text-gray-500 hover:text-gray-700"
               >
-                ✗
+                <div className="i-heroicons-x-mark w-6 h-6" />
               </button>
             </div>
             <p className="mb-4">「{deleteModal.customer.name}」を削除しますか？</p>

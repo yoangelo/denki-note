@@ -263,7 +263,10 @@ export function AdminCustomerDetailPage() {
                       >
                         <td className="border border-gray-300 px-4 py-2">
                           {isDiscarded ? (
-                            <span className="text-gray-600">🗑 {site.name}</span>
+                            <span className="text-gray-600 flex items-center gap-1">
+                              <div className="i-heroicons-trash w-4 h-4" />
+                              {site.name}
+                            </span>
                           ) : (
                             site.name
                           )}
@@ -280,7 +283,7 @@ export function AdminCustomerDetailPage() {
                                 title="編集"
                                 aria-label={`${site.name}を編集`}
                               >
-                                ✏️
+                                <div className="i-heroicons-pencil-square w-5 h-5" />
                               </button>
                               <button
                                 onClick={() => setDeleteSiteModal({ open: true, site })}
@@ -288,7 +291,7 @@ export function AdminCustomerDetailPage() {
                                 title="削除"
                                 aria-label={`${site.name}を削除`}
                               >
-                                🗑
+                                <div className="i-heroicons-trash w-5 h-5" />
                               </button>
                             </>
                           )}
@@ -322,7 +325,7 @@ export function AdminCustomerDetailPage() {
                 onClick={() => setAddSiteModal(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
-                ✗
+                <div className="i-heroicons-x-mark w-6 h-6" />
               </button>
             </div>
 
@@ -389,7 +392,7 @@ export function AdminCustomerDetailPage() {
                 onClick={() => setEditSiteModal({ open: false, site: null })}
                 className="text-gray-500 hover:text-gray-700"
               >
-                ✗
+                <div className="i-heroicons-x-mark w-6 h-6" />
               </button>
             </div>
 
@@ -456,7 +459,7 @@ export function AdminCustomerDetailPage() {
                 onClick={() => setDeleteSiteModal({ open: false, site: null })}
                 className="text-gray-500 hover:text-gray-700"
               >
-                ✗
+                <div className="i-heroicons-x-mark w-6 h-6" />
               </button>
             </div>
             <p className="mb-4">「{deleteSiteModal.site.name}」を削除しますか？</p>

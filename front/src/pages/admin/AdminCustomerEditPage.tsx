@@ -336,14 +336,12 @@ export function AdminCustomerEditPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block mb-2">
-              掛率 <span className="text-red-600">*</span>
-              <span
-                className="ml-2 text-blue-600 cursor-help"
+            <label className="block mb-2 flex items-center">
+              掛率 <span className="text-red-600 ml-1">*</span>
+              <div
+                className="i-heroicons-information-circle ml-2 w-4 h-4 text-blue-600 cursor-help"
                 title="請求金額計算時に適用される掛け率です（例: 90%の場合、請求額 = 工数×単価×0.9）"
-              >
-                ℹ️
-              </span>
+              />
             </label>
             <input
               type="number"
@@ -404,7 +402,7 @@ export function AdminCustomerEditPage() {
                 onClick={() => setShowConfirmModal(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
-                ✗
+                <div className="i-heroicons-x-mark w-6 h-6" />
               </button>
             </div>
 

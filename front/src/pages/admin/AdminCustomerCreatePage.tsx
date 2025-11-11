@@ -370,14 +370,12 @@ export function AdminCustomerCreatePage() {
               <span className="text-red-600" aria-label="必須">
                 *
               </span>
-              <span
+              <div
                 id="rate-percent-help"
-                className="ml-2 text-blue-600 cursor-help"
+                className="i-heroicons-information-circle ml-2 w-4 h-4 text-blue-600 cursor-help"
                 title="請求金額計算時に適用される掛け率です（例: 90%の場合、請求額 = 工数×単価×0.9）"
                 role="tooltip"
-              >
-                ℹ️
-              </span>
+              />
             </label>
             <input
               id="rate-percent"
@@ -504,7 +502,7 @@ export function AdminCustomerCreatePage() {
                 onClick={() => setShowConfirmModal(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
-                ✗
+                <div className="i-heroicons-x-mark w-6 h-6" />
               </button>
             </div>
 
