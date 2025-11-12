@@ -260,14 +260,7 @@ export function AdminCustomerCreatePage() {
 
   return (
     <div>
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
+      <Toast toasts={toasts} onRemove={removeToast} />
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客の新規作成</h2>

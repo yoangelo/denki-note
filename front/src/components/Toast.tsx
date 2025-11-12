@@ -1,52 +1,65 @@
 import { useEffect, useState } from "react";
 
-type ToastProps = {
+type ToastItem = {
+  id: string;
   message: string;
-  type?: "success" | "error" | "info";
-  duration?: number;
-  onClose?: () => void;
+  type: "success" | "error" | "info";
 };
 
-export function Toast({ message, type = "success", duration = 3000, onClose }: ToastProps) {
+type ToastProps = {
+  toasts: ToastItem[];
+  onRemove: (id: string) => void;
+  duration?: number;
+};
+
+function ToastItem({
+  toast,
+  onRemove,
+  duration = 3000,
+}: {
+  toast: ToastItem;
+  onRemove: (id: string) => void;
+  duration?: number;
+}) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     // エラー時は自動で閉じない
-    if (type === "error") return;
+    if (toast.type === "error") return;
 
     const timer = setTimeout(() => {
       setVisible(false);
-      setTimeout(() => onClose?.(), 300);
+      setTimeout(() => onRemove(toast.id), 300);
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onClose, type]);
+  }, [duration, onRemove, toast.id, toast.type]);
 
   const bgColor = {
     success: "bg-green-500",
     error: "bg-red-500",
     info: "bg-blue-500",
-  }[type];
+  }[toast.type];
 
   const handleClose = () => {
     setVisible(false);
-    setTimeout(() => onClose?.(), 300);
+    setTimeout(() => onRemove(toast.id), 300);
   };
 
   if (!visible) return null;
 
   return (
     <div
-      className={`fixed top-5 right-5 z-50 px-6 py-3 text-white rounded-lg shadow-lg transition-all duration-300 ${bgColor} ${
+      className={`px-6 py-3 text-white rounded-lg shadow-lg transition-all duration-300 ${bgColor} ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
       }`}
     >
       <div className="flex items-center gap-2">
-        {type === "success" && <div className="i-heroicons-check-circle-solid w-5 h-5" />}
-        {type === "error" && <div className="i-heroicons-x-circle-solid w-5 h-5" />}
-        {type === "info" && <div className="i-heroicons-information-circle-solid w-5 h-5" />}
-        <span>{message}</span>
-        {type === "error" && (
+        {toast.type === "success" && <div className="i-heroicons-check-circle-solid w-5 h-5" />}
+        {toast.type === "error" && <div className="i-heroicons-x-circle-solid w-5 h-5" />}
+        {toast.type === "info" && <div className="i-heroicons-information-circle-solid w-5 h-5" />}
+        <span>{toast.message}</span>
+        {toast.type === "error" && (
           <button
             onClick={handleClose}
             className="ml-2 text-white hover:text-gray-200"
@@ -56,6 +69,16 @@ export function Toast({ message, type = "success", duration = 3000, onClose }: T
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+export function Toast({ toasts, onRemove, duration = 3000 }: ToastProps) {
+  return (
+    <div className="fixed top-5 right-5 z-50 flex flex-col gap-2">
+      {toasts.map((toast) => (
+        <ToastItem key={toast.id} toast={toast} onRemove={onRemove} duration={duration} />
+      ))}
     </div>
   );
 }

@@ -113,14 +113,7 @@ export function AdminCustomersPage() {
 
   return (
     <div>
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
+      <Toast toasts={toasts} onRemove={removeToast} />
 
       <PageHeader
         title="顧客一覧"

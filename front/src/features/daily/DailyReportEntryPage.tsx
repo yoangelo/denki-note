@@ -253,16 +253,7 @@ export function DailyReportEntryPage() {
         />
 
         {/* トースト表示 */}
-        <div className="fixed top-0 right-0 z-50">
-          {toasts.map((toast) => (
-            <Toast
-              key={toast.id}
-              message={toast.message}
-              type={toast.type}
-              onClose={() => removeToast(toast.id)}
-            />
-          ))}
-        </div>
+        <Toast toasts={toasts} onRemove={removeToast} />
       </div>
     </div>
   );
