@@ -19,6 +19,15 @@ import type {
   BulkCreateDailyReports200,
   BulkCreateDailyReports422,
   BulkCreateDailyReportsBody,
+  BulkUpdateDailyReport200,
+  BulkUpdateDailyReport403,
+  BulkUpdateDailyReport404,
+  BulkUpdateDailyReport422,
+  BulkUpdateDailyReportBody,
+  DestroyDailyReport403,
+  DestroyDailyReport404,
+  GetDailyReport200,
+  GetDailyReport404,
   ListDailyReports200,
   ListDailyReportsParams,
 } from "../timesheetAPI.schemas";
@@ -85,6 +94,61 @@ export function useListDailyReports<
 }
 
 /**
+ * @summary Get single daily report
+ */
+export const getDailyReport = (id: string, signal?: AbortSignal) => {
+  return httpClient<GetDailyReport200>({ url: `/daily_reports/${id}`, method: "GET", signal });
+};
+
+export const getGetDailyReportQueryKey = (id?: string) => {
+  return [`/daily_reports/${id}`] as const;
+};
+
+export const getGetDailyReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDailyReport>>,
+  TError = GetDailyReport404,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getDailyReport>>, TError, TData> }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDailyReportQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getDailyReport>>> = ({ signal }) =>
+    getDailyReport(id, signal);
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDailyReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDailyReportQueryResult = NonNullable<Awaited<ReturnType<typeof getDailyReport>>>;
+export type GetDailyReportQueryError = GetDailyReport404;
+
+/**
+ * @summary Get single daily report
+ */
+
+export function useGetDailyReport<
+  TData = Awaited<ReturnType<typeof getDailyReport>>,
+  TError = GetDailyReport404,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getDailyReport>>, TError, TData> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDailyReportQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
  * @summary Bulk create daily reports with work entries
  */
 export const bulkCreateDailyReports = (
@@ -92,7 +156,7 @@ export const bulkCreateDailyReports = (
   signal?: AbortSignal
 ) => {
   return httpClient<BulkCreateDailyReports200>({
-    url: `/daily_reports/bulk`,
+    url: `/daily_reports/bulk_create`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: bulkCreateDailyReportsBody,
@@ -161,6 +225,159 @@ export const useBulkCreateDailyReports = <
   TContext
 > => {
   const mutationOptions = getBulkCreateDailyReportsMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Bulk update daily report and work entries
+ */
+export const bulkUpdateDailyReport = (
+  id: string,
+  bulkUpdateDailyReportBody: BulkUpdateDailyReportBody
+) => {
+  return httpClient<BulkUpdateDailyReport200>({
+    url: `/daily_reports/${id}/bulk_update`,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data: bulkUpdateDailyReportBody,
+  });
+};
+
+export const getBulkUpdateDailyReportMutationOptions = <
+  TError = BulkUpdateDailyReport403 | BulkUpdateDailyReport404 | BulkUpdateDailyReport422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkUpdateDailyReport>>,
+    TError,
+    { id: string; data: BulkUpdateDailyReportBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof bulkUpdateDailyReport>>,
+  TError,
+  { id: string; data: BulkUpdateDailyReportBody },
+  TContext
+> => {
+  const mutationKey = ["bulkUpdateDailyReport"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof bulkUpdateDailyReport>>,
+    { id: string; data: BulkUpdateDailyReportBody }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return bulkUpdateDailyReport(id, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BulkUpdateDailyReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof bulkUpdateDailyReport>>
+>;
+export type BulkUpdateDailyReportMutationBody = BulkUpdateDailyReportBody;
+export type BulkUpdateDailyReportMutationError =
+  | BulkUpdateDailyReport403
+  | BulkUpdateDailyReport404
+  | BulkUpdateDailyReport422;
+
+/**
+ * @summary Bulk update daily report and work entries
+ */
+export const useBulkUpdateDailyReport = <
+  TError = BulkUpdateDailyReport403 | BulkUpdateDailyReport404 | BulkUpdateDailyReport422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkUpdateDailyReport>>,
+    TError,
+    { id: string; data: BulkUpdateDailyReportBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof bulkUpdateDailyReport>>,
+  TError,
+  { id: string; data: BulkUpdateDailyReportBody },
+  TContext
+> => {
+  const mutationOptions = getBulkUpdateDailyReportMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Soft delete daily report
+ */
+export const destroyDailyReport = (id: string) => {
+  return httpClient<void>({ url: `/daily_reports/${id}/destroy`, method: "DELETE" });
+};
+
+export const getDestroyDailyReportMutationOptions = <
+  TError = DestroyDailyReport403 | DestroyDailyReport404,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof destroyDailyReport>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof destroyDailyReport>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["destroyDailyReport"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof destroyDailyReport>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return destroyDailyReport(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DestroyDailyReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof destroyDailyReport>>
+>;
+
+export type DestroyDailyReportMutationError = DestroyDailyReport403 | DestroyDailyReport404;
+
+/**
+ * @summary Soft delete daily report
+ */
+export const useDestroyDailyReport = <
+  TError = DestroyDailyReport403 | DestroyDailyReport404,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof destroyDailyReport>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof destroyDailyReport>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getDestroyDailyReportMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

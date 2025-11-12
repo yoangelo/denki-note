@@ -59,11 +59,6 @@ export function DailyReportListPage() {
     return grouped;
   }, [dailyReportsData]);
 
-  const handleDeleteRow = (dateKey: string, rowId: string) => {
-    console.log(`削除: ${dateKey} - ${rowId}`);
-    // 実際のアプリケーションではここでAPIを呼び出して削除
-  };
-
   // Worker型に変換（display_nameとnameを統一）
   const workersForList = useMemo(() => {
     return users.map((user) => ({
@@ -106,7 +101,6 @@ export function DailyReportListPage() {
                   workDate={date}
                   workRows={rows}
                   workers={workersForList}
-                  onDeleteRow={(id) => handleDeleteRow(dateKey, id)}
                 />
               );
             })}

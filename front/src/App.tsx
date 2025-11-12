@@ -4,6 +4,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { AcceptInvitationPage } from "./pages/AcceptInvitationPage";
 import { DailyReportEntryPage } from "./features/daily/DailyReportEntryPage";
 import { DailyReportListPage } from "./features/daily/DailyReportListPage";
+import { DailyReportEditPage } from "./features/daily/DailyReportEditPage";
 import { DailyReportCustomerMonthPage } from "./features/daily/DailyReportCustomerMonthPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
@@ -45,6 +46,14 @@ export default function App() {
             <Route index element={<Navigate to="/daily" replace />} />
             <Route path="daily" element={<DailyReportEntryPage />} />
             <Route path="list" element={<DailyReportListPage />} />
+            <Route
+              path="list/:id"
+              element={
+                <AdminRoute>
+                  <DailyReportEditPage />
+                </AdminRoute>
+              }
+            />
             <Route path="summary" element={<DailyReportCustomerMonthPage />} />
 
             {/* 管理者専用ルート */}
