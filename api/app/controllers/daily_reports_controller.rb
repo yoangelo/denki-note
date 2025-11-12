@@ -1,9 +1,12 @@
 class DailyReportsController < AuthenticatedController
+  before_action :require_admin, only: [:bulk_update, :destroy]
+
   def index
     return render json: { daily_reports: [], meta: { total_count: 0, returned_count: 0, year_month: params[:year_month] || "" } } unless current_tenant
 
     # クエリパラメータの処理
-    scope = DailyReport.where(sites: { tenant: current_tenant })
+    scope = DailyReport.kept
+                       .where(sites: { tenant: current_tenant })
                        .joins(:site)
                        .includes(:site => :customer, :work_entries => :user)
 
@@ -80,7 +83,21 @@ class DailyReportsController < AuthenticatedController
   end
 
 
-  def bulk
+  def show
+    daily_report = DailyReport.kept
+                               .where(sites: { tenant: current_tenant })
+                               .joins(:site)
+                               .includes(:site => :customer, :work_entries => :user)
+                               .find_by(id: params[:id])
+
+    return render json: { error: '日報が見つかりません' }, status: :not_found unless daily_report
+
+    render json: {
+      daily_report: format_daily_report(daily_report)
+    }
+  end
+
+  def bulk_create
     reports_created = 0
     entries_created = 0
     created_reports = []
@@ -89,7 +106,7 @@ class DailyReportsController < AuthenticatedController
     return render json: { success: false, errors: [{ error: "Tenant not found" }] }, status: :unauthorized unless current_tenant
 
     ActiveRecord::Base.transaction do
-      bulk_params[:daily_reports].each_with_index do |report_params, index|
+      bulk_create_params[:daily_reports].each_with_index do |report_params, index|
         # 日報ヘッダの作成
         daily_report = DailyReport.new(
           tenant_id: current_tenant.id,
@@ -165,9 +182,103 @@ class DailyReportsController < AuthenticatedController
     }, status: :unprocessable_entity
   end
 
+  def bulk_update
+    daily_report = DailyReport.kept
+                               .where(sites: { tenant: current_tenant })
+                               .joins(:site)
+                               .find_by(id: params[:id])
+
+    return render json: { error: '日報が見つかりません' }, status: :not_found unless daily_report
+
+    ActiveRecord::Base.transaction do
+      # 日報ヘッダの更新
+      daily_report.update!(
+        site_id: bulk_update_params[:site_id],
+        summary: bulk_update_params[:summary]
+      )
+
+      # 既存のwork_entriesを全削除
+      daily_report.work_entries.destroy_all
+
+      # 新しいwork_entriesを一括作成
+      bulk_update_params[:work_entries].each do |entry_params|
+        daily_report.work_entries.create!(
+          tenant_id: current_tenant.id,
+          user_id: entry_params[:user_id],
+          minutes: entry_params[:minutes]
+        )
+      end
+
+      # 最新データを再読み込み
+      daily_report.reload
+      daily_report.site.reload
+    end
+
+    render json: {
+      success: true,
+      daily_report: format_daily_report(daily_report)
+    }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      errors: e.record.errors.messages
+    }, status: :unprocessable_entity
+  rescue => e
+    render json: {
+      error: e.message
+    }, status: :unprocessable_entity
+  end
+
+  def destroy
+    daily_report = DailyReport.kept
+                               .where(sites: { tenant: current_tenant })
+                               .joins(:site)
+                               .find_by(id: params[:id])
+
+    return render json: { error: '日報が見つかりません' }, status: :not_found unless daily_report
+
+    daily_report.discard
+
+    head :no_content
+  end
+
   private
 
-  def bulk_params
+  def require_admin
+    unless current_user&.admin?
+      render json: { error: 'この操作を実行する権限がありません' }, status: :forbidden
+    end
+  end
+
+  def format_daily_report(report)
+    {
+      id: report.id,
+      work_date: report.work_date.to_s,
+      customer: {
+        id: report.site.customer.id,
+        name: report.site.customer.name
+      },
+      site: {
+        id: report.site.id,
+        name: report.site.name
+      },
+      summary: report.summary || "",
+      work_entries: report.work_entries.map do |entry|
+        {
+          id: entry.id,
+          user: {
+            id: entry.user.id,
+            display_name: entry.user.display_name
+          },
+          minutes: entry.minutes
+        }
+      end,
+      total_minutes: report.work_entries.sum(:minutes),
+      created_at: report.created_at.iso8601,
+      updated_at: report.updated_at.iso8601
+    }
+  end
+
+  def bulk_create_params
     params.permit(
       daily_reports: [
         :site_id,
@@ -175,6 +286,14 @@ class DailyReportsController < AuthenticatedController
         :summary,
         work_entries: [:user_id, :minutes]
       ]
+    )
+  end
+
+  def bulk_update_params
+    params.require(:daily_report).permit(
+      :site_id,
+      :summary,
+      work_entries: [:user_id, :minutes]
     )
   end
 end

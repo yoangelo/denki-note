@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_11_07_223848) do
+ActiveRecord::Schema[7.1].define(version: 2025_11_12_215912) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
@@ -40,6 +40,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_11_07_223848) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "summary", null: false
+    t.datetime "discarded_at"
+    t.index ["discarded_at"], name: "index_daily_reports_on_discarded_at"
     t.index ["site_id"], name: "index_daily_reports_on_site_id"
     t.index ["tenant_id", "site_id", "work_date"], name: "index_daily_reports_on_tenant_id_and_site_id_and_work_date"
     t.index ["tenant_id"], name: "index_daily_reports_on_tenant_id"
