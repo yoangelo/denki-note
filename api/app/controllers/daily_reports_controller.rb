@@ -107,41 +107,30 @@ class DailyReportsController < AuthenticatedController
 
     ActiveRecord::Base.transaction do
       bulk_create_params[:daily_reports].each_with_index do |report_params, index|
-        # 日報ヘッダの作成
+        # work_entriesにtenant_idを追加
+        work_entries_attrs = report_params[:work_entries].map do |entry_params|
+          {
+            tenant_id: current_tenant.id,
+            user_id: entry_params[:user_id],
+            minutes: entry_params[:minutes],
+            summary: nil # work_entriesのsummaryは使用しない
+          }
+        end
+
+        # 日報とwork_entriesを同時に作成
         daily_report = DailyReport.new(
           tenant_id: current_tenant.id,
           site_id: report_params[:site_id],
           work_date: report_params[:work_date],
           summary: report_params[:summary],
-          created_by: current_user.id
+          created_by: current_user.id,
+          work_entries_attributes: work_entries_attrs
         )
 
         if daily_report.save
           reports_created += 1
-          entries_count = 0
-
-          # 作業エントリの作成
-          report_params[:work_entries].each do |entry_params|
-            work_entry = WorkEntry.new(
-              tenant_id: current_tenant.id,
-              daily_report_id: daily_report.id,
-              user_id: entry_params[:user_id],
-              minutes: entry_params[:minutes],
-              summary: nil # work_entriesのsummaryは使用しない
-            )
-
-            if work_entry.save
-              entries_created += 1
-              entries_count += 1
-            else
-              errors << {
-                report_index: index,
-                site_id: report_params[:site_id],
-                error: "Work entry error: #{work_entry.errors.full_messages.join(', ')}"
-              }
-              raise ActiveRecord::Rollback
-            end
-          end
+          entries_count = daily_report.work_entries.count
+          entries_created += entries_count
 
           created_reports << {
             id: daily_report.id,

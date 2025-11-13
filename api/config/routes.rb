@@ -51,7 +51,7 @@ Rails.application.routes.draw do
     end
     member do
       put :bulk_update
-      delete :destroy
+      delete 'destroy', to: 'daily_reports#destroy', as: ''
     end
   end
 

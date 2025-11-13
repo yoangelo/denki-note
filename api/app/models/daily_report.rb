@@ -31,6 +31,9 @@ class DailyReport < ApplicationRecord
   belongs_to :site
   has_many :work_entries, dependent: :destroy
 
+  # ネストした属性を受け入れる
+  accepts_nested_attributes_for :work_entries, allow_destroy: true
+
   validates :work_date, presence: true
   validates :summary, presence: { message: '作業概要を入力してください' }
   validates :site_id, presence: true

@@ -531,6 +531,8 @@ paths:
       operationId: destroy_daily_report
       tags: [DailyReports]
       summary: Soft delete daily report
+      security:
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
