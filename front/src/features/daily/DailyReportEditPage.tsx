@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { CustomerSiteSelector } from "@/components/CustomerSiteSelector";
 import { WorkerSelect } from "@/components/WorkerSelect";
 import { TimeInput } from "@/components/TimeInput";
-import { Toast } from "@/components/Toast";
-import { useToast } from "@/hooks/useToast";
 import { useAuthStore } from "@/stores/authStore";
 import {
   useGetDailyReport,
@@ -20,7 +19,6 @@ export function DailyReportEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { toasts, showToast, removeToast } = useToast();
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.is_admin || false;
 
@@ -58,11 +56,11 @@ export function DailyReportEditPage() {
           }),
         ]);
 
-        showToast("日報を更新しました", "success");
+        toast.success("日報を更新しました");
         navigate("/list");
       },
       onError: () => {
-        showToast("日報の更新に失敗しました", "error");
+        toast.error("日報の更新に失敗しました");
       },
     },
   });
@@ -82,11 +80,11 @@ export function DailyReportEditPage() {
           }),
         ]);
 
-        showToast("日報を削除しました", "success");
+        toast.success("日報を削除しました");
         navigate("/list");
       },
       onError: () => {
-        showToast("日報の削除に失敗しました", "error");
+        toast.error("日報の削除に失敗しました");
       },
     },
   });
@@ -225,8 +223,6 @@ export function DailyReportEditPage() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-      <Toast toasts={toasts} onRemove={removeToast} />
-
       <h2 className="text-2xl font-bold mb-4">日報の編集</h2>
       <p className="text-sm text-gray-600 mb-6">
         作業日: {format(new Date(report.work_date), "yyyy年M月d日(E)", { locale: ja })}

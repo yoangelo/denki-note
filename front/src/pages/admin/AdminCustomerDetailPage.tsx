@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { httpClient } from "../../api/mutator";
 import type { Customer, Site } from "../../api/generated/timesheetAPI.schemas";
-import { useToast } from "../../hooks/useToast";
-import { Toast } from "../../components/Toast";
 
 interface CustomerDetailResponse {
   customer: Customer;
@@ -34,7 +32,7 @@ export function AdminCustomerDetailPage() {
   const [siteFormData, setSiteFormData] = useState<SiteFormData>({ name: "", note: "" });
   const [siteFormError, setSiteFormError] = useState("");
   const [showDiscardedSites, setShowDiscardedSites] = useState(false);
-  const { toasts, showToast, removeToast } = useToast();
+  
 
   const fetchCustomerDetail = useCallback(async () => {
     if (!id) return;
@@ -87,7 +85,7 @@ export function AdminCustomerDetailPage() {
       setAddSiteModal(false);
       setSiteFormData({ name: "", note: "" });
       setSiteFormError("");
-      showToast("現場を追加しました", "success");
+      toast.success("現場を追加しました");
       fetchCustomerDetail();
     } catch (err) {
       setSiteFormError("現場の追加に失敗しました");
@@ -128,7 +126,7 @@ export function AdminCustomerDetailPage() {
       setEditSiteModal({ open: false, site: null });
       setSiteFormData({ name: "", note: "" });
       setSiteFormError("");
-      showToast("現場を更新しました", "success");
+      toast.success("現場を更新しました");
       fetchCustomerDetail();
     } catch (err) {
       setSiteFormError("現場の更新に失敗しました");
@@ -145,10 +143,10 @@ export function AdminCustomerDetailPage() {
         method: "DELETE",
       });
       setDeleteSiteModal({ open: false, site: null });
-      showToast("現場を削除しました", "success");
+      toast.success("現場を削除しました");
       fetchCustomerDetail();
     } catch (err) {
-      showToast("現場の削除に失敗しました", "error");
+      toast.error("現場の削除に失敗しました");
       console.error(err);
     }
   };
@@ -175,7 +173,6 @@ export function AdminCustomerDetailPage() {
 
   return (
     <div>
-      <Toast toasts={toasts} onRemove={removeToast} />
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客詳細</h2>

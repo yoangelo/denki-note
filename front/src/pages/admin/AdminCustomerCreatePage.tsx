@@ -1,8 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { httpClient } from "../../api/mutator";
-import { useToast } from "../../hooks/useToast";
-import { Toast } from "../../components/Toast";
 
 interface Site {
   name: string;
@@ -23,7 +22,6 @@ export function AdminCustomerCreatePage() {
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState("");
-  const { toasts, showToast, removeToast } = useToast();
   const checkDuplicateTimeoutRef = useRef<number | null>(null);
 
   const [formData, setFormData] = useState({
@@ -238,13 +236,13 @@ export function AdminCustomerCreatePage() {
         data: payload,
       });
 
-      showToast("顧客を作成しました", "success");
+      toast.success("顧客を作成しました");
       setTimeout(() => {
         navigate("/admin/customers");
       }, 500);
     } catch (err: unknown) {
       setError("顧客の作成に失敗しました");
-      showToast("顧客の作成に失敗しました", "error");
+      toast.error("顧客の作成に失敗しました");
       console.error(err);
     } finally {
       setLoading(false);
@@ -260,7 +258,6 @@ export function AdminCustomerCreatePage() {
 
   return (
     <div>
-      <Toast toasts={toasts} onRemove={removeToast} />
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客の新規作成</h2>

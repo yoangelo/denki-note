@@ -1,8 +1,7 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { DailyReportEntry, type WorkRow } from "./DailyReportEntry";
-import { Toast } from "@/components/Toast";
-import { useToast } from "@/hooks/useToast";
 import { useBulkCreateDailyReports } from "@/api/generated/daily-reports/daily-reports";
 
 export function DailyReportEntryPage() {
@@ -14,20 +13,19 @@ export function DailyReportEntryPage() {
   const [showWorkArea, setShowWorkArea] = useState(false);
   const [workRows, setWorkRows] = useState<WorkRow[]>([]);
 
-  const { toasts, showToast, removeToast } = useToast();
   const queryClient = useQueryClient();
 
   const bulkCreate = useBulkCreateDailyReports({
     mutation: {
       onSuccess: (data) => {
-        showToast(`${data.summary?.entries_created}件の作業を保存しました`, "success");
+        toast.success(`${data.summary?.entries_created}件の作業を保存しました`);
         // 保存成功後、フォームをクリアして作業エリアを閉じる
         setWorkRows([]);
         setShowWorkArea(false);
         queryClient.invalidateQueries({ queryKey: ["/summaries/customer-month"] });
       },
       onError: () => {
-        showToast("保存に失敗しました", "error");
+        toast.error("保存に失敗しました");
       },
     },
   });
@@ -58,13 +56,13 @@ export function DailyReportEntryPage() {
     (rowId: string) => {
       setWorkRows((prev) => {
         if (prev.length === 1) {
-          showToast("最低1行は必要です", "error");
+          toast.error("最低1行は必要です");
           return prev;
         }
         return prev.filter((row) => row.id !== rowId);
       });
     },
-    [showToast]
+    []
   );
 
   // 行を更新
@@ -138,7 +136,7 @@ export function DailyReportEntryPage() {
     );
 
     if (validRows.length === 0) {
-      showToast("保存可能な作業がありません", "error");
+      toast.error("保存可能な作業がありません");
       return;
     }
 
@@ -193,7 +191,7 @@ export function DailyReportEntryPage() {
         daily_reports: daily_reports as never,
       },
     });
-  }, [workRows, workDate, calculateRowTotal, bulkCreate, showToast]);
+  }, [workRows, workDate, calculateRowTotal, bulkCreate]);
 
   // 行が有効かチェック
   const isRowValid = useCallback(
@@ -260,9 +258,6 @@ export function DailyReportEntryPage() {
           isRowValid={isRowValid}
           bulkCreateIsPending={bulkCreate.isPending}
         />
-
-        {/* トースト表示 */}
-        <Toast toasts={toasts} onRemove={removeToast} />
       </div>
     </div>
   );
