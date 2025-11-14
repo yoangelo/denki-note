@@ -1,4 +1,4 @@
-import { SelectCustomerAndSite } from "@/components/SelectCustomerAndSite";
+import { CustomerSiteSelector } from "@/components/CustomerSiteSelector";
 import { TimeInput } from "@/components/TimeInput";
 import { WorkerSelect } from "@/components/WorkerSelect";
 import { useListUsers } from "@/api/generated/users/users";
@@ -21,7 +21,16 @@ type DailyReportEntryProps = {
   addRow: () => void;
   deleteRow: (rowId: string) => void;
   updateRow: (rowId: string, updates: Partial<WorkRow>) => void;
-  handleCustomerSiteSelect: (rowId: string, ids: { customerId: string; siteId: string }) => void;
+  handleCustomerSiteSelect: (
+    rowId: string,
+    data: {
+      customerId: string;
+      siteId: string;
+      customerName?: string;
+      siteName?: string;
+      customerType?: "corporate" | "individual";
+    }
+  ) => void;
   handleWorkersChange: (rowId: string, workers: string[]) => void;
   updateWorkerHours: (rowId: string, workerId: string, hours: number) => void;
   calculateRowTotal: (row: WorkRow) => number;
@@ -101,8 +110,11 @@ export function DailyReportEntry({
                     顧客・現場
                     <span className="text-red-500 ml-1">*</span>
                   </label>
-                  <SelectCustomerAndSite
-                    onSelect={(ids) => handleCustomerSiteSelect(row.id, ids)}
+                  <CustomerSiteSelector
+                    customerId={row.customerId}
+                    siteId={row.siteId}
+                    onSelect={(data) => handleCustomerSiteSelect(row.id, data)}
+                    showRecentCustomers={true}
                   />
                 </div>
 

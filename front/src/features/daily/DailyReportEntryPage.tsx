@@ -74,8 +74,17 @@ export function DailyReportEntryPage() {
 
   // 顧客・現場選択ハンドラ
   const handleCustomerSiteSelect = useCallback(
-    (rowId: string, ids: { customerId: string; siteId: string }) => {
-      updateRow(rowId, { customerId: ids.customerId, siteId: ids.siteId });
+    (
+      rowId: string,
+      data: {
+        customerId: string;
+        siteId: string;
+        customerName?: string;
+        siteName?: string;
+        customerType?: "corporate" | "individual";
+      }
+    ) => {
+      updateRow(rowId, { customerId: data.customerId, siteId: data.siteId });
     },
     [updateRow]
   );

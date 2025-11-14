@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SelectCustomerAndSite } from "@/components/SelectCustomerAndSite";
+import { useQueryClient } from "@tanstack/react-query";
+import { CustomerSiteSelector } from "@/components/CustomerSiteSelector";
 import { WorkerSelect } from "@/components/WorkerSelect";
 import { TimeInput } from "@/components/TimeInput";
 import { Toast } from "@/components/Toast";
@@ -18,6 +19,7 @@ import { ja } from "date-fns/locale";
 export function DailyReportEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.is_admin || false;
@@ -32,18 +34,30 @@ export function DailyReportEditPage() {
   const { data: dailyReportData, isLoading } = useGetDailyReport(id!);
   const { data: users = [] } = useListUsers({ is_active: true });
 
+  const [customerId, setCustomerId] = useState("");
   const [siteId, setSiteId] = useState("");
   const [summary, setSummary] = useState("");
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
   const [workerHours, setWorkerHours] = useState<Record<string, number>>({});
-  const [showCustomerSiteSelect, setShowCustomerSiteSelect] = useState(false);
   const [showWorkerSelect, setShowWorkerSelect] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const bulkUpdate = useBulkUpdateDailyReport({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
+        // キャッシュを無効化して日報一覧を更新
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ["/daily_reports"],
+            exact: false,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ["/summaries/customer-month"],
+            exact: false,
+          }),
+        ]);
+
         showToast("日報を更新しました", "success");
         navigate("/list");
       },
@@ -55,7 +69,19 @@ export function DailyReportEditPage() {
 
   const destroy = useDestroyDailyReport({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
+        // キャッシュを無効化して日報一覧を更新
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ["/daily_reports"],
+            exact: false,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ["/summaries/customer-month"],
+            exact: false,
+          }),
+        ]);
+
         showToast("日報を削除しました", "success");
         navigate("/list");
       },
@@ -69,6 +95,7 @@ export function DailyReportEditPage() {
   useEffect(() => {
     if (dailyReportData?.daily_report) {
       const report = dailyReportData.daily_report;
+      setCustomerId(report.customer.id);
       setSiteId(report.site.id);
       setSummary(report.summary);
 
@@ -83,9 +110,15 @@ export function DailyReportEditPage() {
     }
   }, [dailyReportData]);
 
-  const handleCustomerSiteSelect = (ids: { customerId: string; siteId: string }) => {
-    setSiteId(ids.siteId);
-    setShowCustomerSiteSelect(false);
+  const handleCustomerSiteSelect = (data: {
+    customerId: string;
+    siteId: string;
+    customerName?: string;
+    siteName?: string;
+    customerType?: "corporate" | "individual";
+  }) => {
+    setCustomerId(data.customerId);
+    setSiteId(data.siteId);
   };
 
   const handleWorkersChange = (workers: string[]) => {
@@ -206,34 +239,14 @@ export function DailyReportEditPage() {
             顧客・現場
             <span className="text-red-500 ml-1">*</span>
           </label>
-          {!showCustomerSiteSelect ? (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                <p className="text-sm">
-                  <span className="font-medium">顧客名:</span> {customerName}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">現場名:</span> {siteName}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowCustomerSiteSelect(true)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                変更
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <SelectCustomerAndSite onSelect={handleCustomerSiteSelect} />
-              <button
-                onClick={() => setShowCustomerSiteSelect(false)}
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                キャンセル
-              </button>
-            </div>
-          )}
+          <CustomerSiteSelector
+            customerId={customerId}
+            siteId={siteId}
+            customerName={customerName}
+            siteName={siteName}
+            onSelect={handleCustomerSiteSelect}
+            showRecentCustomers={false}
+          />
         </div>
 
         {/* 作業概要 */}
