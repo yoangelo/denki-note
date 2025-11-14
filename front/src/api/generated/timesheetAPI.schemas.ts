@@ -272,6 +272,47 @@ export type ListDailyReports200 = {
   meta: ListDailyReports200Meta;
 };
 
+export type GetDailyReport200DailyReportCustomer = {
+  id: string;
+  name: string;
+};
+
+export type GetDailyReport200DailyReportSite = {
+  id: string;
+  name: string;
+};
+
+export type GetDailyReport200DailyReportWorkEntriesItemUser = {
+  id: string;
+  display_name: string;
+};
+
+export type GetDailyReport200DailyReportWorkEntriesItem = {
+  id: string;
+  user: GetDailyReport200DailyReportWorkEntriesItemUser;
+  minutes: number;
+};
+
+export type GetDailyReport200DailyReport = {
+  id: string;
+  work_date: string;
+  customer: GetDailyReport200DailyReportCustomer;
+  site: GetDailyReport200DailyReportSite;
+  summary: string;
+  work_entries: GetDailyReport200DailyReportWorkEntriesItem[];
+  total_minutes: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type GetDailyReport200 = {
+  daily_report: GetDailyReport200DailyReport;
+};
+
+export type GetDailyReport404 = {
+  error?: string;
+};
+
 export type BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem = {
   user_id: string;
   /** @minimum 0 */
@@ -325,6 +366,82 @@ export type BulkCreateDailyReports422 = {
   summary?: BulkCreateDailyReports422Summary;
   reports?: BulkCreateDailyReports422ReportsItem[];
   errors?: BulkCreateDailyReports422ErrorsItem[];
+};
+
+export type BulkUpdateDailyReportBodyDailyReportWorkEntriesItem = {
+  user_id: string;
+  /** @minimum 0 */
+  minutes: number;
+};
+
+export type BulkUpdateDailyReportBodyDailyReport = {
+  site_id: string;
+  summary: string;
+  /** @minItems 1 */
+  work_entries: BulkUpdateDailyReportBodyDailyReportWorkEntriesItem[];
+};
+
+export type BulkUpdateDailyReportBody = {
+  daily_report: BulkUpdateDailyReportBodyDailyReport;
+};
+
+export type BulkUpdateDailyReport200DailyReportCustomer = {
+  id: string;
+  name: string;
+};
+
+export type BulkUpdateDailyReport200DailyReportSite = {
+  id: string;
+  name: string;
+};
+
+export type BulkUpdateDailyReport200DailyReportWorkEntriesItemUser = {
+  id: string;
+  display_name: string;
+};
+
+export type BulkUpdateDailyReport200DailyReportWorkEntriesItem = {
+  id: string;
+  user: BulkUpdateDailyReport200DailyReportWorkEntriesItemUser;
+  minutes: number;
+};
+
+export type BulkUpdateDailyReport200DailyReport = {
+  id: string;
+  work_date: string;
+  customer: BulkUpdateDailyReport200DailyReportCustomer;
+  site: BulkUpdateDailyReport200DailyReportSite;
+  summary: string;
+  work_entries: BulkUpdateDailyReport200DailyReportWorkEntriesItem[];
+  total_minutes: number;
+  updated_at: string;
+};
+
+export type BulkUpdateDailyReport200 = {
+  success: boolean;
+  daily_report: BulkUpdateDailyReport200DailyReport;
+};
+
+export type BulkUpdateDailyReport403 = {
+  error?: string;
+};
+
+export type BulkUpdateDailyReport404 = {
+  error?: string;
+};
+
+export type BulkUpdateDailyReport422Errors = { [key: string]: unknown };
+
+export type BulkUpdateDailyReport422 = {
+  errors?: BulkUpdateDailyReport422Errors;
+};
+
+export type DestroyDailyReport403 = {
+  error?: string;
+};
+
+export type DestroyDailyReport404 = {
+  error?: string;
 };
 
 export type RequestPasswordResetBodyUser = {

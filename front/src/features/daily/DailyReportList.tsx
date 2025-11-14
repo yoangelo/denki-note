@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/authStore";
 
 type Worker = {
   id: string;
@@ -20,15 +22,17 @@ type DailyReportListProps = {
   workDate: Date;
   workRows: WorkRow[];
   workers: Worker[];
-  onDeleteRow: (id: string) => void;
 };
 
 export const DailyReportList: React.FC<DailyReportListProps> = ({
   workDate,
   workRows,
   workers,
-  onDeleteRow,
 }) => {
+  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.is_admin || false;
+
   // 作業データに含まれる作業者のみを抽出
   const activeWorkers = useMemo(() => {
     const workerIds = new Set<string>();
@@ -60,7 +64,7 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
         <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-2 py-2 text-left text-sm">お客様名</th>
+              <th className="border border-gray-300 px-2 py-2 text-left text-sm">顧客名</th>
               <th className="border border-gray-300 px-2 py-2 text-left text-sm">現場名</th>
               <th className="border border-gray-300 px-2 py-2 text-left text-sm">概要</th>
               {activeWorkers.map((worker) => (
@@ -72,7 +76,9 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
                 </th>
               ))}
               <th className="border border-gray-300 px-2 py-2 text-center text-sm">合計</th>
-              <th className="border border-gray-300 px-2 py-2 text-center text-sm">操作</th>
+              {isAdmin && (
+                <th className="border border-gray-300 px-2 py-2 text-center text-sm">操作</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -92,20 +98,23 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
                 <td className="border border-gray-300 px-2 py-1 text-center text-sm font-semibold">
                   {calculateRowTotal(row.workerHours)}
                 </td>
-                <td className="border border-gray-300 px-2 py-1 text-center">
-                  <button
-                    onClick={() => onDeleteRow(row.id)}
-                    className="text-red-500 hover:text-red-700 text-xs"
-                  >
-                    削除
-                  </button>
-                </td>
+                {isAdmin && (
+                  <td className="border border-gray-300 px-2 py-1 text-center">
+                    <button
+                      onClick={() => navigate(`/list/${row.id}`)}
+                      className="text-blue-500 hover:text-blue-700 p-1 inline-flex items-center"
+                      aria-label="編集"
+                    >
+                      <div className="i-heroicons-pencil-square w-5 h-5" />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
             {workRows.length === 0 && (
               <tr>
                 <td
-                  colSpan={activeWorkers.length + 5}
+                  colSpan={activeWorkers.length + (isAdmin ? 6 : 5)}
                   className="border border-gray-300 px-4 py-8 text-center text-gray-500"
                 >
                   作業データがありません
@@ -131,7 +140,7 @@ export const DailyReportList: React.FC<DailyReportListProps> = ({
                 <td className="border border-gray-300 px-2 py-2 text-center">
                   {calculateDayTotal()}
                 </td>
-                <td className="border border-gray-300 px-2 py-2"></td>
+                {isAdmin && <td className="border border-gray-300 px-2 py-2"></td>}
               </tr>
             )}
           </tbody>

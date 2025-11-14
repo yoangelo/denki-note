@@ -45,9 +45,13 @@ Rails.application.routes.draw do
   end
   resources :sites, only: [:index, :create]
   resources :users, only: [:index]
-  resources :daily_reports, only: [:index] do
+  resources :daily_reports, only: [:index, :show] do
     collection do
-      post :bulk
+      post :bulk_create
+    end
+    member do
+      put :bulk_update
+      delete 'destroy', to: 'daily_reports#destroy', as: ''
     end
   end
 

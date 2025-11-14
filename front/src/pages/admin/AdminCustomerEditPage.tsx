@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { httpClient } from "../../api/mutator";
 import type { Customer } from "../../api/generated/timesheetAPI.schemas";
-import { useToast } from "../../hooks/useToast";
-import { Toast } from "../../components/Toast";
 
 interface FormErrors {
   name?: string;
@@ -23,7 +21,7 @@ export function AdminCustomerEditPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const { toasts, showToast, removeToast } = useToast();
+  
 
   const [initialData, setInitialData] = useState({
     name: "",
@@ -217,13 +215,13 @@ export function AdminCustomerEditPage() {
         data: payload,
       });
 
-      showToast("顧客を更新しました", "success");
+      toast.success("顧客を更新しました");
       setTimeout(() => {
         navigate(`/admin/customers/${id}`);
       }, 500);
     } catch (err: unknown) {
       setError("顧客の更新に失敗しました");
-      showToast("顧客の更新に失敗しました", "error");
+      toast.error("顧客の更新に失敗しました");
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -259,14 +257,6 @@ export function AdminCustomerEditPage() {
 
   return (
     <div>
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客の編集</h2>

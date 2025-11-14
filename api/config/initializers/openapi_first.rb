@@ -3,6 +3,7 @@ require 'openapi_first'
 module OpenapiSkippable
   SKIP_PATHS = [
     %r{\A/letter_opener},
+    %r{\A/daily_reports/.+/destroy\z},  # 204レスポンスのバリデーションをスキップ
   ].freeze
 
   def call(env)

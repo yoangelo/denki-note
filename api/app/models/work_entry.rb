@@ -29,12 +29,8 @@ class WorkEntry < ApplicationRecord
   belongs_to :daily_report
   belongs_to :user
 
-  validates :minutes, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validate :minutes_must_be_multiple_of_15
-
-  private
-
-  def minutes_must_be_multiple_of_15
-    errors.add(:minutes, "must be a multiple of 15") if minutes.present? && minutes % 15 != 0
-  end
+  validates :minutes, presence: true, numericality: {
+    greater_than_or_equal_to: 0,
+    message: '工数は0以上の値を入力してください'
+  }
 end

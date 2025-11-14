@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { httpClient } from "../../api/mutator";
 import type { TenantSettings } from "../../api/generated/timesheetAPI.schemas";
-import { useToast } from "../../hooks/useToast";
-import { Toast } from "../../components/Toast";
 
 interface TenantResponse {
   tenant: TenantSettings;
@@ -45,7 +44,6 @@ const MONEY_ROUNDING_OPTIONS = [
 
 export function AdminTenantSettingsEditPage() {
   const navigate = useNavigate();
-  const { toasts, showToast, removeToast } = useToast();
   const [originalTenant, setOriginalTenant] = useState<TenantSettings | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -73,7 +71,7 @@ export function AdminTenantSettingsEditPage() {
           money_rounding: response.tenant.money_rounding,
         });
       } catch (err) {
-        showToast("自社設定の取得に失敗しました", "error");
+        toast.error("自社設定の取得に失敗しました");
         console.error(err);
       } finally {
         setLoading(false);
@@ -81,7 +79,6 @@ export function AdminTenantSettingsEditPage() {
     };
 
     fetchTenant();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const validateField = (field: keyof FormErrors, value: string): string | undefined => {
@@ -205,11 +202,9 @@ export function AdminTenantSettingsEditPage() {
           },
         },
       });
-      showToast("設定を更新しました", "success");
+      toast.success("設定を更新しました");
       setShowConfirmModal(false);
-      setTimeout(() => {
-        navigate("/admin/settings");
-      }, 1000);
+      navigate("/admin/settings");
     } catch (err: unknown) {
       if (err && typeof err === "object" && "response" in err) {
         const response = (err as { response?: { data?: { errors?: Record<string, string[]> } } })
@@ -226,7 +221,7 @@ export function AdminTenantSettingsEditPage() {
           setErrors(newErrors);
         }
       }
-      showToast("設定の更新に失敗しました", "error");
+      toast.error("設定の更新に失敗しました");
       setShowConfirmModal(false);
       console.error(err);
     }
@@ -424,15 +419,6 @@ export function AdminTenantSettingsEditPage() {
           </div>
         </div>
       )}
-
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
     </div>
   );
 }

@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { httpClient } from "../../api/mutator";
 import type { Customer } from "../../api/generated/timesheetAPI.schemas";
-import { useToast } from "../../hooks/useToast";
-import { Toast } from "../../components/Toast";
 import {
   Button,
   Input,
@@ -37,7 +36,6 @@ export function AdminCustomersPage() {
   const [sortBy, setSortBy] = useState<"created_at" | "name" | "rate_percent">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showDiscarded, setShowDiscarded] = useState(false);
-  const { toasts, showToast, removeToast } = useToast();
 
   const fetchCustomers = useCallback(
     async (search?: string) => {
@@ -98,11 +96,11 @@ export function AdminCustomersPage() {
         method: "DELETE",
       });
       setDeleteModal({ open: false, customer: null });
-      showToast("顧客を削除しました", "success");
+      toast.success("顧客を削除しました");
       fetchCustomers();
     } catch (err) {
       setError("顧客の削除に失敗しました");
-      showToast("顧客の削除に失敗しました", "error");
+      toast.error("顧客の削除に失敗しました");
       console.error(err);
     }
   };
@@ -113,15 +111,6 @@ export function AdminCustomersPage() {
 
   return (
     <div>
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
-
       <PageHeader
         title="顧客一覧"
         action={
