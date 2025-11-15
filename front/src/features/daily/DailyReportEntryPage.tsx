@@ -52,18 +52,15 @@ export function DailyReportEntryPage() {
   }, []);
 
   // 行を削除
-  const deleteRow = useCallback(
-    (rowId: string) => {
-      setWorkRows((prev) => {
-        if (prev.length === 1) {
-          toast.error("最低1行は必要です");
-          return prev;
-        }
-        return prev.filter((row) => row.id !== rowId);
-      });
-    },
-    []
-  );
+  const deleteRow = useCallback((rowId: string) => {
+    setWorkRows((prev) => {
+      if (prev.length === 1) {
+        toast.error("最低1行は必要です");
+        return prev;
+      }
+      return prev.filter((row) => row.id !== rowId);
+    });
+  }, []);
 
   // 行を更新
   const updateRow = useCallback((rowId: string, updates: Partial<WorkRow>) => {

@@ -6,6 +6,7 @@ import { CustomerSiteSelector } from "@/components/CustomerSiteSelector";
 import { WorkerSelect } from "@/components/WorkerSelect";
 import { TimeInput } from "@/components/TimeInput";
 import { useAuthStore } from "@/stores/authStore";
+import { ConfirmModal, UpdateConfirmModal, type DataRecord } from "@/components/ui";
 import {
   useGetDailyReport,
   useBulkUpdateDailyReport,
@@ -34,12 +35,21 @@ export function DailyReportEditPage() {
 
   const [customerId, setCustomerId] = useState("");
   const [siteId, setSiteId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [siteName, setSiteName] = useState("");
   const [summary, setSummary] = useState("");
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
   const [workerHours, setWorkerHours] = useState<Record<string, number>>({});
   const [showWorkerSelect, setShowWorkerSelect] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // 初期データ保持用
+  const [initialCustomerName, setInitialCustomerName] = useState("");
+  const [initialSiteName, setInitialSiteName] = useState("");
+  const [initialSummary, setInitialSummary] = useState("");
+  const [initialSelectedWorkers, setInitialSelectedWorkers] = useState<string[]>([]);
+  const [initialWorkerHours, setInitialWorkerHours] = useState<Record<string, number>>({});
 
   const bulkUpdate = useBulkUpdateDailyReport({
     mutation: {
@@ -93,8 +103,12 @@ export function DailyReportEditPage() {
   useEffect(() => {
     if (dailyReportData?.daily_report) {
       const report = dailyReportData.daily_report;
+
+      // 現在の値を設定
       setCustomerId(report.customer.id);
       setSiteId(report.site.id);
+      setCustomerName(report.customer.name);
+      setSiteName(report.site.name);
       setSummary(report.summary);
 
       const workers = report.work_entries.map((entry) => entry.user.id);
@@ -105,6 +119,13 @@ export function DailyReportEditPage() {
         hours[entry.user.id] = entry.minutes / 60;
       });
       setWorkerHours(hours);
+
+      // 初期値を保存
+      setInitialCustomerName(report.customer.name);
+      setInitialSiteName(report.site.name);
+      setInitialSummary(report.summary);
+      setInitialSelectedWorkers(workers);
+      setInitialWorkerHours(hours);
     }
   }, [dailyReportData]);
 
@@ -117,6 +138,8 @@ export function DailyReportEditPage() {
   }) => {
     setCustomerId(data.customerId);
     setSiteId(data.siteId);
+    setCustomerName(data.customerName || "");
+    setSiteName(data.siteName || "");
   };
 
   const handleWorkersChange = (workers: string[]) => {
@@ -178,20 +201,54 @@ export function DailyReportEditPage() {
     setShowDeleteModal(false);
   };
 
-  const customerName = useMemo(() => {
-    return dailyReportData?.daily_report.customer.name || "";
-  }, [dailyReportData]);
-
-  const siteName = useMemo(() => {
-    return dailyReportData?.daily_report.site.name || "";
-  }, [dailyReportData]);
-
   const selectedWorkerNames = useMemo(() => {
     return users
       .filter((u) => selectedWorkers.includes(u.id))
       .map((u) => u.display_name)
       .join(", ");
   }, [users, selectedWorkers]);
+
+  const getOldUpdateData = (): DataRecord[] => {
+    const initialWorkerNames = users
+      .filter((u) => initialSelectedWorkers.includes(u.id) && (initialWorkerHours[u.id] || 0) > 0)
+      .map((u) => `${u.display_name}: ${initialWorkerHours[u.id]}h`)
+      .join(", ");
+
+    const initialTotalHours = Object.values(initialWorkerHours).reduce(
+      (sum, hours) => sum + hours,
+      0
+    );
+
+    return [
+      { fieldName: "顧客名", value: initialCustomerName },
+      { fieldName: "現場名", value: initialSiteName },
+      {
+        fieldName: "作業概要",
+        value:
+          initialSummary.length > 50 ? `${initialSummary.substring(0, 50)}...` : initialSummary,
+      },
+      { fieldName: "作業者・工数", value: initialWorkerNames || "（未設定）" },
+      { fieldName: "合計工数", value: `${initialTotalHours}h` },
+    ];
+  };
+
+  const getNewUpdateData = (): DataRecord[] => {
+    const workersWithHours = users
+      .filter((u) => selectedWorkers.includes(u.id) && (workerHours[u.id] || 0) > 0)
+      .map((u) => `${u.display_name}: ${workerHours[u.id]}h`)
+      .join(", ");
+
+    return [
+      { fieldName: "顧客名", value: customerName },
+      { fieldName: "現場名", value: siteName },
+      {
+        fieldName: "作業概要",
+        value: summary.length > 50 ? `${summary.substring(0, 50)}...` : summary,
+      },
+      { fieldName: "作業者・工数", value: workersWithHours || "（未設定）" },
+      { fieldName: "合計工数", value: `${calculateTotalHours()}h` },
+    ];
+  };
 
   if (isLoading) {
     return (
@@ -361,98 +418,28 @@ export function DailyReportEditPage() {
       </div>
 
       {/* 更新確認モーダル */}
-      {showUpdateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">日報の更新</h3>
-              <button
-                onClick={() => setShowUpdateModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✗
-              </button>
-            </div>
-            <div className="space-y-2 mb-6">
-              <p className="text-sm">以下の日報を更新しますか？</p>
-              <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
-                <p>
-                  <span className="font-medium">顧客名:</span> {customerName}
-                </p>
-                <p>
-                  <span className="font-medium">現場名:</span> {siteName}
-                </p>
-                <p>
-                  <span className="font-medium">概要:</span> {summary.substring(0, 50)}
-                  {summary.length > 50 && "..."}
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowUpdateModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleUpdate}
-                disabled={bulkUpdate.isPending}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
-              >
-                更新する
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UpdateConfirmModal
+        isOpen={showUpdateModal}
+        onClose={() => setShowUpdateModal(false)}
+        onConfirm={handleUpdate}
+        title="日報の更新"
+        description="以下の内容で日報を更新します。よろしいですか？"
+        newDatas={getNewUpdateData()}
+        oldDatas={getOldUpdateData()}
+        confirmText="更新する"
+        isSubmitting={bulkUpdate.isPending}
+      />
 
       {/* 削除確認モーダル */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">日報の削除</h3>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✗
-              </button>
-            </div>
-            <div className="space-y-2 mb-6">
-              <p className="text-sm">以下の日報を削除しますか？</p>
-              <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
-                <p>
-                  <span className="font-medium">顧客名:</span> {customerName}
-                </p>
-                <p>
-                  <span className="font-medium">現場名:</span> {siteName}
-                </p>
-                <p>
-                  <span className="font-medium">概要:</span> {summary.substring(0, 50)}
-                  {summary.length > 50 && "..."}
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={destroy.isPending}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:bg-gray-400"
-              >
-                削除する
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="日報の削除"
+        message="この日報を削除してもよろしいですか？"
+        confirmText="削除する"
+        variant="danger"
+      />
     </div>
   );
 }

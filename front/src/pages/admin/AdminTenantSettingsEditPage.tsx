@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { httpClient } from "../../api/mutator";
 import type { TenantSettings } from "../../api/generated/timesheetAPI.schemas";
+import { UpdateConfirmModal, type DataRecord } from "../../components/ui";
 
 interface TenantResponse {
   tenant: TenantSettings;
@@ -18,12 +19,6 @@ interface FormData {
 interface FormErrors {
   name?: string;
   default_unit_rate?: string;
-}
-
-interface ChangeInfo {
-  field: string;
-  from: string;
-  to: string;
 }
 
 const TIME_INCREMENT_OPTIONS = [
@@ -54,7 +49,7 @@ export function AdminTenantSettingsEditPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [changes, setChanges] = useState<ChangeInfo[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTenant = async () => {
@@ -121,55 +116,46 @@ export function AdminTenantSettingsEditPage() {
     return Object.values(errors).some((error) => error !== undefined);
   };
 
-  const getChanges = (): ChangeInfo[] => {
+  const getOldData = (): DataRecord[] => {
     if (!originalTenant) return [];
-    const changeList: ChangeInfo[] = [];
 
-    if (formData.name !== originalTenant.name) {
-      changeList.push({
-        field: "自社名",
-        from: originalTenant.name,
-        to: formData.name,
-      });
-    }
+    const fromTimeLabel =
+      TIME_INCREMENT_OPTIONS.find((o) => o.value === originalTenant.time_increment_minutes)
+        ?.label || `${originalTenant.time_increment_minutes}分`;
 
-    if (Number(formData.default_unit_rate) !== originalTenant.default_unit_rate) {
-      changeList.push({
-        field: "基本時間単価",
-        from: `${new Intl.NumberFormat("ja-JP").format(originalTenant.default_unit_rate)}円`,
-        to: `${new Intl.NumberFormat("ja-JP").format(Number(formData.default_unit_rate))}円`,
-      });
-    }
+    const fromRoundingLabel =
+      MONEY_ROUNDING_OPTIONS.find((o) => o.value === originalTenant.money_rounding)?.label ||
+      originalTenant.money_rounding;
 
-    if (formData.time_increment_minutes !== originalTenant.time_increment_minutes) {
-      const fromLabel = TIME_INCREMENT_OPTIONS.find(
-        (o) => o.value === originalTenant.time_increment_minutes
-      )?.label;
-      const toLabel = TIME_INCREMENT_OPTIONS.find(
-        (o) => o.value === formData.time_increment_minutes
-      )?.label;
-      changeList.push({
-        field: "時間刻み",
-        from: fromLabel || `${originalTenant.time_increment_minutes}分`,
-        to: toLabel || `${formData.time_increment_minutes}分`,
-      });
-    }
+    return [
+      { fieldName: "自社名", value: originalTenant.name },
+      {
+        fieldName: "基本時間単価",
+        value: `${new Intl.NumberFormat("ja-JP").format(originalTenant.default_unit_rate)}円`,
+      },
+      { fieldName: "時間刻み", value: fromTimeLabel },
+      { fieldName: "金額丸め方式", value: fromRoundingLabel },
+    ];
+  };
 
-    if (formData.money_rounding !== originalTenant.money_rounding) {
-      const fromLabel = MONEY_ROUNDING_OPTIONS.find(
-        (o) => o.value === originalTenant.money_rounding
-      )?.label;
-      const toLabel = MONEY_ROUNDING_OPTIONS.find(
-        (o) => o.value === formData.money_rounding
-      )?.label;
-      changeList.push({
-        field: "金額丸め方式",
-        from: fromLabel || originalTenant.money_rounding,
-        to: toLabel || formData.money_rounding,
-      });
-    }
+  const getNewData = (): DataRecord[] => {
+    const toTimeLabel =
+      TIME_INCREMENT_OPTIONS.find((o) => o.value === formData.time_increment_minutes)?.label ||
+      `${formData.time_increment_minutes}分`;
 
-    return changeList;
+    const toRoundingLabel =
+      MONEY_ROUNDING_OPTIONS.find((o) => o.value === formData.money_rounding)?.label ||
+      formData.money_rounding;
+
+    return [
+      { fieldName: "自社名", value: formData.name },
+      {
+        fieldName: "基本時間単価",
+        value: `${new Intl.NumberFormat("ja-JP").format(Number(formData.default_unit_rate))}円`,
+      },
+      { fieldName: "時間刻み", value: toTimeLabel },
+      { fieldName: "金額丸め方式", value: toRoundingLabel },
+    ];
   };
 
   const handleSubmitClick = () => {
@@ -183,12 +169,11 @@ export function AdminTenantSettingsEditPage() {
       return;
     }
 
-    const changeList = getChanges();
-    setChanges(changeList);
     setShowConfirmModal(true);
   };
 
   const handleConfirmUpdate = async () => {
+    setIsSubmitting(true);
     try {
       await httpClient<TenantResponse>({
         url: "/admin/tenant",
@@ -224,6 +209,8 @@ export function AdminTenantSettingsEditPage() {
       toast.error("設定の更新に失敗しました");
       setShowConfirmModal(false);
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -379,46 +366,17 @@ export function AdminTenantSettingsEditPage() {
         </div>
       </div>
 
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">設定の更新確認</h3>
-            </div>
-
-            <div className="p-6">
-              <p className="text-sm text-gray-700 mb-4">以下の内容で更新します。よろしいですか？</p>
-
-              {changes.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-gray-900">変更内容</h4>
-                  {changes.map((change, index) => (
-                    <div key={index} className="text-sm text-gray-700">
-                      <span className="font-medium">{change.field}:</span> {change.from} →{" "}
-                      {change.to}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleConfirmUpdate}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-              >
-                更新する
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UpdateConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmUpdate}
+        title="設定の更新確認"
+        description="以下の内容で更新します。よろしいですか？"
+        newDatas={getNewData()}
+        oldDatas={getOldData()}
+        confirmText="更新する"
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }
