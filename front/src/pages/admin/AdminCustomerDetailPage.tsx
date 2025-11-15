@@ -1,4 +1,5 @@
-import toast from "react-hot-toast";import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { httpClient } from "../../api/mutator";
 import type { Customer, Site } from "../../api/generated/timesheetAPI.schemas";
@@ -32,7 +33,6 @@ export function AdminCustomerDetailPage() {
   const [siteFormData, setSiteFormData] = useState<SiteFormData>({ name: "", note: "" });
   const [siteFormError, setSiteFormError] = useState("");
   const [showDiscardedSites, setShowDiscardedSites] = useState(false);
-  
 
   const fetchCustomerDetail = useCallback(async () => {
     if (!id) return;
@@ -173,7 +173,6 @@ export function AdminCustomerDetailPage() {
 
   return (
     <div>
-
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客詳細</h2>
         <Link

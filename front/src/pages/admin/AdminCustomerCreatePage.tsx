@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { httpClient } from "../../api/mutator";
+import { CreateConfirmModal, type DataRecord } from "../../components/ui";
 
 interface Site {
   name: string;
@@ -256,9 +257,27 @@ export function AdminCustomerCreatePage() {
     return type;
   };
 
+  const getConfirmData = (): DataRecord[] => {
+    const data: DataRecord[] = [
+      { fieldName: "顧客名", value: formData.name },
+      { fieldName: "企業区分", value: getCustomerTypeLabel(formData.customer_type) },
+      { fieldName: "法人番号", value: formData.corporation_number || "（なし）" },
+      { fieldName: "掛率", value: `${formData.rate_percent}%` },
+      { fieldName: "概要", value: formData.note || "（なし）" },
+    ];
+
+    if (sites.length > 0) {
+      const sitesValue = sites
+        .map((site) => `${site.name}${site.note ? ` (${site.note})` : ""}`)
+        .join(", ");
+      data.push({ fieldName: "現場", value: sitesValue });
+    }
+
+    return data;
+  };
+
   return (
     <div>
-
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客の新規作成</h2>
       </div>
@@ -483,79 +502,16 @@ export function AdminCustomerCreatePage() {
       </div>
 
       {/* 作成確認モーダル */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">顧客の作成確認</h3>
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <div className="i-heroicons-x-mark w-6 h-6" />
-              </button>
-            </div>
-
-            <p className="mb-4">以下の内容で作成します。よろしいですか？</p>
-
-            <div className="mb-6">
-              <h4 className="font-bold mb-2">【顧客情報】</h4>
-              <div className="bg-gray-50 p-4 rounded">
-                <p>
-                  <span className="font-semibold">顧客名:</span> {formData.name}
-                </p>
-                <p>
-                  <span className="font-semibold">企業区分:</span>{" "}
-                  {getCustomerTypeLabel(formData.customer_type)}
-                </p>
-                <p>
-                  <span className="font-semibold">法人番号:</span>{" "}
-                  {formData.corporation_number || "（なし）"}
-                </p>
-                <p>
-                  <span className="font-semibold">掛率:</span> {formData.rate_percent}%
-                </p>
-                <p>
-                  <span className="font-semibold">概要:</span> {formData.note || "（なし）"}
-                </p>
-              </div>
-            </div>
-
-            {sites.length > 0 && (
-              <div className="mb-6">
-                <h4 className="font-bold mb-2">【現場】</h4>
-                <div className="bg-gray-50 p-4 rounded">
-                  <ul className="list-disc list-inside">
-                    {sites.map((site, index) => (
-                      <li key={index}>
-                        {site.name}
-                        {site.note && ` (${site.note})`}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={loading}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-              >
-                戻る
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:bg-gray-300"
-              >
-                {loading ? "作成中..." : "作成する"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleSubmit}
+        title="顧客の作成確認"
+        description="以下の内容で顧客を作成します。よろしいですか？"
+        newDatas={getConfirmData()}
+        confirmText="作成する"
+        isSubmitting={loading}
+      />
     </div>
   );
 }

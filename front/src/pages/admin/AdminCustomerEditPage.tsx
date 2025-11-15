@@ -1,7 +1,9 @@
-import toast from "react-hot-toast";import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { httpClient } from "../../api/mutator";
 import type { Customer } from "../../api/generated/timesheetAPI.schemas";
+import { UpdateConfirmModal, type DataRecord } from "../../components/ui";
 
 interface FormErrors {
   name?: string;
@@ -21,7 +23,6 @@ export function AdminCustomerEditPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  
 
   const [initialData, setInitialData] = useState({
     name: "",
@@ -138,44 +139,30 @@ export function AdminCustomerEditPage() {
     );
   };
 
-  const getChanges = () => {
-    const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
+  const getOldData = (): DataRecord[] => {
+    return [
+      { fieldName: "顧客名", value: initialData.name },
+      { fieldName: "企業区分", value: getCustomerTypeLabel(initialData.customer_type) },
+      { fieldName: "法人番号", value: initialData.corporation_number || "（なし）" },
+      { fieldName: "掛率", value: `${initialData.rate_percent}%` },
+      { fieldName: "概要", value: initialData.note || "（なし）" },
+    ];
+  };
 
-    if (formData.name !== initialData.name) {
-      changes.push({ field: "顧客名", oldValue: initialData.name, newValue: formData.name });
-    }
+  const getNewData = (): DataRecord[] => {
+    return [
+      { fieldName: "顧客名", value: formData.name },
+      { fieldName: "企業区分", value: getCustomerTypeLabel(formData.customer_type) },
+      { fieldName: "法人番号", value: formData.corporation_number || "（なし）" },
+      { fieldName: "掛率", value: `${formData.rate_percent}%` },
+      { fieldName: "概要", value: formData.note || "（なし）" },
+    ];
+  };
 
-    if (formData.customer_type !== initialData.customer_type) {
-      const oldLabel = getCustomerTypeLabel(initialData.customer_type);
-      const newLabel = getCustomerTypeLabel(formData.customer_type);
-      changes.push({ field: "企業区分", oldValue: oldLabel, newValue: newLabel });
-    }
-
-    if (formData.corporation_number !== initialData.corporation_number) {
-      changes.push({
-        field: "法人番号",
-        oldValue: initialData.corporation_number || "（なし）",
-        newValue: formData.corporation_number || "（なし）",
-      });
-    }
-
-    if (formData.rate_percent !== initialData.rate_percent) {
-      changes.push({
-        field: "掛率",
-        oldValue: `${initialData.rate_percent}%`,
-        newValue: `${formData.rate_percent}%`,
-      });
-    }
-
-    if (formData.note !== initialData.note) {
-      changes.push({
-        field: "概要",
-        oldValue: initialData.note || "（なし）",
-        newValue: formData.note || "（なし）",
-      });
-    }
-
-    return changes;
+  const hasChanges = () => {
+    const oldData = getOldData();
+    const newData = getNewData();
+    return oldData.some((old, index) => old.value !== newData[index].value);
   };
 
   const handleSubmit = async () => {
@@ -253,11 +240,8 @@ export function AdminCustomerEditPage() {
     );
   }
 
-  const changes = getChanges();
-
   return (
     <div>
-
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">顧客の編集</h2>
       </div>
@@ -370,9 +354,9 @@ export function AdminCustomerEditPage() {
           </button>
           <button
             onClick={() => setShowConfirmModal(true)}
-            disabled={!isFormValid() || changes.length === 0}
+            disabled={!isFormValid() || !hasChanges()}
             className={`px-6 py-2 rounded transition-colors ${
-              isFormValid() && changes.length > 0
+              isFormValid() && hasChanges()
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
@@ -383,56 +367,17 @@ export function AdminCustomerEditPage() {
       </div>
 
       {/* 更新確認モーダル */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">顧客の更新確認</h3>
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <div className="i-heroicons-x-mark w-6 h-6" />
-              </button>
-            </div>
-
-            <p className="mb-4">以下の内容で更新します。よろしいですか？</p>
-
-            <div className="mb-6">
-              <h4 className="font-bold mb-2">【変更内容】</h4>
-              <div className="bg-gray-50 p-4 rounded">
-                {changes.length === 0 ? (
-                  <p className="text-gray-500">変更はありません</p>
-                ) : (
-                  changes.map((change, index) => (
-                    <p key={index} className="mb-2">
-                      <span className="font-semibold">{change.field}:</span> {change.oldValue} →{" "}
-                      {change.newValue}
-                    </p>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={submitting}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-              >
-                戻る
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:bg-gray-300"
-              >
-                {submitting ? "更新中..." : "更新する"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UpdateConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleSubmit}
+        title="顧客の更新確認"
+        description="以下の内容で更新します。よろしいですか？"
+        newDatas={getNewData()}
+        oldDatas={getOldData()}
+        confirmText="更新する"
+        isSubmitting={submitting}
+      />
     </div>
   );
 }
