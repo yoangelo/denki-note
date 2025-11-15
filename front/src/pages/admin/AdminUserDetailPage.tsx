@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { httpClient } from "../../api/mutator";
 import type { User } from "../../stores/authStore";
+import { ConfirmModal } from "../../components/ui";
 
 interface UserDetailResponse {
   user: User;
@@ -17,6 +19,7 @@ export function AdminUserDetailPage() {
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -98,24 +101,24 @@ export function AdminUserDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("本当にこのユーザーを削除しますか？この操作は取り消せません。")) {
-      return;
-    }
-
     try {
       await httpClient({
         url: `/admin/users/${id}`,
         method: "DELETE",
       });
-      alert("ユーザーを削除しました");
+      toast.success("ユーザーを削除しました");
       navigate("/admin/users");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "削除に失敗しました");
+        toast.error(err.message || "削除に失敗しました");
       } else {
         setError("削除に失敗しました");
+        toast.error("削除に失敗しました");
       }
       console.error(err);
+    } finally {
+      setShowDeleteModal(false);
     }
   };
 
@@ -238,7 +241,7 @@ export function AdminUserDetailPage() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <h4 className="text-sm font-semibold mb-2 text-red-700">危険な操作</h4>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteModal(true)}
               className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
             >
               このユーザーを削除
@@ -276,6 +279,17 @@ export function AdminUserDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* 削除確認モーダル */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="ユーザーの削除"
+        message={`本当に「${user?.display_name}」を削除しますか？\n\nこの操作は取り消せません。`}
+        confirmText="削除する"
+        variant="danger"
+      />
     </div>
   );
 }

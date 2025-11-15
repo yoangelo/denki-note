@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { httpClient } from "../../api/mutator";
 import type { Customer, Site } from "../../api/generated/timesheetAPI.schemas";
+import { ConfirmModal } from "../../components/ui";
 
 interface CustomerDetailResponse {
   customer: Customer;
@@ -439,37 +440,15 @@ export function AdminCustomerDetailPage() {
       )}
 
       {/* 現場削除確認モーダル */}
-      {deleteSiteModal.open && deleteSiteModal.site && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">現場の削除</h3>
-              <button
-                onClick={() => setDeleteSiteModal({ open: false, site: null })}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <div className="i-heroicons-x-mark w-6 h-6" />
-              </button>
-            </div>
-            <p className="mb-4">「{deleteSiteModal.site.name}」を削除しますか？</p>
-            <p className="mb-4 text-sm text-gray-600">※削除後も日報データは保持されます。</p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setDeleteSiteModal({ open: false, site: null })}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleDeleteSite}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
-              >
-                削除する
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={deleteSiteModal.open && !!deleteSiteModal.site}
+        onClose={() => setDeleteSiteModal({ open: false, site: null })}
+        onConfirm={handleDeleteSite}
+        title="現場の削除"
+        message={`「${deleteSiteModal.site?.name}」を削除しますか？\n\n※削除後も日報データは保持されます。`}
+        confirmText="削除する"
+        variant="danger"
+      />
     </div>
   );
 }
