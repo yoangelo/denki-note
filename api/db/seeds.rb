@@ -20,7 +20,6 @@ if Rails.env.development?
   # テナント設定
   tenant_setting = TenantSetting.find_or_create_by!(tenant: tenant) do |ts|
     ts.default_unit_rate = 3000
-    ts.time_increment_minutes = 15
     ts.money_rounding = "round"
   end
   puts "テナント設定作成"

@@ -1359,7 +1359,6 @@ paths:
                   properties:
                     name: { type: string }
                     default_unit_rate: { type: integer, minimum: 0 }
-                    time_increment_minutes: { type: integer, enum: [1, 5, 10, 15, 20, 30, 60] }
                     money_rounding: { type: string, enum: [round, ceil, floor] }
       responses:
         '200':
@@ -1470,12 +1469,11 @@ components:
 
     TenantSettings:
       type: object
-      required: [id, name, default_unit_rate, time_increment_minutes, money_rounding, created_at, updated_at]
+      required: [id, name, default_unit_rate, money_rounding, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
         default_unit_rate: { type: integer }
-        time_increment_minutes: { type: integer, enum: [1, 5, 10, 15, 20, 30, 60] }
         money_rounding: { type: string, enum: [round, ceil, floor] }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }

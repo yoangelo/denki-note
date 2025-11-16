@@ -2,13 +2,12 @@
 #
 # Table name: tenant_settings
 #
-#  id                     :uuid             not null, primary key
-#  default_unit_rate      :integer          default(3000)
-#  money_rounding         :string           default("round")
-#  time_increment_minutes :integer          default(15)
-#  created_at             :datetime         not null
-#  updated_at             :datetime         not null
-#  tenant_id              :uuid             not null
+#  id                :uuid             not null, primary key
+#  default_unit_rate :integer          default(3000)
+#  money_rounding    :string           default("round")
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#  tenant_id         :uuid             not null
 #
 # Indexes
 #
@@ -27,13 +26,6 @@ class TenantSetting < ApplicationRecord
       only_integer: true,
       greater_than_or_equal_to: 0,
       message: '基本時間単価は0以上の整数で入力してください'
-    }
-
-  validates :time_increment_minutes,
-    presence: { message: '時間刻みを選択してください' },
-    inclusion: {
-      in: [1, 5, 10, 15, 20, 30, 60],
-      message: '時間刻みは1分 5分 10分 15分 20分 30分 60分のいずれかを選択してください'
     }
 
   validates :money_rounding,

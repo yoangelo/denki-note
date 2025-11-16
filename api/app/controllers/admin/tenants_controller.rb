@@ -11,7 +11,6 @@ class Admin::TenantsController < AuthenticatedController
         id: tenant.id,
         name: tenant.name,
         default_unit_rate: tenant_setting&.default_unit_rate,
-        time_increment_minutes: tenant_setting&.time_increment_minutes,
         money_rounding: tenant_setting&.money_rounding,
         created_at: tenant.created_at,
         updated_at: tenant.updated_at
@@ -34,7 +33,7 @@ class Admin::TenantsController < AuthenticatedController
       end
 
       # 業務設定の更新
-      setting_params = tenant_params.slice(:default_unit_rate, :time_increment_minutes, :money_rounding)
+      setting_params = tenant_params.slice(:default_unit_rate, :money_rounding)
       if setting_params.present?
         unless tenant_setting.update(setting_params)
           render json: { errors: tenant_setting.errors.messages }, status: :unprocessable_entity
@@ -47,7 +46,6 @@ class Admin::TenantsController < AuthenticatedController
           id: tenant.id,
           name: tenant.name,
           default_unit_rate: tenant_setting.default_unit_rate,
-          time_increment_minutes: tenant_setting.time_increment_minutes,
           money_rounding: tenant_setting.money_rounding,
           created_at: tenant.created_at,
           updated_at: tenant.updated_at
@@ -59,7 +57,7 @@ class Admin::TenantsController < AuthenticatedController
   private
 
   def tenant_params
-    params.require(:tenant).permit(:name, :default_unit_rate, :time_increment_minutes, :money_rounding)
+    params.require(:tenant).permit(:name, :default_unit_rate, :money_rounding)
   end
 
   def require_admin

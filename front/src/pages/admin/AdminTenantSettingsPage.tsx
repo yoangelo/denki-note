@@ -33,10 +33,6 @@ export function AdminTenantSettingsPage() {
     fetchTenant();
   }, []);
 
-  const getTimeIncrementLabel = (minutes: number) => {
-    return `${minutes}分単位`;
-  };
-
   const getMoneyRoundingLabel = (rounding: string) => {
     switch (rounding) {
       case "round":
@@ -106,12 +102,6 @@ export function AdminTenantSettingsPage() {
                   <dt className="w-40 text-sm font-medium text-gray-500">基本時間単価:</dt>
                   <dd className="text-sm text-gray-900">
                     {formatCurrency(tenant.default_unit_rate)}円/時間
-                  </dd>
-                </div>
-                <div className="flex">
-                  <dt className="w-40 text-sm font-medium text-gray-500">時間刻み:</dt>
-                  <dd className="text-sm text-gray-900">
-                    {getTimeIncrementLabel(tenant.time_increment_minutes)}
                   </dd>
                 </div>
                 <div className="flex">
