@@ -12,7 +12,6 @@ interface TenantResponse {
 interface FormData {
   name: string;
   default_unit_rate: string;
-  time_increment_minutes: number;
   money_rounding: string;
 }
 
@@ -20,16 +19,6 @@ interface FormErrors {
   name?: string;
   default_unit_rate?: string;
 }
-
-const TIME_INCREMENT_OPTIONS = [
-  { value: 1, label: "1分" },
-  { value: 5, label: "5分" },
-  { value: 10, label: "10分" },
-  { value: 15, label: "15分" },
-  { value: 20, label: "20分" },
-  { value: 30, label: "30分" },
-  { value: 60, label: "60分" },
-];
 
 const MONEY_ROUNDING_OPTIONS = [
   { value: "round", label: "四捨五入" },
@@ -43,7 +32,6 @@ export function AdminTenantSettingsEditPage() {
   const [formData, setFormData] = useState<FormData>({
     name: "",
     default_unit_rate: "",
-    time_increment_minutes: 15,
     money_rounding: "round",
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -62,7 +50,6 @@ export function AdminTenantSettingsEditPage() {
         setFormData({
           name: response.tenant.name,
           default_unit_rate: String(response.tenant.default_unit_rate),
-          time_increment_minutes: response.tenant.time_increment_minutes,
           money_rounding: response.tenant.money_rounding,
         });
       } catch (err) {
@@ -107,7 +94,6 @@ export function AdminTenantSettingsEditPage() {
     return (
       formData.name !== originalTenant.name ||
       Number(formData.default_unit_rate) !== originalTenant.default_unit_rate ||
-      formData.time_increment_minutes !== originalTenant.time_increment_minutes ||
       formData.money_rounding !== originalTenant.money_rounding
     );
   };
@@ -119,10 +105,6 @@ export function AdminTenantSettingsEditPage() {
   const getOldData = (): DataRecord[] => {
     if (!originalTenant) return [];
 
-    const fromTimeLabel =
-      TIME_INCREMENT_OPTIONS.find((o) => o.value === originalTenant.time_increment_minutes)
-        ?.label || `${originalTenant.time_increment_minutes}分`;
-
     const fromRoundingLabel =
       MONEY_ROUNDING_OPTIONS.find((o) => o.value === originalTenant.money_rounding)?.label ||
       originalTenant.money_rounding;
@@ -133,16 +115,11 @@ export function AdminTenantSettingsEditPage() {
         fieldName: "基本時間単価",
         value: `${new Intl.NumberFormat("ja-JP").format(originalTenant.default_unit_rate)}円`,
       },
-      { fieldName: "時間刻み", value: fromTimeLabel },
       { fieldName: "金額丸め方式", value: fromRoundingLabel },
     ];
   };
 
   const getNewData = (): DataRecord[] => {
-    const toTimeLabel =
-      TIME_INCREMENT_OPTIONS.find((o) => o.value === formData.time_increment_minutes)?.label ||
-      `${formData.time_increment_minutes}分`;
-
     const toRoundingLabel =
       MONEY_ROUNDING_OPTIONS.find((o) => o.value === formData.money_rounding)?.label ||
       formData.money_rounding;
@@ -153,7 +130,6 @@ export function AdminTenantSettingsEditPage() {
         fieldName: "基本時間単価",
         value: `${new Intl.NumberFormat("ja-JP").format(Number(formData.default_unit_rate))}円`,
       },
-      { fieldName: "時間刻み", value: toTimeLabel },
       { fieldName: "金額丸め方式", value: toRoundingLabel },
     ];
   };
@@ -182,7 +158,6 @@ export function AdminTenantSettingsEditPage() {
           tenant: {
             name: formData.name,
             default_unit_rate: Number(formData.default_unit_rate),
-            time_increment_minutes: formData.time_increment_minutes,
             money_rounding: formData.money_rounding,
           },
         },
@@ -287,33 +262,6 @@ export function AdminTenantSettingsEditPage() {
                   {errors.default_unit_rate && (
                     <p className="mt-1 text-sm text-red-500">{errors.default_unit_rate}</p>
                   )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="time_increment_minutes"
-                    className="flex items-center text-sm font-medium text-gray-700 mb-1"
-                  >
-                    時間刻み <span className="text-red-500 ml-1">*</span>
-                    <div
-                      className="i-heroicons-information-circle ml-2 w-4 h-4 text-gray-400 cursor-help"
-                      title="日報入力時の時間選択の刻み幅です。例: 15分刻みの場合、0:00、0:15、0:30、0:45...と選択できます。1分刻みから60分刻みまで選択可能です。"
-                    />
-                  </label>
-                  <select
-                    id="time_increment_minutes"
-                    value={formData.time_increment_minutes}
-                    onChange={(e) =>
-                      setFormData({ ...formData, time_increment_minutes: Number(e.target.value) })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {TIME_INCREMENT_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <div>

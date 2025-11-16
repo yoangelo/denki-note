@@ -773,6 +773,8 @@ paths:
       tags:
         - DailyReports
       summary: Soft delete daily report
+      security:
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
@@ -1764,16 +1766,6 @@ paths:
                     default_unit_rate:
                       type: integer
                       minimum: 0
-                    time_increment_minutes:
-                      type: integer
-                      enum:
-                        - 1
-                        - 5
-                        - 10
-                        - 15
-                        - 20
-                        - 30
-                        - 60
                     money_rounding:
                       type: string
                       enum:
@@ -1972,7 +1964,6 @@ components:
         - id
         - name
         - default_unit_rate
-        - time_increment_minutes
         - money_rounding
         - created_at
         - updated_at
@@ -1984,16 +1975,6 @@ components:
           type: string
         default_unit_rate:
           type: integer
-        time_increment_minutes:
-          type: integer
-          enum:
-            - 1
-            - 5
-            - 10
-            - 15
-            - 20
-            - 30
-            - 60
         money_rounding:
           type: string
           enum:
