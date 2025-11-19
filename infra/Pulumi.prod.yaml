@@ -1,0 +1,2 @@
+config:
+  denki-note-infra:acrLoginServer: denkinoteacr.azurecr.io

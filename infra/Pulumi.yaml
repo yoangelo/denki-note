@@ -1,0 +1,3 @@
+name: denki-note-infra
+runtime: nodejs
+description: Infra for denki-note (stg/prod)
