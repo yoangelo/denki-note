@@ -1,8 +1,6 @@
-import type { defineConfig as DefineConfig } from 'orval';
-
-const defineConfig: typeof DefineConfig = (config) => config;
-
-export default defineConfig({
+// openapi/orval.config.cjs
+/** @type {import('orval').Config} */
+const config = {
   denkiNote: {
     input: './dist/bundled.yaml', // ← Redoclyでバンドル後を読む
     output: {
@@ -26,4 +24,6 @@ export default defineConfig({
       },
     },
   },
-});
+};
+
+module.exports = config;

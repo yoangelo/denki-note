@@ -12,7 +12,7 @@
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}'",
     "preview": "vite preview",
     "openapi:bundle": "redocly bundle ../openapi/openapi.yaml -o ../openapi/dist/bundled.yaml",
-    "generate:api": "npm run openapi:bundle && orval --config ../openapi/orval.config.ts"
+    "generate:api": "npm run openapi:bundle && orval --config ../openapi/orval.config.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.5",
