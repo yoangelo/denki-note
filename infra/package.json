@@ -1,7 +1,6 @@
 {
   "name": "denki-note-infra",
   "version": "1.0.0",
-  "main": "bin/index.js",
   "license": "MIT",
   "scripts": {
     "build": "tsc"
