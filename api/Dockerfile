@@ -26,6 +26,10 @@ RUN bundle install
 # アプリ配置
 COPY api/ /app
 
+# OpenAPI スキーマをコンテナにコピー
+# コンテナ側では /app/openapi/openapi.yaml として置く
+COPY openapi/ /app/openapi
+
 # Puma 設定
 EXPOSE 3000
 
