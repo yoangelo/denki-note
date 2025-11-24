@@ -8,6 +8,8 @@ on:
 jobs:
   deploy-front:
     runs-on: ubuntu-latest
+    env:
+      VITE_API_ORIGIN: ${{ secrets.STG_API_URL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -36,3 +38,4 @@ jobs:
           app_location: "front"    # repoルートから見たfrontディレクトリ
           output_location: "dist"  # Viteのビルド出力
           api_location: ""         # APIはSWAではなくContainer Appsなので空
+
