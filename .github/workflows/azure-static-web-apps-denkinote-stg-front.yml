@@ -1,0 +1,38 @@
+name: Deploy Front to Azure Static Web Apps (stg)
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy-front:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20" # or 22, どちらでもOK（orvalは警告だけ）
+
+      - name: Install deps & generate API client
+        working-directory: front
+        run: |
+          npm ci
+          npm run generate:api
+
+      - name: Build front
+        working-directory: front
+        run: npm run build
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.SWA_STG_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "front"    # repoルートから見たfrontディレクトリ
+          output_location: "dist"  # Viteのビルド出力
+          api_location: ""         # APIはSWAではなくContainer Appsなので空
