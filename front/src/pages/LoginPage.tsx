@@ -3,6 +3,7 @@ import { httpClient } from "../api/mutator";
 import { useAuthStore } from "../stores/authStore";
 import type { User } from "../stores/authStore";
 import { Button, Input, Alert, Card } from "../components/ui";
+import { Modal } from "../components/ui/Modal";
 
 interface LoginResponse {
   user: User;
@@ -13,6 +14,8 @@ export function LoginPage() {
   const [password, setPassword] = useState("Password123!");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [healthModalOpen, setHealthModalOpen] = useState(false);
+  const [healthMessage, setHealthMessage] = useState("");
   const setUser = useAuthStore((state) => state.setUser);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -31,7 +34,6 @@ export function LoginPage() {
           },
         },
       });
-
       setUser(response.user);
     } catch (err) {
       setError("ログインに失敗しました。メールアドレスとパスワードを確認してください。");
@@ -39,6 +41,22 @@ export function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // healthチェックボタンのハンドラ
+  const handleHealthCheck = async () => {
+    try {
+      const res = await httpClient<{ message: string }>({
+        url: "/health",
+        method: "GET",
+      });
+      setHealthMessage(res.message || "No message");
+    } catch (err) {
+      setHealthMessage(
+        "ヘルスチェック失敗: " + (err instanceof Error ? err.message : "不明なエラー")
+      );
+    }
+    setHealthModalOpen(true);
   };
 
   return (
@@ -87,6 +105,28 @@ export function LoginPage() {
               <li>メンバー: test1@example.com / Password123!</li>
             </ul>
           </div>
+
+          {/* healthチェックボタン追加 */}
+          <div className="mt-6">
+            <Button variant="secondary" onClick={handleHealthCheck} fullWidth>
+              Healthチェック
+            </Button>
+          </div>
+
+          {/* healthチェック結果モーダル */}
+          <Modal
+            isOpen={healthModalOpen}
+            onClose={() => setHealthModalOpen(false)}
+            title="Healthチェック結果"
+            size="sm"
+          >
+            <p className="text-gray-700 text-center py-4">{healthMessage}</p>
+            <div className="flex justify-center mt-4">
+              <Button variant="primary" onClick={() => setHealthModalOpen(false)}>
+                閉じる
+              </Button>
+            </div>
+          </Modal>
         </Card>
       </div>
     </div>
