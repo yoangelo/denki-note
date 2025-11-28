@@ -1,15 +1,17 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as resources from "@pulumi/azure-native/resources";
-import * as app from "@pulumi/azure-native/app"; // Container Apps 用
+import * as app from "@pulumi/azure-native/app";
 
 const config = new pulumi.Config();
 const stack = pulumi.getStack();
 
-const namePrefix = `denkinote-${stack}`;
 const location = "japaneast";
 
+// 共有リソースの名前（固定）
+const sharedResourceGroupName = "denkinote-container-apps-rg";
+const sharedEnvName = "denkinote-apps-env";
+
 // 共有ACR（例: denkinoteacr.azurecr.io）
-// Pulumi config で stg/prod 両方に同じ値を入れている想定
 const acrLoginServer = config.require("acrLoginServer");
 
 // DB URL と CORS許可オリジン
@@ -17,12 +19,10 @@ const databaseUrl = config.require("databaseUrl");
 const corsOrigins = config.require("corsOrigins");
 
 // GitHub Actions やローカル環境から渡す API イメージ
-// ex: denkinoteacr.azurecr.io/denki-note-api:stg-<SHA>
 const apiImage =
   process.env.API_IMAGE || `${acrLoginServer}/denki-note-api:local`;
 
 // ACR のユーザー名/パスワード（env から渡す想定）
-// ローカルで pulumi up するときは export しておく
 const acrUsername = process.env.ACR_USERNAME || "";
 const acrPassword = process.env.ACR_PASSWORD || "";
 
@@ -32,25 +32,42 @@ if (!acrUsername || !acrPassword) {
   );
 }
 
-// 1. リソースグループ（stg / prod）
-const resourceGroup = new resources.ResourceGroup(`${namePrefix}-rg`, {
-  location,
-});
+// 1. リソースグループ（stg スタックでのみ作成、prod は参照のみ）
+const resourceGroup =
+  stack === "stg"
+    ? new resources.ResourceGroup(sharedResourceGroupName, {
+        resourceGroupName: sharedResourceGroupName,
+        location,
+      })
+    : null;
 
-// 2. Container Apps の環境
-const managedEnv = new app.ManagedEnvironment(`${namePrefix}-env`, {
-  resourceGroupName: resourceGroup.name,
-  location,
-});
+const resourceGroupName =
+  stack === "stg" ? resourceGroup!.name : sharedResourceGroupName;
+
+// 2. Container Apps 環境（stg スタックでのみ作成、prod は参照のみ）
+const managedEnv =
+  stack === "stg"
+    ? new app.ManagedEnvironment(sharedEnvName, {
+        environmentName: sharedEnvName,
+        resourceGroupName: resourceGroupName,
+        location,
+      })
+    : null;
+
+// prod スタック用の環境ID
+const sharedEnvId = `/subscriptions/a2537416-6c96-43a0-b770-8aecb0099f5a/resourceGroups/${sharedResourceGroupName}/providers/Microsoft.App/managedEnvironments/${sharedEnvName}`;
+const managedEnvId = stack === "stg" ? managedEnv!.id : sharedEnvId;
 
 // 3. Rails API 用 Container App
-const apiApp = new app.ContainerApp(`${namePrefix}-api`, {
-  resourceGroupName: resourceGroup.name,
-  managedEnvironmentId: managedEnv.id,
+const apiAppName = `denkinote-${stack}-api`;
+const apiApp = new app.ContainerApp(apiAppName, {
+  containerAppName: apiAppName,
+  resourceGroupName: resourceGroupName,
+  managedEnvironmentId: managedEnvId,
   configuration: {
     ingress: {
       external: true,
-      targetPort: 3000, // Railsコンテナのポート
+      targetPort: 3000,
       transport: "auto",
     },
     registries: [
@@ -102,8 +119,8 @@ const apiApp = new app.ContainerApp(`${namePrefix}-api`, {
   },
 });
 
-// 出力：APIのURL（あとで VITE_API_ORIGIN に使う）
-export const resourceGroupName = resourceGroup.name;
+// 出力
+export const outputResourceGroupName = resourceGroupName;
 export const containerRegistry = acrLoginServer;
 export const apiUrl = apiApp.configuration.apply((c) =>
   c?.ingress?.fqdn ? `https://${c.ingress.fqdn}` : "",

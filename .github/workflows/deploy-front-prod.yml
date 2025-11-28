@@ -1,0 +1,40 @@
+name: Deploy Front to Azure Static Web Apps (prod)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-front:
+    runs-on: ubuntu-latest
+    env:
+      VITE_API_ORIGIN: ${{ secrets.PROD_API_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps & generate API client
+        working-directory: front
+        run: |
+          npm ci
+          npm run generate:api
+
+      - name: Build front
+        working-directory: front
+        run: npm run build
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.SWA_PROD_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "front"
+          output_location: "dist"
+          api_location: ""

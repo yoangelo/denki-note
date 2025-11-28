@@ -1,0 +1,70 @@
+name: Deploy API to Azure Container Apps (prod)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "api/**"
+      - "openapi/**"
+      - "docker/entrypoint-api.sh"
+      - ".github/workflows/deploy-api-prod.yml"
+
+env:
+  ACR_LOGIN_SERVER: denkinoteacr.azurecr.io
+  IMAGE_NAME: denki-note-api
+  PULUMI_STACK: prod
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name denkinoteacr
+
+      - name: Set image tag
+        id: image_tag
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "tag=prod-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.image_tag.outputs.tag }} \
+            -f api/Dockerfile \
+            .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.image_tag.outputs.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Pulumi CLI
+        uses: pulumi/actions@v5
+
+      - name: Install infra dependencies
+        working-directory: infra
+        run: npm ci
+
+      - name: Deploy with Pulumi
+        working-directory: infra
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          API_IMAGE: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.image_tag.outputs.tag }}
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          pulumi stack select ${{ env.PULUMI_STACK }}
+          pulumi up --yes
