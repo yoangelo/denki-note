@@ -1,4 +1,10 @@
+# 顧客情報を管理するコントローラー
 class CustomersController < AuthenticatedController
+  # 顧客一覧を取得する
+  #
+  # クエリパラメータで名前検索が可能。結果は名前順でソートされる。
+  #
+  # @return [Array<Hash>] 顧客情報の配列（id, name, customer_type, corporation_number, rate_percent）
   def index
     return render json: [] unless current_tenant
 
@@ -8,6 +14,12 @@ class CustomersController < AuthenticatedController
     render json: scope.order(:name).limit(limit).select(:id, :name, :customer_type, :corporation_number, :rate_percent)
   end
 
+  # 最近使用した顧客一覧を取得する
+  #
+  # 直近の日報から最大3件の顧客を取得し、最終利用日時順にソートして返す。
+  # 各顧客には最後に使用した現場の情報も含まれる。
+  #
+  # @return [Array<Hash>] 顧客情報の配列（id, name, customer_type, corporation_number, rate_percent, site, last_used_at）
   def recent
     return render json: [] unless current_tenant
 
@@ -61,6 +73,9 @@ class CustomersController < AuthenticatedController
 
   private
 
+  # indexアクション用のパラメータを許可する
+  #
+  # @return [ActionController::Parameters] 許可されたパラメータ（query, limit）
   def index_params
     params.permit(:query, :limit)
   end
