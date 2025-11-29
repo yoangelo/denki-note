@@ -2,7 +2,6 @@ import * as pulumi from "@pulumi/pulumi";
 import * as resources from "@pulumi/azure-native/resources";
 import * as app from "@pulumi/azure-native/app";
 
-const config = new pulumi.Config();
 const stack = pulumi.getStack();
 
 const location = "japaneast";
@@ -11,25 +10,26 @@ const location = "japaneast";
 const sharedResourceGroupName = "denkinote-container-apps-rg";
 const sharedEnvName = "denkinote-apps-env";
 
-// 共有ACR（例: denkinoteacr.azurecr.io）
-const acrLoginServer = config.require("acrLoginServer");
-
-// DB URL と CORS許可オリジン
-const databaseUrl = config.require("databaseUrl");
-const corsOrigins = config.require("corsOrigins");
-
-// GitHub Actions やローカル環境から渡す API イメージ
-const apiImage =
-  process.env.API_IMAGE || `${acrLoginServer}/denki-note-api:local`;
-
-// ACR のユーザー名/パスワード（env から渡す想定）
+// 環境変数から設定を読み込み（GitHub Actions / ローカル共通）
+const acrLoginServer = process.env.ACR_LOGIN_SERVER || "denkinoteacr.azurecr.io";
 const acrUsername = process.env.ACR_USERNAME || "";
 const acrPassword = process.env.ACR_PASSWORD || "";
+const databaseUrl = process.env.DATABASE_URL || "";
+const corsOrigins = process.env.CORS_ORIGINS || "";
+const apiImage = process.env.API_IMAGE || `${acrLoginServer}/denki-note-api:local`;
 
 if (!acrUsername || !acrPassword) {
   pulumi.log.warn(
     "ACR_USERNAME / ACR_PASSWORD が設定されていません。ContainerApp作成時に失敗する可能性があります。",
   );
+}
+
+if (!databaseUrl) {
+  pulumi.log.warn("DATABASE_URL が設定されていません。");
+}
+
+if (!corsOrigins) {
+  pulumi.log.warn("CORS_ORIGINS が設定されていません。");
 }
 
 // 1. リソースグループ（stg スタックでのみ作成、prod は参照のみ）

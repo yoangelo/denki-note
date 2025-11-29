@@ -63,8 +63,12 @@ jobs:
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           API_IMAGE: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.image_tag.outputs.tag }}
+          ACR_LOGIN_SERVER: ${{ env.ACR_LOGIN_SERVER }}
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          CORS_ORIGINS: ${{ secrets.PROD_CORS_ORIGINS }}
         run: |
+          pulumi login
           pulumi stack select ${{ env.PULUMI_STACK }}
           pulumi up --yes
