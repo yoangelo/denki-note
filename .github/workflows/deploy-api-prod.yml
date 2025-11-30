@@ -68,6 +68,7 @@ jobs:
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
           DB_ADMIN_PASSWORD: ${{ secrets.PROD_DB_ADMIN_PASSWORD }}
           CORS_ORIGINS: ${{ secrets.PROD_CORS_ORIGINS }}
+          SECRET_KEY_BASE: ${{ secrets.PROD_SECRET_KEY_BASE }}
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
