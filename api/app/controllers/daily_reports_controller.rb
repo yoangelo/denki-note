@@ -1,6 +1,15 @@
+# 日報を管理するコントローラー
 class DailyReportsController < AuthenticatedController
   before_action :require_admin, only: [:bulk_update, :destroy]
 
+  # 日報一覧を取得する
+  #
+  # year_month, user_id, customer_id, site_id でフィルタリング可能。
+  # 結果は作業日の降順でソートされる。
+  #
+  # @return [Hash] 日報一覧とメタ情報
+  #   - daily_reports [Array<Hash>] 日報データの配列
+  #   - meta [Hash] 総件数、返却件数、検索年月
   def index
     return render json: { daily_reports: [], meta: { total_count: 0, returned_count: 0, year_month: params[:year_month] || "" } } unless current_tenant
 
@@ -82,7 +91,9 @@ class DailyReportsController < AuthenticatedController
     }
   end
 
-
+  # 日報の詳細を取得する
+  #
+  # @return [Hash] 日報の詳細情報（daily_report）
   def show
     daily_report = DailyReport.kept
                                .where(sites: { tenant: current_tenant })
@@ -97,6 +108,16 @@ class DailyReportsController < AuthenticatedController
     }
   end
 
+  # 日報を一括作成する
+  #
+  # 複数の日報とそれに紐づく作業エントリを一度に作成する。
+  # トランザクション内で処理され、1件でもエラーがあれば全てロールバックされる。
+  #
+  # @return [Hash] 作成結果
+  #   - success [Boolean] 成功/失敗
+  #   - summary [Hash] 作成件数（reports_created, entries_created）
+  #   - reports [Array<Hash>] 作成された日報の情報
+  #   - errors [Array<Hash>] エラー情報
   def bulk_create
     reports_created = 0
     entries_created = 0
@@ -171,6 +192,14 @@ class DailyReportsController < AuthenticatedController
     }, status: :unprocessable_entity
   end
 
+  # 日報を更新する（管理者専用）
+  #
+  # 日報ヘッダと作業エントリを一括で更新する。
+  # 既存の作業エントリは全て削除され、新しいエントリで置き換えられる。
+  #
+  # @return [Hash] 更新結果
+  #   - success [Boolean] 成功/失敗
+  #   - daily_report [Hash] 更新後の日報データ
   def bulk_update
     daily_report = DailyReport.kept
                                .where(sites: { tenant: current_tenant })
@@ -217,6 +246,11 @@ class DailyReportsController < AuthenticatedController
     }, status: :unprocessable_entity
   end
 
+  # 日報を論理削除する（管理者専用）
+  #
+  # discardによる論理削除を行う。
+  #
+  # @return [void] 成功時は204 No Contentを返す
   def destroy
     daily_report = DailyReport.kept
                                .where(sites: { tenant: current_tenant })
@@ -232,12 +266,21 @@ class DailyReportsController < AuthenticatedController
 
   private
 
+  # 管理者権限を要求する
+  #
+  # 管理者でない場合は403 Forbiddenを返す。
+  #
+  # @return [void]
   def require_admin
     unless current_user&.admin?
       render json: { error: 'この操作を実行する権限がありません' }, status: :forbidden
     end
   end
 
+  # 日報をレスポンス用のハッシュにフォーマットする
+  #
+  # @param report [DailyReport] 日報オブジェクト
+  # @return [Hash] フォーマット済みの日報データ
   def format_daily_report(report)
     {
       id: report.id,
@@ -267,6 +310,9 @@ class DailyReportsController < AuthenticatedController
     }
   end
 
+  # bulk_createアクション用のパラメータを許可する
+  #
+  # @return [ActionController::Parameters] 許可されたパラメータ
   def bulk_create_params
     params.permit(
       daily_reports: [
@@ -278,6 +324,9 @@ class DailyReportsController < AuthenticatedController
     )
   end
 
+  # bulk_updateアクション用のパラメータを許可する
+  #
+  # @return [ActionController::Parameters] 許可されたパラメータ
   def bulk_update_params
     params.require(:daily_report).permit(
       :site_id,

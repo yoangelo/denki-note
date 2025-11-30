@@ -113,7 +113,7 @@ const apiApp = new app.ContainerApp(apiAppName, {
       },
     ],
     scale: {
-      minReplicas: 0,
+      minReplicas: 1,
       maxReplicas: 3,
     },
   },
