@@ -1,4 +1,14 @@
+# 集計情報を提供するコントローラー
 class SummariesController < AuthenticatedController
+  # 顧客の月次サマリーを取得する
+  #
+  # 指定した顧客の指定月における作業実績を日別に集計し、
+  # 合計時間と金額を算出して返す。
+  #
+  # @return [Hash] 集計結果
+  #   - rows [Array<Hash>] 日別の作業データ（date, summary, hours）
+  #   - total_hours [Float] 月間合計時間
+  #   - amount_jpy [Integer] 請求金額（円）
   def customer_month
     return render json: { rows: [], total_hours: 0, amount_jpy: 0 } unless current_tenant
 
@@ -50,6 +60,9 @@ class SummariesController < AuthenticatedController
 
   private
 
+  # customer_monthアクション用のパラメータを許可する
+  #
+  # @return [ActionController::Parameters] 許可されたパラメータ（customer_id, yyyymm, rate_toggle）
   def summary_params
     params.permit(:customer_id, :yyyymm, :rate_toggle)
   end
