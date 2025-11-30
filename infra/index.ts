@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as resources from "@pulumi/azure-native/resources";
 import * as app from "@pulumi/azure-native/app";
+import * as dbforpostgresql from "@pulumi/azure-native/dbforpostgresql";
 
 const stack = pulumi.getStack();
 
@@ -14,9 +15,11 @@ const sharedEnvName = "denkinote-apps-env";
 const acrLoginServer = process.env.ACR_LOGIN_SERVER || "denkinoteacr.azurecr.io";
 const acrUsername = process.env.ACR_USERNAME || "";
 const acrPassword = process.env.ACR_PASSWORD || "";
-const databaseUrl = process.env.DATABASE_URL || "";
 const corsOrigins = process.env.CORS_ORIGINS || "";
 const apiImage = process.env.API_IMAGE || `${acrLoginServer}/denki-note-api:local`;
+
+// PostgreSQL 管理者パスワード（環境変数から取得）
+const dbAdminPassword = process.env.DB_ADMIN_PASSWORD || "";
 
 if (!acrUsername || !acrPassword) {
   pulumi.log.warn(
@@ -24,8 +27,8 @@ if (!acrUsername || !acrPassword) {
   );
 }
 
-if (!databaseUrl) {
-  pulumi.log.warn("DATABASE_URL が設定されていません。");
+if (!dbAdminPassword) {
+  pulumi.log.warn("DB_ADMIN_PASSWORD が設定されていません。");
 }
 
 if (!corsOrigins) {
@@ -58,7 +61,56 @@ const managedEnv =
 const sharedEnvId = `/subscriptions/a2537416-6c96-43a0-b770-8aecb0099f5a/resourceGroups/${sharedResourceGroupName}/providers/Microsoft.App/managedEnvironments/${sharedEnvName}`;
 const managedEnvId = stack === "stg" ? managedEnv!.id : sharedEnvId;
 
-// 3. Rails API 用 Container App
+// 3. PostgreSQL Flexible Server（stg/prod それぞれ作成）
+const dbServerName = `denkinote-${stack}-db`;
+const dbName = `denkinote_${stack}`;
+const dbAdminUser = "dbadmin";
+
+const postgresServer = new dbforpostgresql.Server(dbServerName, {
+  serverName: dbServerName,
+  resourceGroupName: resourceGroupName,
+  location,
+  version: "16",
+  administratorLogin: dbAdminUser,
+  administratorLoginPassword: dbAdminPassword,
+  sku: {
+    name: "Standard_B1ms",
+    tier: "Burstable",
+  },
+  storage: {
+    storageSizeGB: 32,
+  },
+  backup: {
+    backupRetentionDays: 7,
+    geoRedundantBackup: "Disabled",
+  },
+  highAvailability: {
+    mode: "Disabled",
+  },
+});
+
+// PostgreSQL データベース
+const database = new dbforpostgresql.Database(dbName, {
+  databaseName: dbName,
+  resourceGroupName: resourceGroupName,
+  serverName: postgresServer.name,
+  charset: "UTF8",
+  collation: "en_US.utf8",
+});
+
+// PostgreSQL ファイアウォールルール（Azure サービスからのアクセスを許可）
+const firewallRule = new dbforpostgresql.FirewallRule(`${dbServerName}-allow-azure`, {
+  firewallRuleName: "AllowAzureServices",
+  resourceGroupName: resourceGroupName,
+  serverName: postgresServer.name,
+  startIpAddress: "0.0.0.0",
+  endIpAddress: "0.0.0.0",
+});
+
+// DATABASE_URL を動的に生成
+const databaseUrl = pulumi.interpolate`postgresql://${dbAdminUser}:${dbAdminPassword}@${postgresServer.fullyQualifiedDomainName}:5432/${dbName}?sslmode=require`;
+
+// 4. Rails API 用 Container App
 const apiAppName = `denkinote-${stack}-api`;
 const apiApp = new app.ContainerApp(apiAppName, {
   containerAppName: apiAppName,
@@ -125,3 +177,5 @@ export const containerRegistry = acrLoginServer;
 export const apiUrl = apiApp.configuration.apply((c) =>
   c?.ingress?.fqdn ? `https://${c.ingress.fqdn}` : "",
 );
+export const dbServerFqdn = postgresServer.fullyQualifiedDomainName;
+export const dbConnectionString = databaseUrl;

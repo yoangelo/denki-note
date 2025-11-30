@@ -66,7 +66,7 @@ jobs:
           ACR_LOGIN_SERVER: ${{ env.ACR_LOGIN_SERVER }}
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          DB_ADMIN_PASSWORD: ${{ secrets.PROD_DB_ADMIN_PASSWORD }}
           CORS_ORIGINS: ${{ secrets.PROD_CORS_ORIGINS }}
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
