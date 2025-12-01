@@ -6,7 +6,7 @@ on:
       - develop
 
 jobs:
-  deploy-front:
+  build:
     runs-on: ubuntu-latest
     env:
       VITE_API_ORIGIN: ${{ secrets.STG_API_URL }}
@@ -17,17 +17,38 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20" # or 22, どちらでもOK（orvalは警告だけ）
+          node-version: "20"
 
-      - name: Install deps & generate API client
+      - name: Install dependencies
         working-directory: front
-        run: |
-          npm ci
-          npm run generate:api
+        run: npm ci
 
-      - name: Build front
+      - name: Generate API client
+        working-directory: front
+        run: npm run generate:api
+
+      - name: Build
         working-directory: front
         run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: front-dist
+          path: front/dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: front-dist
+          path: front/dist
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
@@ -35,7 +56,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.SWA_STG_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "front"    # repoルートから見たfrontディレクトリ
-          output_location: "dist"  # Viteのビルド出力
-          api_location: ""         # APIはSWAではなくContainer Appsなので空
-
+          app_location: "front"
+          output_location: "dist"
+          skip_app_build: true
+          api_location: ""
