@@ -114,6 +114,15 @@ const firewallRule = new dbforpostgresql.FirewallRule(`${dbServerName}-allow-azu
   endIpAddress: "0.0.0.0",
 });
 
+// PostgreSQL 拡張機能の許可設定（pg_trgm, pgcrypto, plpgsql）
+const extensionsConfig = new dbforpostgresql.Configuration(`${dbServerName}-extensions`, {
+  configurationName: "azure.extensions",
+  resourceGroupName: resourceGroupName,
+  serverName: postgresServer.name,
+  value: "pg_trgm,pgcrypto,plpgsql",
+  source: "user-override",
+});
+
 // DATABASE_URL を動的に生成
 const databaseUrl = pulumi.interpolate`postgresql://${dbAdminUser}:${dbAdminPassword}@${postgresServer.fullyQualifiedDomainName}:5432/${dbName}?sslmode=require`;
 
