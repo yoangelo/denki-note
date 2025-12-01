@@ -21,6 +21,9 @@ const apiImage = process.env.API_IMAGE || `${acrLoginServer}/denki-note-api:loca
 // PostgreSQL 管理者パスワード（環境変数から取得）
 const dbAdminPassword = process.env.DB_ADMIN_PASSWORD || "";
 
+// Rails SECRET_KEY_BASE（環境変数から取得）
+const secretKeyBase = process.env.SECRET_KEY_BASE || "";
+
 if (!acrUsername || !acrPassword) {
   pulumi.log.warn(
     "ACR_USERNAME / ACR_PASSWORD が設定されていません。ContainerApp作成時に失敗する可能性があります。",
@@ -33,6 +36,10 @@ if (!dbAdminPassword) {
 
 if (!corsOrigins) {
   pulumi.log.warn("CORS_ORIGINS が設定されていません。");
+}
+
+if (!secretKeyBase) {
+  pulumi.log.warn("SECRET_KEY_BASE が設定されていません。");
 }
 
 // 1. リソースグループ（stg スタックでのみ作成、prod は参照のみ）
@@ -107,6 +114,15 @@ const firewallRule = new dbforpostgresql.FirewallRule(`${dbServerName}-allow-azu
   endIpAddress: "0.0.0.0",
 });
 
+// PostgreSQL 拡張機能の許可設定（pg_trgm, pgcrypto, plpgsql）
+const extensionsConfig = new dbforpostgresql.Configuration(`${dbServerName}-extensions`, {
+  configurationName: "azure.extensions",
+  resourceGroupName: resourceGroupName,
+  serverName: postgresServer.name,
+  value: "pg_trgm,pgcrypto,plpgsql",
+  source: "user-override",
+});
+
 // DATABASE_URL を動的に生成
 const databaseUrl = pulumi.interpolate`postgresql://${dbAdminUser}:${dbAdminPassword}@${postgresServer.fullyQualifiedDomainName}:5432/${dbName}?sslmode=require`;
 
@@ -142,6 +158,10 @@ const apiApp = new app.ContainerApp(apiAppName, {
         name: "cors-origins",
         value: corsOrigins,
       },
+      {
+        name: "secret-key-base",
+        value: secretKeyBase,
+      },
     ],
   },
   template: {
@@ -156,6 +176,7 @@ const apiApp = new app.ContainerApp(apiAppName, {
           },
           { name: "DATABASE_URL", secretRef: "database-url" },
           { name: "CORS_ORIGINS", secretRef: "cors-origins" },
+          { name: "SECRET_KEY_BASE", secretRef: "secret-key-base" },
           { name: "RAILS_LOG_TO_STDOUT", value: "true" },
         ],
         resources: {
