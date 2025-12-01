@@ -33,6 +33,7 @@ class Admin::TenantsController < AuthenticatedController
       end
 
       # 業務設定の更新
+      # 存在しない場合は新規作成
       setting_params = tenant_params.slice(:default_unit_rate, :money_rounding)
       if setting_params.present?
         unless tenant_setting.update(setting_params)
