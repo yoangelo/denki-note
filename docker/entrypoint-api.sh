@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# tmp/pids ディレクトリを作成（Puma の pidfile 用）
+mkdir -p tmp/pids
+
 # dev/prod 分岐
 if [ "${RAILS_ENV}" = "production" ]; then
   echo "==> Starting Puma (production)"
