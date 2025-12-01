@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  deploy-front:
+  build:
     runs-on: ubuntu-latest
     env:
       VITE_API_ORIGIN: ${{ secrets.PROD_API_URL }}
@@ -19,15 +19,36 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install deps & generate API client
+      - name: Install dependencies
         working-directory: front
-        run: |
-          npm ci
-          npm run generate:api
+        run: npm ci
 
-      - name: Build front
+      - name: Generate API client
+        working-directory: front
+        run: npm run generate:api
+
+      - name: Build
         working-directory: front
         run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: front-dist
+          path: front/dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: front-dist
+          path: front/dist
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
@@ -37,4 +58,5 @@ jobs:
           action: "upload"
           app_location: "front"
           output_location: "dist"
+          skip_app_build: true
           api_location: ""
