@@ -2,14 +2,14 @@
 #
 # Table name: sites
 #
-#  id           :uuid             not null, primary key
-#  discarded_at :datetime
-#  name         :string           not null
-#  note         :text
-#  created_at   :datetime         not null
-#  updated_at   :datetime         not null
-#  customer_id  :uuid             not null
-#  tenant_id    :uuid             not null
+#  id(ID)                             :uuid             not null, primary key
+#  discarded_at(削除日時（論理削除）) :datetime
+#  name(現場名)                       :string           not null
+#  note(メモ)                         :text
+#  created_at(作成日時)               :datetime         not null
+#  updated_at(更新日時)               :datetime         not null
+#  customer_id(顧客ID)                :uuid             not null
+#  tenant_id(テナントID)              :uuid             not null
 #
 # Indexes
 #

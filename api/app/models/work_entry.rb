@@ -2,14 +2,14 @@
 #
 # Table name: work_entries
 #
-#  id              :uuid             not null, primary key
-#  minutes         :integer          not null
-#  summary         :text
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  daily_report_id :uuid             not null
-#  tenant_id       :uuid             not null
-#  user_id         :uuid             not null
+#  id(ID)                            :uuid             not null, primary key
+#  minutes(作業時間（分、15分刻み）) :integer          not null
+#  summary(作業概要)                 :text
+#  created_at(作成日時)              :datetime         not null
+#  updated_at(更新日時)              :datetime         not null
+#  daily_report_id(日報ヘッダID)     :uuid             not null
+#  tenant_id(テナントID)             :uuid             not null
+#  user_id(作業者ID)                 :uuid             not null
 #
 # Indexes
 #

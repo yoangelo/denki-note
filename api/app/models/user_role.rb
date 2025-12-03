@@ -2,13 +2,13 @@
 #
 # Table name: user_roles
 #
-#  id             :uuid             not null, primary key
-#  assigned_at    :datetime         not null
-#  created_at     :datetime         not null
-#  updated_at     :datetime         not null
-#  assigned_by_id :uuid
-#  role_id        :uuid             not null
-#  user_id        :uuid             not null
+#  id(ID)                   :uuid             not null, primary key
+#  assigned_at(付与日時)    :datetime         not null
+#  created_at(作成日時)     :datetime         not null
+#  updated_at(更新日時)     :datetime         not null
+#  assigned_by_id(付与者ID) :uuid
+#  role_id(ロールID)        :uuid             not null
+#  user_id(ユーザーID)      :uuid             not null
 #
 # Indexes
 #
