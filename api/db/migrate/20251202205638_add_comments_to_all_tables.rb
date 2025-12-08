@@ -1,0 +1,112 @@
+class AddCommentsToAllTables < ActiveRecord::Migration[7.1]
+  def change
+    # ========== tenants ==========
+    change_table_comment :tenants, "自社（会社）"
+    change_column_comment :tenants, :id, "ID"
+    change_column_comment :tenants, :name, "会社名"
+    change_column_comment :tenants, :created_at, "作成日時"
+    change_column_comment :tenants, :updated_at, "更新日時"
+
+    # ========== tenant_settings ==========
+    change_table_comment :tenant_settings, "自社設定"
+    change_column_comment :tenant_settings, :id, "ID"
+    change_column_comment :tenant_settings, :tenant_id, "自社ID"
+    change_column_comment :tenant_settings, :default_unit_rate, "既定単価（円/時）"
+    change_column_comment :tenant_settings, :money_rounding, "丸めルール（round/ceil/floor）"
+    change_column_comment :tenant_settings, :created_at, "作成日時"
+    change_column_comment :tenant_settings, :updated_at, "更新日時"
+
+    # ========== customers ==========
+    change_table_comment :customers, "顧客"
+    change_column_comment :customers, :id, "ID"
+    change_column_comment :customers, :tenant_id, "自社ID"
+    change_column_comment :customers, :name, "顧客名"
+    change_column_comment :customers, :customer_type, "企業区分（corporate: 法人 / individual: 個人）"
+    change_column_comment :customers, :corporation_number, "法人番号（13桁、法人時必須）"
+    change_column_comment :customers, :rate_percent, "掛率（0〜300%）"
+    change_column_comment :customers, :note, "備考"
+    change_column_comment :customers, :discarded_at, "削除日時（論理削除）"
+    change_column_comment :customers, :created_at, "作成日時"
+    change_column_comment :customers, :updated_at, "更新日時"
+
+    # ========== sites ==========
+    change_table_comment :sites, "現場"
+    change_column_comment :sites, :id, "ID"
+    change_column_comment :sites, :tenant_id, "自社ID"
+    change_column_comment :sites, :customer_id, "顧客ID"
+    change_column_comment :sites, :name, "現場名"
+    change_column_comment :sites, :note, "メモ"
+    change_column_comment :sites, :discarded_at, "削除日時（論理削除）"
+    change_column_comment :sites, :created_at, "作成日時"
+    change_column_comment :sites, :updated_at, "更新日時"
+
+    # ========== users ==========
+    change_table_comment :users, "ユーザー"
+    change_column_comment :users, :id, "ID"
+    change_column_comment :users, :tenant_id, "自社ID"
+    change_column_comment :users, :display_name, "表示名"
+    change_column_comment :users, :is_active, "有効フラグ"
+    change_column_comment :users, :email, "メールアドレス"
+    change_column_comment :users, :encrypted_password, "暗号化パスワード"
+    change_column_comment :users, :reset_password_token, "パスワードリセットトークン"
+    change_column_comment :users, :reset_password_sent_at, "パスワードリセット送信日時"
+    change_column_comment :users, :remember_created_at, "ログイン記憶日時"
+    change_column_comment :users, :sign_in_count, "ログイン回数"
+    change_column_comment :users, :current_sign_in_at, "現在のログイン日時"
+    change_column_comment :users, :last_sign_in_at, "前回のログイン日時"
+    change_column_comment :users, :current_sign_in_ip, "現在のログインIP"
+    change_column_comment :users, :last_sign_in_ip, "前回のログインIP"
+    change_column_comment :users, :invitation_token, "招待トークン"
+    change_column_comment :users, :invitation_created_at, "招待作成日時"
+    change_column_comment :users, :invitation_sent_at, "招待送信日時"
+    change_column_comment :users, :invitation_accepted_at, "招待受諾日時"
+    change_column_comment :users, :invitation_limit, "招待可能数"
+    change_column_comment :users, :invited_by_type, "招待者タイプ"
+    change_column_comment :users, :invited_by_id, "招待者ID"
+    change_column_comment :users, :invitations_count, "招待数"
+    change_column_comment :users, :created_at, "作成日時"
+    change_column_comment :users, :updated_at, "更新日時"
+
+    # ========== roles ==========
+    change_table_comment :roles, "ロール（権限）"
+    change_column_comment :roles, :id, "ID"
+    change_column_comment :roles, :name, "ロール名（admin, member等）"
+    change_column_comment :roles, :display_name, "表示名"
+    change_column_comment :roles, :description, "説明"
+    change_column_comment :roles, :created_at, "作成日時"
+    change_column_comment :roles, :updated_at, "更新日時"
+
+    # ========== user_roles ==========
+    change_table_comment :user_roles, "ユーザーロール（中間テーブル）"
+    change_column_comment :user_roles, :id, "ID"
+    change_column_comment :user_roles, :user_id, "ユーザーID"
+    change_column_comment :user_roles, :role_id, "ロールID"
+    change_column_comment :user_roles, :assigned_by_id, "付与者ID"
+    change_column_comment :user_roles, :assigned_at, "付与日時"
+    change_column_comment :user_roles, :created_at, "作成日時"
+    change_column_comment :user_roles, :updated_at, "更新日時"
+
+    # ========== daily_reports ==========
+    change_table_comment :daily_reports, "日報ヘッダ"
+    change_column_comment :daily_reports, :id, "ID"
+    change_column_comment :daily_reports, :tenant_id, "自社ID"
+    change_column_comment :daily_reports, :site_id, "現場ID"
+    change_column_comment :daily_reports, :work_date, "作業日"
+    change_column_comment :daily_reports, :created_by, "作成者ID"
+    change_column_comment :daily_reports, :summary, "概要"
+    change_column_comment :daily_reports, :discarded_at, "削除日時（論理削除）"
+    change_column_comment :daily_reports, :created_at, "作成日時"
+    change_column_comment :daily_reports, :updated_at, "更新日時"
+
+    # ========== work_entries ==========
+    change_table_comment :work_entries, "日報行（作業エントリ）"
+    change_column_comment :work_entries, :id, "ID"
+    change_column_comment :work_entries, :tenant_id, "自社ID"
+    change_column_comment :work_entries, :daily_report_id, "日報ヘッダID"
+    change_column_comment :work_entries, :user_id, "作業者ID"
+    change_column_comment :work_entries, :summary, "作業概要"
+    change_column_comment :work_entries, :minutes, "作業時間（分、15分刻み）"
+    change_column_comment :work_entries, :created_at, "作成日時"
+    change_column_comment :work_entries, :updated_at, "更新日時"
+  end
+end

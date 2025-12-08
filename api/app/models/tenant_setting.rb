@@ -2,12 +2,12 @@
 #
 # Table name: tenant_settings
 #
-#  id                :uuid             not null, primary key
-#  default_unit_rate :integer          default(3000)
-#  money_rounding    :string           default("round")
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  tenant_id         :uuid             not null
+#  id(ID)                                         :uuid             not null, primary key
+#  default_unit_rate(既定単価（円/時）)           :integer          default(3000)
+#  money_rounding(丸めルール（round/ceil/floor）) :string           default("round")
+#  created_at(作成日時)                           :datetime         not null
+#  updated_at(更新日時)                           :datetime         not null
+#  tenant_id(テナントID)                          :uuid             not null
 #
 # Indexes
 #

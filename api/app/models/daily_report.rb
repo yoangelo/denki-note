@@ -2,15 +2,15 @@
 #
 # Table name: daily_reports
 #
-#  id           :uuid             not null, primary key
-#  created_by   :uuid
-#  discarded_at :datetime
-#  summary      :text             not null
-#  work_date    :date             not null
-#  created_at   :datetime         not null
-#  updated_at   :datetime         not null
-#  site_id      :uuid             not null
-#  tenant_id    :uuid             not null
+#  id(ID)                             :uuid             not null, primary key
+#  created_by(作成者ID)               :uuid
+#  discarded_at(削除日時（論理削除）) :datetime
+#  summary(概要)                      :text             not null
+#  work_date(作業日)                  :date             not null
+#  created_at(作成日時)               :datetime         not null
+#  updated_at(更新日時)               :datetime         not null
+#  site_id(現場ID)                    :uuid             not null
+#  tenant_id(テナントID)              :uuid             not null
 #
 # Indexes
 #

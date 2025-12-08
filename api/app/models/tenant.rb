@@ -2,10 +2,10 @@
 #
 # Table name: tenants
 #
-#  id         :uuid             not null, primary key
-#  name       :string           not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
+#  id(ID)               :uuid             not null, primary key
+#  name(会社名)         :string           not null
+#  created_at(作成日時) :datetime         not null
+#  updated_at(更新日時) :datetime         not null
 #
 # Indexes
 #
