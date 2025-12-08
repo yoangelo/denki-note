@@ -29,6 +29,7 @@ class Site < ApplicationRecord
   belongs_to :tenant
   belongs_to :customer
   has_many :daily_reports, dependent: :destroy
+  has_many :invoices, dependent: :restrict_with_error
 
   validates :name, presence: { message: "現場名を入力してください" }
   validates :name, uniqueness: {

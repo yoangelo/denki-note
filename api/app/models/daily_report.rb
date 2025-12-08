@@ -30,9 +30,17 @@ class DailyReport < ApplicationRecord
   belongs_to :tenant
   belongs_to :site
   has_many :work_entries, dependent: :destroy
+  has_many :daily_report_products, dependent: :destroy
+  has_many :products, through: :daily_report_products
+  has_many :daily_report_materials, dependent: :destroy
+  has_many :materials, through: :daily_report_materials
+  has_many :invoice_daily_reports, dependent: :destroy
+  has_many :invoices, through: :invoice_daily_reports
 
   # ネストした属性を受け入れる
   accepts_nested_attributes_for :work_entries, allow_destroy: true
+  accepts_nested_attributes_for :daily_report_products, allow_destroy: true
+  accepts_nested_attributes_for :daily_report_materials, allow_destroy: true
 
   validates :work_date, presence: true
   validates :summary, presence: { message: '作業概要を入力してください' }
