@@ -63,6 +63,9 @@ Metrics/PerceivedComplexity:
 Naming/PredicatePrefix:
   Enabled: false
 
+Naming/PredicateMethod:
+  Enabled: false
+
 # ===== Performance =====
 Performance/CollectionLiteralInLoop:
   Exclude:
