@@ -36,6 +36,11 @@ Rails.application.routes.draw do
     resources :sites, only: [:create, :update, :destroy]
 
     resource :tenant, only: [:show, :update]
+
+    resources :manufacturers, only: [:index]
+    resources :products, only: [:index, :show, :create, :update, :destroy]
+    resources :materials, only: [:index, :show, :create, :update, :destroy]
+    resources :bank_accounts, only: [:index, :show, :create, :update, :destroy]
   end
 
   resources :customers, only: [:index] do
