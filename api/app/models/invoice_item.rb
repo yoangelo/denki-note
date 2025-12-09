@@ -3,12 +3,12 @@ class InvoiceItem < ApplicationRecord
   belongs_to :source_product, class_name: "Product", optional: true
   belongs_to :source_material, class_name: "Material", optional: true
 
-  enum item_type: {
+  enum :item_type, {
     header: "header",
     product: "product",
     material: "material",
     labor: "labor",
-    other: "other"
+    other: "other",
   }
 
   validates :item_type, presence: { message: "項目タイプを選択してください" }
@@ -28,6 +28,7 @@ class InvoiceItem < ApplicationRecord
 
   def calculate_amount
     return if header?
+
     self.amount = (quantity || 0) * (unit_price || 0) if quantity.present? && unit_price.present?
   end
 end

@@ -6,10 +6,10 @@ class BankAccount < ApplicationRecord
 
   belongs_to :tenant
 
-  enum account_type: {
+  enum :account_type, {
     ordinary: "ordinary",
     current: "current",
-    savings: "savings"
+    savings: "savings",
   }
 
   validates :bank_name, presence: { message: "銀行名を入力してください" }
@@ -24,14 +24,15 @@ class BankAccount < ApplicationRecord
 
   def masked_account_number
     return nil if account_number.blank?
+
     "****#{account_number[-4..]}"
   end
 
   private
 
   def ensure_single_default
-    if is_default_for_invoice && is_default_for_invoice_changed?
-      tenant.bank_accounts.kept.where.not(id: id).update_all(is_default_for_invoice: false)
-    end
+    return unless is_default_for_invoice && is_default_for_invoice_changed?
+
+    tenant.bank_accounts.kept.where.not(id: id).update_all(is_default_for_invoice: false)
   end
 end

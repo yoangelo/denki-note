@@ -4,7 +4,7 @@ class Invoice < ApplicationRecord
   belongs_to :tenant
   belongs_to :customer
   belongs_to :site, optional: true
-  belongs_to :creator, class_name: "User", foreign_key: :created_by, optional: true
+  belongs_to :creator, class_name: "User", foreign_key: :created_by, inverse_of: false, optional: true
 
   has_many :invoice_items, dependent: :destroy
   has_many :invoice_daily_reports, dependent: :destroy
@@ -12,16 +12,16 @@ class Invoice < ApplicationRecord
 
   accepts_nested_attributes_for :invoice_items, allow_destroy: true
 
-  enum status: {
+  enum :status, {
     draft: "draft",
     issued: "issued",
-    canceled: "canceled"
+    canceled: "canceled",
   }
 
   validates :customer_id, presence: { message: "顧客を選択してください" }
   validates :customer_name, presence: { message: "顧客名を入力してください" }
   validates :tax_rate, presence: true,
-    numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
+                       numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
   validates :status, inclusion: { in: statuses.keys }
 
   validate :validate_status_constraints
@@ -32,14 +32,14 @@ class Invoice < ApplicationRecord
   scope :filter_by_customer, ->(customer_id) { where(customer_id: customer_id) if customer_id.present? }
   scope :filter_by_site, ->(site_id) { where(site_id: site_id) if site_id.present? }
   scope :filter_by_status, ->(status) { where(status: status) if status.present? }
-  scope :filter_by_issued_date_range, ->(from, to) {
+  scope :filter_by_issued_date_range, lambda { |from, to|
     scope = all
-    scope = scope.where("issued_at >= ?", from.beginning_of_day) if from.present?
-    scope = scope.where("issued_at <= ?", to.end_of_day) if to.present?
+    scope = scope.where(issued_at: from.beginning_of_day..) if from.present?
+    scope = scope.where(issued_at: ..to.end_of_day) if to.present?
     scope
   }
 
-  def issue!
+  def issue
     return false unless draft?
 
     transaction do
@@ -51,7 +51,7 @@ class Invoice < ApplicationRecord
     true
   end
 
-  def cancel!
+  def cancel
     return false if canceled?
 
     transaction do
@@ -94,15 +94,15 @@ class Invoice < ApplicationRecord
     prefix = "INV-#{year}-"
 
     last_number = tenant.invoices
-      .where("invoice_number LIKE ?", "#{prefix}%")
-      .order(invoice_number: :desc)
-      .pick(:invoice_number)
+                        .where("invoice_number LIKE ?", "#{prefix}%")
+                        .order(invoice_number: :desc)
+                        .pick(:invoice_number)
 
-    if last_number
-      seq = last_number.split("-").last.to_i + 1
-    else
-      seq = 1
-    end
+    seq = if last_number
+            last_number.split("-").last.to_i + 1
+          else
+            1
+          end
 
     format("#{prefix}%03d", seq)
   end
