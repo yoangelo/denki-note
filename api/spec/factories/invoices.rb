@@ -7,10 +7,10 @@ FactoryBot.define do
     title { "テスト請求書" }
     customer_name { "テスト顧客" }
     site_name { nil }
-    subtotal { 10000 }
+    subtotal { 10_000 }
     tax_rate { 10.0 }
     tax_amount { 1000 }
-    total_amount { 11000 }
+    total_amount { 11_000 }
     status { "draft" }
 
     after(:build) do |invoice|

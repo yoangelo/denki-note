@@ -5,8 +5,8 @@ FactoryBot.define do
     sequence(:name) { |n| "テスト項目#{n}" }
     quantity { 1 }
     unit { "個" }
-    unit_price { 10000 }
-    amount { 10000 }
+    unit_price { 10_000 }
+    amount { 10_000 }
     sequence(:sort_order) { |n| n }
 
     trait :header do
@@ -23,8 +23,8 @@ FactoryBot.define do
       name { "製品A" }
       quantity { 1 }
       unit { "個" }
-      unit_price { 10000 }
-      amount { 10000 }
+      unit_price { 10_000 }
+      amount { 10_000 }
     end
 
     trait :material do
@@ -42,7 +42,7 @@ FactoryBot.define do
       quantity { 8 }
       unit { "時間" }
       unit_price { 3000 }
-      amount { 24000 }
+      amount { 24_000 }
     end
 
     trait :other do

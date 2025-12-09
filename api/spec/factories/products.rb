@@ -5,7 +5,7 @@ FactoryBot.define do
     sequence(:name) { |n| "テスト製品#{n}" }
     sequence(:model_number) { |n| "MODEL-#{format("%04d", n)}" }
     unit { "個" }
-    unit_price { 10000 }
+    unit_price { 10_000 }
 
     trait :without_manufacturer do
       manufacturer { nil }

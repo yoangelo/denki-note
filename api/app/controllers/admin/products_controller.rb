@@ -68,7 +68,7 @@ class Admin::ProductsController < AuthenticatedController
       @product.manufacturer = nil
     end
 
-    if @product.update(product_params)
+    if @product.update(update_product_params)
       render json: {
         product: @product.as_json(
           only: [:id, :name, :model_number, :unit, :unit_price, :created_at, :updated_at],
@@ -95,6 +95,12 @@ class Admin::ProductsController < AuthenticatedController
   end
 
   def product_params
+    params.require(:product).permit(:name, :model_number, :unit, :unit_price)
+  end
+
+  def update_product_params
+    return {} unless params[:product]
+
     params.require(:product).permit(:name, :model_number, :unit, :unit_price)
   end
 
