@@ -41,6 +41,14 @@ Rails.application.routes.draw do
     resources :products, only: [:index, :show, :create, :update, :destroy]
     resources :materials, only: [:index, :show, :create, :update, :destroy]
     resources :bank_accounts, only: [:index, :show, :create, :update, :destroy]
+
+    resources :invoices, only: [:index, :show, :create, :update] do
+      member do
+        post :issue
+        post :cancel
+        post :copy
+      end
+    end
   end
 
   resources :customers, only: [:index] do
