@@ -1,4 +1,5 @@
 # 日報を管理するコントローラー
+# rubocop:disable Metrics/ClassLength
 class DailyReportsController < AuthenticatedController
   before_action :require_admin, only: [:bulk_update, :destroy]
 
@@ -98,7 +99,12 @@ class DailyReportsController < AuthenticatedController
     daily_report = DailyReport.kept
                               .where(sites: { tenant: current_tenant })
                               .joins(:site)
-                              .includes(site: :customer, work_entries: :user)
+                              .includes(
+                                site: :customer,
+                                work_entries: :user,
+                                daily_report_products: :product,
+                                daily_report_materials: :material
+                              )
                               .find_by(id: params[:id])
 
     return render json: { error: "日報が見つかりません" }, status: :not_found unless daily_report
@@ -148,7 +154,9 @@ class DailyReportsController < AuthenticatedController
           work_date: report_params[:work_date],
           summary: report_params[:summary],
           created_by: current_user.id,
-          work_entries_attributes: work_entries_attrs
+          work_entries_attributes: work_entries_attrs,
+          daily_report_products_attributes: build_products_attrs(report_params[:products]),
+          daily_report_materials_attributes: build_materials_attrs(report_params[:materials])
         )
 
         if daily_report.save
@@ -230,6 +238,9 @@ class DailyReportsController < AuthenticatedController
         )
       end
 
+      # 製品・資材の更新（パラメータがある場合のみ）
+      update_products_and_materials(daily_report, bulk_update_params)
+
       # 最新データを再読み込み
       daily_report.reload
       daily_report.site.reload
@@ -307,10 +318,42 @@ class DailyReportsController < AuthenticatedController
           minutes: entry.minutes,
         }
       end,
+      products: format_products(report),
+      materials: format_materials(report),
       total_minutes: report.work_entries.sum(:minutes),
       created_at: report.created_at.iso8601,
       updated_at: report.updated_at.iso8601,
     }
+  end
+
+  def format_products(report)
+    return [] unless report.respond_to?(:daily_report_products)
+
+    report.daily_report_products.map do |drp|
+      {
+        id: drp.id,
+        product_id: drp.product_id,
+        product_name: drp.product&.name,
+        quantity: drp.quantity,
+        unit: drp.product&.unit,
+        unit_price: drp.product&.unit_price,
+      }
+    end
+  end
+
+  def format_materials(report)
+    return [] unless report.respond_to?(:daily_report_materials)
+
+    report.daily_report_materials.map do |drm|
+      {
+        id: drm.id,
+        material_id: drm.material_id,
+        material_name: drm.material&.name,
+        quantity: drm.quantity,
+        unit: drm.material&.unit,
+        unit_price: drm.material&.unit_price,
+      }
+    end
   end
 
   # bulk_createアクション用のパラメータを許可する
@@ -323,6 +366,8 @@ class DailyReportsController < AuthenticatedController
         :work_date,
         :summary,
         { work_entries: [:user_id, :minutes] },
+        { products: [:product_id, :quantity] },
+        { materials: [:material_id, :quantity] },
       ]
     )
   end
@@ -334,7 +379,51 @@ class DailyReportsController < AuthenticatedController
     params.require(:daily_report).permit(
       :site_id,
       :summary,
-      work_entries: [:user_id, :minutes]
+      work_entries: [:user_id, :minutes],
+      products: [:product_id, :quantity],
+      materials: [:material_id, :quantity]
     )
   end
+
+  # 製品パラメータをネスト属性用に変換
+  def build_products_attrs(products_params)
+    return [] if products_params.blank?
+
+    products_params.map do |p|
+      { product_id: p[:product_id], quantity: p[:quantity] }
+    end
+  end
+
+  # 資材パラメータをネスト属性用に変換
+  def build_materials_attrs(materials_params)
+    return [] if materials_params.blank?
+
+    materials_params.map do |m|
+      { material_id: m[:material_id], quantity: m[:quantity] }
+    end
+  end
+
+  # 製品・資材の更新
+  def update_products_and_materials(daily_report, update_params)
+    if update_params[:products].present?
+      daily_report.daily_report_products.destroy_all
+      update_params[:products].each do |product_params|
+        daily_report.daily_report_products.create!(
+          product_id: product_params[:product_id],
+          quantity: product_params[:quantity]
+        )
+      end
+    end
+
+    return if update_params[:materials].blank?
+
+    daily_report.daily_report_materials.destroy_all
+    update_params[:materials].each do |material_params|
+      daily_report.daily_report_materials.create!(
+        material_id: material_params[:material_id],
+        quantity: material_params[:quantity]
+      )
+    end
+  end
 end
+# rubocop:enable Metrics/ClassLength
