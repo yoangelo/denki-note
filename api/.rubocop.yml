@@ -1,0 +1,153 @@
+plugins:
+  - rubocop-rails
+  - rubocop-rspec
+  - rubocop-performance
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "bin/**/*"
+    - "db/schema.rb"
+    - "db/migrate/**/*"
+    - "node_modules/**/*"
+    - "tmp/**/*"
+    - "vendor/**/*"
+    - "config/initializers/devise.rb"
+
+# ===== Layout =====
+Layout/LineLength:
+  Max: 120
+  AllowedPatterns:
+    - "^\\s*#"
+
+Layout/EmptyLinesAroundAttributeAccessor:
+  Enabled: true
+
+Layout/SpaceAroundMethodCallOperator:
+  Enabled: true
+
+# ===== Metrics =====
+Metrics/AbcSize:
+  Max: 50
+  Exclude:
+    - "app/controllers/**/*"
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "config/routes.rb"
+    - "config/environments/**/*"
+    - "db/seeds.rb"
+    - "lib/tasks/**/*"
+    - "app/controllers/**/*"
+
+Metrics/ClassLength:
+  Max: 250
+
+Metrics/MethodLength:
+  Max: 40
+  Exclude:
+    - "app/controllers/**/*"
+
+Metrics/CyclomaticComplexity:
+  Max: 15
+  Exclude:
+    - "app/controllers/**/*"
+
+Metrics/PerceivedComplexity:
+  Max: 20
+
+# ===== Naming =====
+Naming/PredicatePrefix:
+  Enabled: false
+
+# ===== Performance =====
+Performance/CollectionLiteralInLoop:
+  Exclude:
+    - "db/seeds.rb"
+    - "spec/**/*"
+
+# ===== Style =====
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Style/SymbolArray:
+  EnforcedStyle: brackets
+
+Style/WordArray:
+  EnforcedStyle: brackets
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: consistent_comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: consistent_comma
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Style/HashSyntax:
+  EnforcedShorthandSyntax: either
+
+# ===== Rails =====
+Rails/UnknownEnv:
+  Environments:
+    - production
+    - development
+    - test
+
+Rails/I18nLocaleTexts:
+  Enabled: false
+
+Rails/FilePath:
+  EnforcedStyle: arguments
+
+Rails/HttpStatusNameConsistency:
+  Enabled: false
+
+Rails/LexicallyScopedActionFilter:
+  Enabled: false
+
+Rails/SkipsModelValidations:
+  Enabled: false
+
+Rails/Exit:
+  Exclude:
+    - "spec/**/*"
+
+# ===== Bundler =====
+Bundler/OrderedGems:
+  Enabled: false
+
+# ===== RSpec =====
+RSpec/ExampleLength:
+  Max: 20
+
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/NestedGroups:
+  Max: 4
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
+
+RSpec/ContextWording:
+  Enabled: false
+
+RSpec/LetSetup:
+  Enabled: false
+
+RSpec/IndexedLet:
+  Enabled: false

@@ -46,12 +46,12 @@ Rails.application.configure do
   config.force_ssl = ENV.fetch("FORCE_SSL", "true") == "true"
 
   # Log to STDOUT by default
-  config.logger = ActiveSupport::Logger.new(STDOUT)
-    .tap  { |logger| logger.formatter = ::Logger::Formatter.new }
-    .then { |logger| ActiveSupport::TaggedLogging.new(logger) }
+  config.logger = ActiveSupport::Logger.new($stdout)
+                                       .tap  { |logger| logger.formatter = Logger::Formatter.new }
+                                       .then { |logger| ActiveSupport::TaggedLogging.new(logger) }
 
   # Prepend all log lines with the following tags.
-  config.log_tags = [ :request_id ]
+  config.log_tags = [:request_id]
 
   # "info" includes generic and useful information about system operation, but avoids logging too much
   # information to avoid inadvertent exposure of personally identifiable information (PII). If you
@@ -70,16 +70,16 @@ Rails.application.configure do
   # SendGrid settings for email delivery
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
-    address: 'smtp.sendgrid.net',
+    address: "smtp.sendgrid.net",
     port: 587,
-    domain: ENV['MAIL_DOMAIN'],
-    user_name: 'apikey',
-    password: ENV['SENDGRID_API_KEY'],
+    domain: ENV.fetch("MAIL_DOMAIN", nil),
+    user_name: "apikey",
+    password: ENV.fetch("SENDGRID_API_KEY", nil),
     authentication: :plain,
-    enable_starttls_auto: true
+    enable_starttls_auto: true,
   }
   config.action_mailer.default_url_options = {
-    host: ENV['FRONTEND_URL']&.gsub(/^https?:\/\//, '') || 'localhost'
+    host: ENV["FRONTEND_URL"]&.gsub(%r{^https?://}, "") || "localhost",
   }
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_deliveries = true

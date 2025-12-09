@@ -51,11 +51,7 @@ class UserSerializer
     user.roles.pluck(:name)
   end
 
-  attribute :is_admin do |user|
-    user.admin?
-  end
+  attribute :is_admin, &:admin?
 
-  attribute :is_member do |user|
-    user.member?
-  end
+  attribute :is_member, &:member?
 end
