@@ -34,8 +34,8 @@ class Invoice < ApplicationRecord
   scope :filter_by_status, ->(status) { where(status: status) if status.present? }
   scope :filter_by_issued_date_range, lambda { |from, to|
     scope = all
-    scope = scope.where(issued_at: from.beginning_of_day..) if from.present?
-    scope = scope.where(issued_at: ..to.end_of_day) if to.present?
+    scope = scope.where(issued_at: Date.parse(from).beginning_of_day..) if from.present?
+    scope = scope.where(issued_at: ..Date.parse(to).end_of_day) if to.present?
     scope
   }
 
@@ -83,7 +83,9 @@ class Invoice < ApplicationRecord
   end
 
   def calculate_amounts
-    items_subtotal = invoice_items.reject(&:header?).sum { |item| item.amount || 0 }
+    items_subtotal = invoice_items.reject(&:header?).sum do |item|
+      item.amount || ((item.quantity || 0) * (item.unit_price || 0))
+    end
     self.subtotal = items_subtotal
     self.tax_amount = (subtotal * tax_rate / 100).floor
     self.total_amount = subtotal + tax_amount
