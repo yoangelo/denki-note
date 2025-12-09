@@ -53,7 +53,7 @@ RSpec.describe "Admin::Tenants", type: :request do
       it "不正な丸め方式の場合はエラー" do
         patch "/admin/tenant", params: { tenant: { money_rounding: "invalid" } }
 
-        expect(response).to have_http_status(:bad_request)
+        expect(response).to have_http_status(:unprocessable_entity)
       end
     end
 
