@@ -35,6 +35,6 @@ class Site < ApplicationRecord
   validates :name, uniqueness: {
     scope: [:tenant_id, :customer_id],
     conditions: -> { kept },
-    message: "この現場名は既に使用されています"
+    message: "この現場名は既に使用されています",
   }
 end

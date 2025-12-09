@@ -35,23 +35,23 @@ class Customer < ApplicationRecord
     sites.discard_all
   end
 
-  enum customer_type: {
+  enum :customer_type, {
     corporate: "corporate",
-    individual: "individual"
+    individual: "individual",
   }
 
   validates :name, presence: { message: "顧客名を入力してください" }
   validates :customer_type, presence: { message: "企業区分を選択してください" }
   validates :corporation_number,
-    numericality: { only_integer: true, message: "法人番号は数字のみ入力してください" },
-    allow_blank: true
+            numericality: { only_integer: true, message: "法人番号は数字のみ入力してください" },
+            allow_blank: true
   validates :rate_percent,
-    presence: { message: "掛率を入力してください" },
-    numericality: {
-      greater_than_or_equal_to: 0,
-      less_than_or_equal_to: 300,
-      message: "掛率は0〜300の範囲で入力してください"
-    }
+            presence: { message: "掛率を入力してください" },
+            numericality: {
+              greater_than_or_equal_to: 0,
+              less_than_or_equal_to: 300,
+              message: "掛率は0〜300の範囲で入力してください",
+            }
 
   validate :warn_duplicate_name
 
@@ -61,9 +61,9 @@ class Customer < ApplicationRecord
 
   def warn_duplicate_name
     if Customer.kept
-                .where(tenant_id: tenant_id, name: name)
-                .where.not(id: id)
-                .exists?
+               .where(tenant_id: tenant_id, name: name)
+               .where.not(id: id)
+               .exists?
       Rails.logger.warn("Duplicate customer name: #{name}")
     end
   end

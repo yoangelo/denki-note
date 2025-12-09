@@ -42,6 +42,7 @@ front/dist-ssr
 
 # テスト
 **/coverage
+api/spec/examples.txt
 
 # キャッシュ
 **/.cache

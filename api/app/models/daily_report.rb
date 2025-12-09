@@ -43,15 +43,14 @@ class DailyReport < ApplicationRecord
   accepts_nested_attributes_for :daily_report_materials, allow_destroy: true
 
   validates :work_date, presence: true
-  validates :summary, presence: { message: '作業概要を入力してください' }
-  validates :site_id, presence: true
+  validates :summary, presence: { message: "作業概要を入力してください" }
   validate :must_have_work_entries
 
   private
 
   def must_have_work_entries
-    if work_entries.empty? || work_entries.all? { |e| e.minutes.zero? }
-      errors.add(:work_entries, '作業者と工数を設定してください')
-    end
+    return unless work_entries.empty? || work_entries.all? { |e| e.minutes.zero? }
+
+    errors.add(:work_entries, "作業者と工数を設定してください")
   end
 end

@@ -1,19 +1,19 @@
 Rails.application.routes.draw do
   mount LetterOpenerWeb::Engine, at: "/letter_opener" if Rails.env.development?
 
-  devise_for :users, path: 'auth', path_names: {
-    sign_in: 'login',
-    sign_out: 'logout',
-    registration: 'signup'
+  devise_for :users, path: "auth", path_names: {
+    sign_in: "login",
+    sign_out: "logout",
+    registration: "signup",
   }, controllers: {
-    sessions: 'users/sessions',
-    registrations: 'users/registrations',
-    invitations: 'users/invitations',
-    passwords: 'users/passwords'
+    sessions: "users/sessions",
+    registrations: "users/registrations",
+    invitations: "users/invitations",
+    passwords: "users/passwords",
   }
 
   devise_scope :user do
-    get 'auth/invitations/pending', to: 'users/invitations#index'
+    get "auth/invitations/pending", to: "users/invitations#index"
   end
 
   get "/health", to: "health#check"
@@ -22,7 +22,7 @@ Rails.application.routes.draw do
     resources :users, only: [:index, :show, :update, :destroy] do
       member do
         post :add_role
-        delete 'roles/:role_id', to: 'users#remove_role', as: :remove_role
+        delete "roles/:role_id", to: "users#remove_role", as: :remove_role
       end
     end
 
@@ -51,7 +51,7 @@ Rails.application.routes.draw do
     end
     member do
       put :bulk_update
-      delete 'destroy', to: 'daily_reports#destroy', as: ''
+      delete "destroy", to: "daily_reports#destroy", as: ""
     end
   end
 

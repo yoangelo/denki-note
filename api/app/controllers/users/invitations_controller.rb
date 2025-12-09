@@ -18,7 +18,7 @@ class Users::InvitationsController < Devise::InvitationsController
         email: user.email,
         display_name: user.display_name,
         invitation_sent_at: user.invitation_sent_at,
-        invitation_created_at: user.invitation_created_at
+        invitation_created_at: user.invitation_created_at,
       }
     }
   end
@@ -28,26 +28,26 @@ class Users::InvitationsController < Devise::InvitationsController
       {
         email: invite_params[:email],
         display_name: invite_params[:display_name],
-        tenant_id: current_user.tenant_id
+        tenant_id: current_user.tenant_id,
       },
       current_user
     )
 
     if user.errors.empty?
       # role_idsが指定されていない場合はデフォルトでmemberロールを付与
-      role_ids = invite_params[:role_ids].presence || [Role.find_by(name: 'member')&.id].compact
+      role_ids = invite_params[:role_ids].presence || [Role.find_by(name: "member")&.id].compact
       user.role_ids = role_ids
       user.save
     end
 
     if user.errors.empty?
       render json: {
-        message: 'Invitation sent successfully',
-        user: UserSerializer.new(user).serializable_hash[:data][:attributes]
+        message: "Invitation sent successfully",
+        user: UserSerializer.new(user).serializable_hash[:data][:attributes],
       }, status: :created
     else
       render json: {
-        errors: user.errors.full_messages
+        errors: user.errors.full_messages,
       }, status: :unprocessable_entity
     end
   end
@@ -58,7 +58,7 @@ class Users::InvitationsController < Devise::InvitationsController
 
     if resource.nil?
       render json: {
-        errors: ['Invalid invitation token']
+        errors: ["Invalid invitation token"],
       }, status: :unprocessable_entity
       return
     end
@@ -76,12 +76,12 @@ class Users::InvitationsController < Devise::InvitationsController
       )
       sign_in(resource)
       render json: {
-        message: 'Password set successfully',
-        user: UserSerializer.new(resource).serializable_hash[:data][:attributes]
+        message: "Password set successfully",
+        user: UserSerializer.new(resource).serializable_hash[:data][:attributes],
       }, status: :ok
     else
       render json: {
-        errors: resource.errors.full_messages
+        errors: resource.errors.full_messages,
       }, status: :unprocessable_entity
     end
   end
@@ -97,8 +97,8 @@ class Users::InvitationsController < Devise::InvitationsController
   end
 
   def check_admin_permission
-    unless current_user&.admin?
-      render json: { error: 'Unauthorized' }, status: :forbidden
-    end
+    return if current_user&.admin?
+
+    render json: { error: "Unauthorized" }, status: :forbidden
   end
 end

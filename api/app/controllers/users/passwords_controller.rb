@@ -6,11 +6,11 @@ class Users::PasswordsController < Devise::PasswordsController
 
     if successfully_sent?(resource)
       render json: {
-        message: 'Password reset instructions sent to your email'
+        message: "Password reset instructions sent to your email",
       }, status: :ok
     else
       render json: {
-        errors: resource.errors.full_messages
+        errors: resource.errors.full_messages,
       }, status: :unprocessable_entity
     end
   end
@@ -22,12 +22,12 @@ class Users::PasswordsController < Devise::PasswordsController
       resource.unlock_access! if unlockable?(resource)
       sign_in(resource_name, resource)
       render json: {
-        message: 'Password updated successfully',
-        user: UserSerializer.new(resource).serializable_hash[:data][:attributes]
+        message: "Password updated successfully",
+        user: UserSerializer.new(resource).serializable_hash[:data][:attributes],
       }, status: :ok
     else
       render json: {
-        errors: resource.errors.full_messages
+        errors: resource.errors.full_messages,
       }, status: :unprocessable_entity
     end
   end

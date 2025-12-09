@@ -17,14 +17,15 @@ class Admin::CustomersController < AuthenticatedController
     sort_order = params[:sort_order].presence || "desc"
 
     # ソートキーのバリデーション
-    allowed_sort_columns = %w[created_at name rate_percent]
+    allowed_sort_columns = ["created_at", "name", "rate_percent"]
     sort_by = "created_at" unless allowed_sort_columns.include?(sort_by)
-    sort_order = "desc" unless %w[asc desc].include?(sort_order)
+    sort_order = "desc" unless ["asc", "desc"].include?(sort_order)
 
     customers = customers.order("#{sort_by} #{sort_order}")
 
     render json: {
-      customers: customers.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :discarded_at, :created_at, :updated_at])
+      customers: customers.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note,
+                                          :discarded_at, :created_at, :updated_at,]),
     }
   end
 
@@ -33,13 +34,14 @@ class Admin::CustomersController < AuthenticatedController
     name = params[:name]
     return render json: { duplicate: false } if name.blank?
 
-    exists = current_tenant.customers.kept.where(name: name).exists?
+    exists = current_tenant.customers.kept.exists?(name: name)
     render json: { duplicate: exists, name: name }
   end
 
   # POST /admin/customers_bulk
   def create_bulk
-    customer_params_data = params.require(:customer).permit(:name, :customer_type, :corporation_number, :rate_percent, :note)
+    customer_params_data = params.require(:customer).permit(:name, :customer_type, :corporation_number, :rate_percent,
+                                                            :note)
     sites_params_data = params[:sites] || []
 
     ActiveRecord::Base.transaction do
@@ -67,8 +69,9 @@ class Admin::CustomersController < AuthenticatedController
       end
 
       render json: {
-        customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :created_at, :updated_at]),
-        sites: @sites.as_json(only: [:id, :customer_id, :name, :note, :created_at, :updated_at])
+        customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note,
+                                           :created_at, :updated_at,]),
+        sites: @sites.as_json(only: [:id, :customer_id, :name, :note, :created_at, :updated_at]),
       }, status: :created
     end
   end
@@ -79,8 +82,9 @@ class Admin::CustomersController < AuthenticatedController
     sites = params[:show_discarded] == "true" ? @customer.sites.with_discarded : @customer.sites.kept
 
     render json: {
-      customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :created_at, :updated_at]),
-      sites: sites.as_json(only: [:id, :customer_id, :name, :note, :discarded_at, :created_at, :updated_at])
+      customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note,
+                                         :created_at, :updated_at,]),
+      sites: sites.as_json(only: [:id, :customer_id, :name, :note, :discarded_at, :created_at, :updated_at]),
     }
   end
 
@@ -88,7 +92,8 @@ class Admin::CustomersController < AuthenticatedController
   def update
     if @customer.update(update_params)
       render json: {
-        customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note, :created_at, :updated_at])
+        customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note,
+                                           :created_at, :updated_at,]),
       }
     else
       render json: { errors: @customer.errors.full_messages }, status: :unprocessable_entity
@@ -114,8 +119,8 @@ class Admin::CustomersController < AuthenticatedController
   end
 
   def require_admin
-    unless current_user&.has_role?(:admin)
-      render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
-    end
+    return if current_user&.has_role?(:admin)
+
+    render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
   end
 end
