@@ -97,7 +97,7 @@ RSpec.describe "Admin::Customers", type: :request do
     it "顧客名が空の場合はエラー" do
       post "/admin/customers/create_bulk", params: { customer: { name: "", customer_type: "corporate" } }
 
-      expect(response).to have_http_status(:bad_request)
+      expect(response).to have_http_status(:unprocessable_entity)
     end
   end
 
