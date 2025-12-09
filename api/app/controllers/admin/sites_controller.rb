@@ -14,7 +14,8 @@ class Admin::SitesController < AuthenticatedController
 
     if @site.save
       render json: {
-        site: @site.as_json(only: [:id, :customer_id, :tenant_id, :name, :note, :discarded_at, :created_at, :updated_at])
+        site: @site.as_json(only: [:id, :customer_id, :tenant_id, :name, :note, :discarded_at,
+                                   :created_at, :updated_at,]),
       }, status: :created
     else
       render json: { errors: @site.errors.full_messages }, status: :unprocessable_entity
@@ -27,7 +28,8 @@ class Admin::SitesController < AuthenticatedController
   def update
     if @site.update(update_params)
       render json: {
-        site: @site.as_json(only: [:id, :customer_id, :tenant_id, :name, :note, :discarded_at, :created_at, :updated_at])
+        site: @site.as_json(only: [:id, :customer_id, :tenant_id, :name, :note, :discarded_at, :created_at,
+                                   :updated_at,]),
       }
     else
       render json: { errors: @site.errors.full_messages }, status: :unprocessable_entity
@@ -57,8 +59,8 @@ class Admin::SitesController < AuthenticatedController
   end
 
   def require_admin
-    unless current_user&.has_role?(:admin)
-      render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
-    end
+    return if current_user&.has_role?(:admin)
+
+    render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
   end
 end

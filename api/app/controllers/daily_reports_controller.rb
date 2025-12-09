@@ -11,26 +11,28 @@ class DailyReportsController < AuthenticatedController
   #   - daily_reports [Array<Hash>] 日報データの配列
   #   - meta [Hash] 総件数、返却件数、検索年月
   def index
-    return render json: { daily_reports: [], meta: { total_count: 0, returned_count: 0, year_month: params[:year_month] || "" } } unless current_tenant
+    unless current_tenant
+      return render json: { daily_reports: [],
+                            meta: { total_count: 0, returned_count: 0,
+                                    year_month: params[:year_month] || "", }, }
+    end
 
     # クエリパラメータの処理
     scope = DailyReport.kept
                        .where(sites: { tenant: current_tenant })
                        .joins(:site)
-                       .includes(:site => :customer, :work_entries => :user)
+                       .includes(site: :customer, work_entries: :user)
 
     # year_month フィルタ (YYYY-MM形式)
     if params[:year_month].present?
-      year, month = params[:year_month].split('-').map(&:to_i)
+      year, month = params[:year_month].split("-").map(&:to_i)
       start_date = Date.new(year, month, 1)
       end_date = start_date.end_of_month
       scope = scope.where(work_date: start_date..end_date)
     end
 
     # user_id フィルタ
-    if params[:user_id].present?
-      scope = scope.joins(:work_entries).where(work_entries: { user_id: params[:user_id] })
-    end
+    scope = scope.joins(:work_entries).where(work_entries: { user_id: params[:user_id] }) if params[:user_id].present?
 
     # customer_id フィルタ
     if params[:customer_id].present?
@@ -38,9 +40,7 @@ class DailyReportsController < AuthenticatedController
     end
 
     # site_id フィルタ
-    if params[:site_id].present?
-      scope = scope.where(site_id: params[:site_id])
-    end
+    scope = scope.where(site_id: params[:site_id]) if params[:site_id].present?
 
     # 取得件数の制限
     limit = (params[:limit] || 100).to_i.clamp(1, 500)
@@ -58,11 +58,11 @@ class DailyReportsController < AuthenticatedController
         work_date: report.work_date.to_s,
         customer: {
           id: report.site.customer.id,
-          name: report.site.customer.name
+          name: report.site.customer.name,
         },
         site: {
           id: report.site.id,
-          name: report.site.name
+          name: report.site.name,
         },
         summary: report.summary || "",
         work_entries: report.work_entries.map do |entry|
@@ -70,14 +70,14 @@ class DailyReportsController < AuthenticatedController
             id: entry.id,
             user: {
               id: entry.user.id,
-              display_name: entry.user.display_name
+              display_name: entry.user.display_name,
             },
-            minutes: entry.minutes
+            minutes: entry.minutes,
           }
         end,
         total_minutes: report.work_entries.sum(:minutes),
         created_at: report.created_at.iso8601,
-        updated_at: report.updated_at.iso8601
+        updated_at: report.updated_at.iso8601,
       }
     end
 
@@ -86,8 +86,8 @@ class DailyReportsController < AuthenticatedController
       meta: {
         total_count: total_count,
         returned_count: formatted_reports.size,
-        year_month: params[:year_month] || ""
-      }
+        year_month: params[:year_month] || "",
+      },
     }
   end
 
@@ -96,15 +96,15 @@ class DailyReportsController < AuthenticatedController
   # @return [Hash] 日報の詳細情報（daily_report）
   def show
     daily_report = DailyReport.kept
-                               .where(sites: { tenant: current_tenant })
-                               .joins(:site)
-                               .includes(:site => :customer, :work_entries => :user)
-                               .find_by(id: params[:id])
+                              .where(sites: { tenant: current_tenant })
+                              .joins(:site)
+                              .includes(site: :customer, work_entries: :user)
+                              .find_by(id: params[:id])
 
-    return render json: { error: '日報が見つかりません' }, status: :not_found unless daily_report
+    return render json: { error: "日報が見つかりません" }, status: :not_found unless daily_report
 
     render json: {
-      daily_report: format_daily_report(daily_report)
+      daily_report: format_daily_report(daily_report),
     }
   end
 
@@ -124,7 +124,10 @@ class DailyReportsController < AuthenticatedController
     created_reports = []
     errors = []
 
-    return render json: { success: false, errors: [{ error: "Tenant not found" }] }, status: :unauthorized unless current_tenant
+    unless current_tenant
+      return render json: { success: false, errors: [{ error: "Tenant not found" }] },
+                    status: :unauthorized
+    end
 
     ActiveRecord::Base.transaction do
       bulk_create_params[:daily_reports].each_with_index do |report_params, index|
@@ -134,7 +137,7 @@ class DailyReportsController < AuthenticatedController
             tenant_id: current_tenant.id,
             user_id: entry_params[:user_id],
             minutes: entry_params[:minutes],
-            summary: nil # work_entriesのsummaryは使用しない
+            summary: nil, # work_entriesのsummaryは使用しない
           }
         end
 
@@ -158,13 +161,13 @@ class DailyReportsController < AuthenticatedController
             site_id: daily_report.site_id,
             work_date: daily_report.work_date,
             summary: daily_report.summary,
-            entries_count: entries_count
+            entries_count: entries_count,
           }
         else
           errors << {
             report_index: index,
             site_id: report_params[:site_id],
-            error: daily_report.errors.full_messages.join(', ')
+            error: daily_report.errors.full_messages.join(", "),
           }
           raise ActiveRecord::Rollback
         end
@@ -175,20 +178,20 @@ class DailyReportsController < AuthenticatedController
       success: errors.empty?,
       summary: {
         reports_created: reports_created,
-        entries_created: entries_created
+        entries_created: entries_created,
       },
       reports: created_reports,
-      errors: errors
+      errors: errors,
     }
-  rescue => e
+  rescue StandardError => e
     render json: {
       success: false,
       summary: {
         reports_created: 0,
-        entries_created: 0
+        entries_created: 0,
       },
       reports: [],
-      errors: [{ error: e.message }]
+      errors: [{ error: e.message }],
     }, status: :unprocessable_entity
   end
 
@@ -202,11 +205,11 @@ class DailyReportsController < AuthenticatedController
   #   - daily_report [Hash] 更新後の日報データ
   def bulk_update
     daily_report = DailyReport.kept
-                               .where(sites: { tenant: current_tenant })
-                               .joins(:site)
-                               .find_by(id: params[:id])
+                              .where(sites: { tenant: current_tenant })
+                              .joins(:site)
+                              .find_by(id: params[:id])
 
-    return render json: { error: '日報が見つかりません' }, status: :not_found unless daily_report
+    return render json: { error: "日報が見つかりません" }, status: :not_found unless daily_report
 
     ActiveRecord::Base.transaction do
       # 日報ヘッダの更新
@@ -234,15 +237,15 @@ class DailyReportsController < AuthenticatedController
 
     render json: {
       success: true,
-      daily_report: format_daily_report(daily_report)
+      daily_report: format_daily_report(daily_report),
     }
   rescue ActiveRecord::RecordInvalid => e
     render json: {
-      errors: e.record.errors.messages
+      errors: e.record.errors.messages,
     }, status: :unprocessable_entity
-  rescue => e
+  rescue StandardError => e
     render json: {
-      error: e.message
+      error: e.message,
     }, status: :unprocessable_entity
   end
 
@@ -253,11 +256,11 @@ class DailyReportsController < AuthenticatedController
   # @return [void] 成功時は204 No Contentを返す
   def destroy
     daily_report = DailyReport.kept
-                               .where(sites: { tenant: current_tenant })
-                               .joins(:site)
-                               .find_by(id: params[:id])
+                              .where(sites: { tenant: current_tenant })
+                              .joins(:site)
+                              .find_by(id: params[:id])
 
-    return render json: { error: '日報が見つかりません' }, status: :not_found unless daily_report
+    return render json: { error: "日報が見つかりません" }, status: :not_found unless daily_report
 
     daily_report.discard
 
@@ -272,9 +275,9 @@ class DailyReportsController < AuthenticatedController
   #
   # @return [void]
   def require_admin
-    unless current_user&.admin?
-      render json: { error: 'この操作を実行する権限がありません' }, status: :forbidden
-    end
+    return if current_user&.admin?
+
+    render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
   end
 
   # 日報をレスポンス用のハッシュにフォーマットする
@@ -287,11 +290,11 @@ class DailyReportsController < AuthenticatedController
       work_date: report.work_date.to_s,
       customer: {
         id: report.site.customer.id,
-        name: report.site.customer.name
+        name: report.site.customer.name,
       },
       site: {
         id: report.site.id,
-        name: report.site.name
+        name: report.site.name,
       },
       summary: report.summary || "",
       work_entries: report.work_entries.map do |entry|
@@ -299,14 +302,14 @@ class DailyReportsController < AuthenticatedController
           id: entry.id,
           user: {
             id: entry.user.id,
-            display_name: entry.user.display_name
+            display_name: entry.user.display_name,
           },
-          minutes: entry.minutes
+          minutes: entry.minutes,
         }
       end,
       total_minutes: report.work_entries.sum(:minutes),
       created_at: report.created_at.iso8601,
-      updated_at: report.updated_at.iso8601
+      updated_at: report.updated_at.iso8601,
     }
   end
 
@@ -319,7 +322,7 @@ class DailyReportsController < AuthenticatedController
         :site_id,
         :work_date,
         :summary,
-        work_entries: [:user_id, :minutes]
+        { work_entries: [:user_id, :minutes] },
       ]
     )
   end

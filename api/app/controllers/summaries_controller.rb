@@ -14,7 +14,7 @@ class SummariesController < AuthenticatedController
 
     begin
       month_date = Date.strptime("#{summary_params[:yyyymm]}-01", "%Y-%m-%d")
-    rescue
+    rescue StandardError
       return render json: { error: "Invalid date format" }, status: :bad_request
     end
 
@@ -35,12 +35,13 @@ class SummariesController < AuthenticatedController
     rows = []
     entries.group_by { |e| report_map[e.daily_report_id]&.work_date }.each do |date, date_entries|
       next unless date
+
       total_minutes = date_entries.sum(&:minutes)
-      summaries = date_entries.map(&:summary).compact.reject(&:empty?).join(", ")
+      summaries = date_entries.filter_map(&:summary).reject(&:empty?).join(", ")
       rows << {
         date: date.to_s,
         summary: summaries[0..200],
-        hours: (total_minutes / 60.0).round(2)
+        hours: (total_minutes / 60.0).round(2),
       }
     end
     rows.sort_by! { |r| r[:date] }
@@ -52,7 +53,7 @@ class SummariesController < AuthenticatedController
     tenant_setting = TenantSetting.find_by(tenant: current_tenant)
 
     default_unit_rate = tenant_setting&.default_unit_rate || 0
-    rate_percent = (summary_params[:rate_toggle] == "on") ? (customer&.rate_percent || 100) : 100
+    rate_percent = summary_params[:rate_toggle] == "on" ? (customer&.rate_percent || 100) : 100
     amount_jpy = (total_hours * default_unit_rate * (rate_percent / 100.0)).round
 
     render json: { rows: rows, total_hours: total_hours, amount_jpy: amount_jpy }

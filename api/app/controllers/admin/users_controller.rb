@@ -14,29 +14,27 @@ module Admin
     #   - meta [Hash] 総件数、返却件数
     def index
       scope = User.where(tenant_id: current_tenant.id)
-        .includes(:roles)
-        .order(created_at: :desc)
+                  .includes(:roles)
+                  .order(created_at: :desc)
 
       if params[:query].present?
-        scope = scope.where('display_name ILIKE ? OR email ILIKE ?',
-          "%#{params[:query]}%", "%#{params[:query]}%")
+        scope = scope.where("display_name ILIKE ? OR email ILIKE ?",
+                            "%#{params[:query]}%", "%#{params[:query]}%")
       end
 
-      if params[:role].present?
-        scope = scope.joins(:roles).where(roles: { name: params[:role] })
-      end
+      scope = scope.joins(:roles).where(roles: { name: params[:role] }) if params[:role].present?
 
       limit = (params[:limit] || 50).to_i.clamp(1, 100)
       users = scope.limit(limit)
 
       render json: {
-        users: users.map { |user|
+        users: users.map do |user|
           UserSerializer.new(user).serializable_hash[:data][:attributes]
-        },
+        end,
         meta: {
           total_count: scope.count,
-          returned_count: users.count
-        }
+          returned_count: users.count,
+        },
       }
     end
 
@@ -45,7 +43,7 @@ module Admin
     # @return [Hash] ユーザーの詳細情報（user）
     def show
       render json: {
-        user: UserSerializer.new(@user).serializable_hash[:data][:attributes]
+        user: UserSerializer.new(@user).serializable_hash[:data][:attributes],
       }
     end
 
@@ -57,12 +55,12 @@ module Admin
     def update
       if @user.update(user_update_params)
         render json: {
-          message: 'User updated successfully',
-          user: UserSerializer.new(@user).serializable_hash[:data][:attributes]
+          message: "User updated successfully",
+          user: UserSerializer.new(@user).serializable_hash[:data][:attributes],
         }
       else
         render json: {
-          errors: @user.errors.full_messages
+          errors: @user.errors.full_messages,
         }, status: :unprocessable_entity
       end
     end
@@ -74,11 +72,11 @@ module Admin
     # @return [Hash] 削除結果（message）
     def destroy
       if @user.id == current_user.id
-        return render json: { error: 'Cannot delete yourself' }, status: :unprocessable_entity
+        return render json: { error: "Cannot delete yourself" }, status: :unprocessable_entity
       end
 
       @user.destroy
-      render json: { message: 'User deleted successfully' }
+      render json: { message: "User deleted successfully" }
     end
 
     # ユーザーにロールを追加する
@@ -90,17 +88,15 @@ module Admin
       @user = User.find(params[:id])
       role = Role.find_by(name: params[:role_name])
 
-      unless role
-        return render json: { error: 'Role not found' }, status: :not_found
-      end
+      return render json: { error: "Role not found" }, status: :not_found unless role
 
       if @user.add_role(role.name, assigned_by: current_user)
         render json: {
-          message: 'Role added successfully',
-          user: UserSerializer.new(@user).serializable_hash[:data][:attributes]
+          message: "Role added successfully",
+          user: UserSerializer.new(@user).serializable_hash[:data][:attributes],
         }
       else
-        render json: { error: 'Failed to add role' }, status: :unprocessable_entity
+        render json: { error: "Failed to add role" }, status: :unprocessable_entity
       end
     end
 
@@ -115,11 +111,11 @@ module Admin
 
       if @user.remove_role(role.name)
         render json: {
-          message: 'Role removed successfully',
-          user: UserSerializer.new(@user).serializable_hash[:data][:attributes]
+          message: "Role removed successfully",
+          user: UserSerializer.new(@user).serializable_hash[:data][:attributes],
         }
       else
-        render json: { error: 'Failed to remove role' }, status: :unprocessable_entity
+        render json: { error: "Failed to remove role" }, status: :unprocessable_entity
       end
     end
 
@@ -132,9 +128,9 @@ module Admin
     # @return [void]
     def set_user
       @user = User.find(params[:id])
-      unless @user.tenant_id == current_tenant.id
-        render json: { error: 'User not found' }, status: :not_found
-      end
+      return if @user.tenant_id == current_tenant.id
+
+      render json: { error: "User not found" }, status: :not_found
     end
 
     # updateアクション用のパラメータを許可する
@@ -150,9 +146,9 @@ module Admin
     #
     # @return [void]
     def check_admin_permission
-      unless current_user&.admin?
-        render json: { error: 'Unauthorized' }, status: :forbidden
-      end
+      return if current_user&.admin?
+
+      render json: { error: "Unauthorized" }, status: :forbidden
     end
   end
 end

@@ -25,12 +25,12 @@ class CustomersController < AuthenticatedController
 
     # 直近の日報10件を取得（削除済みの顧客・現場は除外）
     recent_daily_reports = DailyReport
-      .joins(site: :customer)
-      .where(sites: { tenant: current_tenant, discarded_at: nil })
-      .where(customers: { discarded_at: nil })
-      .order(created_at: :desc)
-      .limit(10)
-      .includes(site: :customer)
+                           .joins(site: :customer)
+                           .where(sites: { tenant: current_tenant, discarded_at: nil })
+                           .where(customers: { discarded_at: nil })
+                           .order(created_at: :desc)
+                           .limit(10)
+                           .includes(site: :customer)
 
     # 日報に紐づく顧客と現場の情報を集計
     customer_site_map = {}
@@ -40,33 +40,35 @@ class CustomersController < AuthenticatedController
       customer = site.customer
 
       # 各顧客について、最後に使用した現場と使用日時を記録
-      if !customer_site_map[customer.id] || customer_site_map[customer.id][:last_used_at] < daily_report.created_at
-        customer_site_map[customer.id] = {
-          customer: customer,
-          site: site,
-          last_used_at: daily_report.created_at
-        }
+      unless !customer_site_map[customer.id] || customer_site_map[customer.id][:last_used_at] < daily_report.created_at
+        next
       end
+
+      customer_site_map[customer.id] = {
+        customer: customer,
+        site: site,
+        last_used_at: daily_report.created_at,
+      }
     end
 
     # 最大3件の顧客に制限し、最終利用日時順にソート
     result = customer_site_map.values
-      .sort_by { |item| -item[:last_used_at].to_i }
-      .take(3)
-      .map do |item|
-        {
-          id: item[:customer].id,
-          name: item[:customer].name,
-          customer_type: item[:customer].customer_type,
-          corporation_number: item[:customer].corporation_number,
-          rate_percent: item[:customer].rate_percent,
-          site: {
-            id: item[:site].id,
-            name: item[:site].name
-          },
-          last_used_at: item[:last_used_at]
-        }
-      end
+                              .sort_by { |item| -item[:last_used_at].to_i }
+                              .take(3)
+                              .map do |item|
+      {
+        id: item[:customer].id,
+        name: item[:customer].name,
+        customer_type: item[:customer].customer_type,
+        corporation_number: item[:customer].corporation_number,
+        rate_percent: item[:customer].rate_percent,
+        site: {
+          id: item[:site].id,
+          name: item[:site].name,
+        },
+        last_used_at: item[:last_used_at],
+      }
+    end
 
     render json: result
   end

@@ -10,7 +10,7 @@ class UsersController < AuthenticatedController
       {
         id: user.id,
         display_name: user.display_name,
-        is_active: user.is_active
+        is_active: user.is_active,
       }
     }
   end

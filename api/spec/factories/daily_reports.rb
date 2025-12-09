@@ -3,7 +3,7 @@ FactoryBot.define do
     tenant
     site
     work_date { Date.current }
-    summary { 'テスト作業概要' }
+    summary { "テスト作業概要" }
 
     transient do
       entries_count { 1 }
@@ -14,7 +14,8 @@ FactoryBot.define do
       if daily_report.work_entries.empty?
         user = evaluator.work_user || build(:user, tenant: daily_report.tenant)
         evaluator.entries_count.times do
-          daily_report.work_entries << build(:work_entry, daily_report: daily_report, tenant: daily_report.tenant, user: user)
+          daily_report.work_entries << build(:work_entry, daily_report: daily_report, tenant: daily_report.tenant,
+                                                          user: user)
         end
       end
     end
