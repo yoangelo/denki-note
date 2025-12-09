@@ -34,13 +34,13 @@ FactoryBot.define do
 
     trait :issued do
       status { "issued" }
-      sequence(:invoice_number) { |n| "INV-#{Time.current.year}-#{format("%03d", n)}" }
+      sequence(:invoice_number, "INV-2025-001", &:succ)
       issued_at { Time.current }
     end
 
     trait :canceled do
       status { "canceled" }
-      sequence(:invoice_number) { |n| "INV-#{Time.current.year}-#{format("%03d", n)}" }
+      sequence(:invoice_number, "INV-2025-C01", &:succ)
       issued_at { 1.day.ago }
       discarded_at { Time.current }
     end
