@@ -328,6 +328,12 @@ paths:
                                 display_name: { type: string }
                             minutes: { type: integer }
                       total_minutes: { type: integer }
+                      products:
+                        type: array
+                        items: { $ref: '#/components/schemas/DailyReportProduct' }
+                      materials:
+                        type: array
+                        items: { $ref: '#/components/schemas/DailyReportMaterial' }
                       created_at: { type: string, format: date-time }
                       updated_at: { type: string, format: date-time }
         '404':
@@ -373,6 +379,22 @@ paths:
                             minutes:
                               type: integer
                               minimum: 0
+                      products:
+                        type: array
+                        items:
+                          type: object
+                          required: [product_id, quantity]
+                          properties:
+                            product_id: { type: string, format: uuid }
+                            quantity: { type: number, minimum: 0 }
+                      materials:
+                        type: array
+                        items:
+                          type: object
+                          required: [material_id, quantity]
+                          properties:
+                            material_id: { type: string, format: uuid }
+                            quantity: { type: number, minimum: 0 }
       responses:
         '200':
           description: Success
@@ -456,6 +478,22 @@ paths:
                           minutes:
                             type: integer
                             minimum: 0
+                    products:
+                      type: array
+                      items:
+                        type: object
+                        required: [product_id, quantity]
+                        properties:
+                          product_id: { type: string, format: uuid }
+                          quantity: { type: number, minimum: 0 }
+                    materials:
+                      type: array
+                      items:
+                        type: object
+                        required: [material_id, quantity]
+                        properties:
+                          material_id: { type: string, format: uuid }
+                          quantity: { type: number, minimum: 0 }
       responses:
         '200':
           description: Success
@@ -499,6 +537,12 @@ paths:
                                 id: { type: string, format: uuid }
                                 display_name: { type: string }
                             minutes: { type: integer }
+                      products:
+                        type: array
+                        items: { $ref: '#/components/schemas/DailyReportProduct' }
+                      materials:
+                        type: array
+                        items: { $ref: '#/components/schemas/DailyReportMaterial' }
                       total_minutes: { type: integer }
                       updated_at: { type: string, format: date-time }
         '403':
@@ -1320,6 +1364,887 @@ paths:
         '403':
           description: Forbidden
 
+  # 製品マスタ API
+  /admin/products:
+    get:
+      operationId: admin_list_products
+      tags: [Admin, Products]
+      summary: Get all products (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Search by product name (partial match)
+        - in: query
+          name: model_number
+          schema: { type: string }
+          description: Search by model number (partial match)
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: [created_at, name, unit_price]
+            default: created_at
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - in: query
+          name: show_discarded
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items: { $ref: '#/components/schemas/Product' }
+        '403':
+          description: Forbidden
+
+    post:
+      operationId: admin_create_product
+      tags: [Admin, Products]
+      summary: Create product (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product]
+              properties:
+                product:
+                  type: object
+                  required: [name, unit_price]
+                  properties:
+                    name: { type: string }
+                    model_number: { type: string }
+                    unit: { type: string }
+                    unit_price: { type: integer, minimum: 0 }
+                manufacturer_name: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product: { $ref: '#/components/schemas/Product' }
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items: { type: string }
+        '403':
+          description: Forbidden
+
+  /admin/products/{id}:
+    get:
+      operationId: admin_get_product
+      tags: [Admin, Products]
+      summary: Get product detail (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product: { $ref: '#/components/schemas/Product' }
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    patch:
+      operationId: admin_update_product
+      tags: [Admin, Products]
+      summary: Update product (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product]
+              properties:
+                product:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    model_number: { type: string }
+                    unit: { type: string }
+                    unit_price: { type: integer, minimum: 0 }
+                manufacturer_name: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product: { $ref: '#/components/schemas/Product' }
+        '422':
+          description: Unprocessable Entity
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    delete:
+      operationId: admin_delete_product
+      tags: [Admin, Products]
+      summary: Delete product (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+  # 資材マスタ API
+  /admin/materials:
+    get:
+      operationId: admin_list_materials
+      tags: [Admin, Materials]
+      summary: Get all materials (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Search by material name (partial match)
+        - in: query
+          name: model_number
+          schema: { type: string }
+          description: Search by model number (partial match)
+        - in: query
+          name: material_type
+          schema: { type: string }
+          description: Filter by material type
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: [created_at, name, unit_price, material_type]
+            default: created_at
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - in: query
+          name: show_discarded
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  materials:
+                    type: array
+                    items: { $ref: '#/components/schemas/Material' }
+        '403':
+          description: Forbidden
+
+    post:
+      operationId: admin_create_material
+      tags: [Admin, Materials]
+      summary: Create material (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [material]
+              properties:
+                material:
+                  type: object
+                  required: [name, unit_price]
+                  properties:
+                    name: { type: string }
+                    model_number: { type: string }
+                    unit: { type: string }
+                    unit_price: { type: integer, minimum: 0 }
+                    material_type: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  material: { $ref: '#/components/schemas/Material' }
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items: { type: string }
+        '403':
+          description: Forbidden
+
+  /admin/materials/{id}:
+    get:
+      operationId: admin_get_material
+      tags: [Admin, Materials]
+      summary: Get material detail (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  material: { $ref: '#/components/schemas/Material' }
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    patch:
+      operationId: admin_update_material
+      tags: [Admin, Materials]
+      summary: Update material (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [material]
+              properties:
+                material:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    model_number: { type: string }
+                    unit: { type: string }
+                    unit_price: { type: integer, minimum: 0 }
+                    material_type: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  material: { $ref: '#/components/schemas/Material' }
+        '422':
+          description: Unprocessable Entity
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    delete:
+      operationId: admin_delete_material
+      tags: [Admin, Materials]
+      summary: Delete material (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+  # 口座情報 API
+  /admin/bank_accounts:
+    get:
+      operationId: admin_list_bank_accounts
+      tags: [Admin, BankAccounts]
+      summary: Get all bank accounts (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: show_discarded
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bank_accounts:
+                    type: array
+                    items: { $ref: '#/components/schemas/BankAccount' }
+        '403':
+          description: Forbidden
+
+    post:
+      operationId: admin_create_bank_account
+      tags: [Admin, BankAccounts]
+      summary: Create bank account (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bank_account]
+              properties:
+                bank_account:
+                  type: object
+                  required: [bank_name, branch_name, account_type, account_number, account_holder]
+                  properties:
+                    bank_name: { type: string }
+                    branch_name: { type: string }
+                    account_type: { type: string, enum: [ordinary, current, savings] }
+                    account_number: { type: string }
+                    account_holder: { type: string }
+                    is_default_for_invoice: { type: boolean }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bank_account: { $ref: '#/components/schemas/BankAccountDetail' }
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items: { type: string }
+        '403':
+          description: Forbidden
+
+  /admin/bank_accounts/{id}:
+    get:
+      operationId: admin_get_bank_account
+      tags: [Admin, BankAccounts]
+      summary: Get bank account detail (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bank_account: { $ref: '#/components/schemas/BankAccountDetail' }
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    patch:
+      operationId: admin_update_bank_account
+      tags: [Admin, BankAccounts]
+      summary: Update bank account (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bank_account]
+              properties:
+                bank_account:
+                  type: object
+                  properties:
+                    bank_name: { type: string }
+                    branch_name: { type: string }
+                    account_type: { type: string, enum: [ordinary, current, savings] }
+                    account_number: { type: string }
+                    account_holder: { type: string }
+                    is_default_for_invoice: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bank_account: { $ref: '#/components/schemas/BankAccountDetail' }
+        '422':
+          description: Unprocessable Entity
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    delete:
+      operationId: admin_delete_bank_account
+      tags: [Admin, BankAccounts]
+      summary: Delete bank account (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+  # メーカー API
+  /admin/manufacturers:
+    get:
+      operationId: admin_list_manufacturers
+      tags: [Admin, Manufacturers]
+      summary: Get manufacturers for autocomplete (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Search by manufacturer name (partial match)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manufacturers:
+                    type: array
+                    items: { $ref: '#/components/schemas/Manufacturer' }
+        '403':
+          description: Forbidden
+
+  # 請求書 API
+  /admin/invoices:
+    get:
+      operationId: admin_list_invoices
+      tags: [Admin, Invoices]
+      summary: Get all invoices (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: customer_id
+          schema: { type: string, format: uuid }
+          description: Filter by customer
+        - in: query
+          name: site_id
+          schema: { type: string, format: uuid }
+          description: Filter by site
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [draft, issued, canceled]
+          description: Filter by status
+        - in: query
+          name: issued_from
+          schema: { type: string, format: date }
+          description: Filter by issued date (from)
+        - in: query
+          name: issued_to
+          schema: { type: string, format: date }
+          description: Filter by issued date (to)
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: [created_at, invoice_number, total_amount, issued_at, customer_name]
+            default: created_at
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - in: query
+          name: show_discarded
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoices:
+                    type: array
+                    items: { $ref: '#/components/schemas/InvoiceListItem' }
+        '403':
+          description: Forbidden
+
+    post:
+      operationId: admin_create_invoice
+      tags: [Admin, Invoices]
+      summary: Create invoice (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invoice]
+              properties:
+                invoice:
+                  type: object
+                  required: [customer_id, tax_rate]
+                  properties:
+                    customer_id: { type: string, format: uuid }
+                    site_id: { type: string, format: uuid }
+                    customer_name: { type: string }
+                    site_name: { type: string }
+                    title: { type: string }
+                    tax_rate: { type: number }
+                    delivery_date: { type: string, format: date }
+                    delivery_place: { type: string }
+                    transaction_method: { type: string }
+                    valid_until: { type: string, format: date }
+                    note: { type: string }
+                daily_report_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+                invoice_items:
+                  type: array
+                  items: { $ref: '#/components/schemas/InvoiceItemInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice: { $ref: '#/components/schemas/Invoice' }
+                  invoice_items:
+                    type: array
+                    items: { $ref: '#/components/schemas/InvoiceItem' }
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items: { type: string }
+        '403':
+          description: Forbidden
+
+  /admin/invoices/{id}:
+    get:
+      operationId: admin_get_invoice
+      tags: [Admin, Invoices]
+      summary: Get invoice detail (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice: { $ref: '#/components/schemas/Invoice' }
+                  invoice_items:
+                    type: array
+                    items: { $ref: '#/components/schemas/InvoiceItem' }
+                  daily_reports:
+                    type: array
+                    items: { $ref: '#/components/schemas/InvoiceDailyReportSummary' }
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+    patch:
+      operationId: admin_update_invoice
+      tags: [Admin, Invoices]
+      summary: Update invoice (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invoice:
+                  type: object
+                  properties:
+                    customer_id: { type: string, format: uuid }
+                    site_id: { type: string, format: uuid }
+                    customer_name: { type: string }
+                    site_name: { type: string }
+                    title: { type: string }
+                    tax_rate: { type: number }
+                    delivery_date: { type: string, format: date }
+                    delivery_place: { type: string }
+                    transaction_method: { type: string }
+                    valid_until: { type: string, format: date }
+                    note: { type: string }
+                daily_report_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+                invoice_items:
+                  type: array
+                  items: { $ref: '#/components/schemas/InvoiceItemInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice: { $ref: '#/components/schemas/Invoice' }
+                  invoice_items:
+                    type: array
+                    items: { $ref: '#/components/schemas/InvoiceItem' }
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items: { type: string }
+                  error: { type: string }
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+  /admin/invoices/{id}/issue:
+    post:
+      operationId: admin_issue_invoice
+      tags: [Admin, Invoices]
+      summary: Issue invoice (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice: { $ref: '#/components/schemas/Invoice' }
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  errors:
+                    type: array
+                    items: { type: string }
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+  /admin/invoices/{id}/cancel:
+    post:
+      operationId: admin_cancel_invoice
+      tags: [Admin, Invoices]
+      summary: Cancel invoice (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice: { $ref: '#/components/schemas/Invoice' }
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  errors:
+                    type: array
+                    items: { type: string }
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
+  /admin/invoices/{id}/copy:
+    post:
+      operationId: admin_copy_invoice
+      tags: [Admin, Invoices]
+      summary: Copy invoice to new draft (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice: { $ref: '#/components/schemas/Invoice' }
+                  invoice_items:
+                    type: array
+                    items: { $ref: '#/components/schemas/InvoiceItem' }
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items: { type: string }
+        '404':
+          description: Not Found
+        '403':
+          description: Forbidden
+
   /admin/tenant:
     get:
       operationId: admin_get_tenant
@@ -1477,3 +2402,190 @@ components:
         money_rounding: { type: string, enum: [round, ceil, floor] }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    # 製品マスタ
+    Product:
+      type: object
+      required: [id, name, unit_price]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        model_number: { type: string, nullable: true }
+        unit: { type: string, nullable: true }
+        unit_price: { type: integer }
+        manufacturer:
+          type: object
+          nullable: true
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+        discarded_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # 資材マスタ
+    Material:
+      type: object
+      required: [id, name, unit_price]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        model_number: { type: string, nullable: true }
+        unit: { type: string, nullable: true }
+        unit_price: { type: integer }
+        material_type: { type: string, nullable: true }
+        discarded_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # 口座情報（一覧用、口座番号マスキング）
+    BankAccount:
+      type: object
+      required: [id, bank_name, branch_name, account_type, account_number, account_holder]
+      properties:
+        id: { type: string, format: uuid }
+        bank_name: { type: string }
+        branch_name: { type: string }
+        account_type: { type: string, enum: [ordinary, current, savings] }
+        account_number: { type: string }
+        account_holder: { type: string }
+        is_default_for_invoice: { type: boolean }
+        discarded_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # 口座情報詳細（口座番号は平文）
+    BankAccountDetail:
+      type: object
+      required: [id, bank_name, branch_name, account_type, account_number, account_holder]
+      properties:
+        id: { type: string, format: uuid }
+        bank_name: { type: string }
+        branch_name: { type: string }
+        account_type: { type: string, enum: [ordinary, current, savings] }
+        account_number: { type: string }
+        account_holder: { type: string }
+        is_default_for_invoice: { type: boolean }
+        discarded_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # メーカー
+    Manufacturer:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+
+    # 請求書一覧用
+    InvoiceListItem:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        invoice_number: { type: string, nullable: true }
+        customer_id: { type: string, format: uuid }
+        customer_name: { type: string }
+        site_id: { type: string, format: uuid, nullable: true }
+        site_name: { type: string, nullable: true }
+        subtotal: { type: integer }
+        tax_rate: { type: number }
+        tax_amount: { type: integer }
+        total_amount: { type: integer }
+        status: { type: string, enum: [draft, issued, canceled] }
+        issued_at: { type: string, format: date-time, nullable: true }
+        discarded_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # 請求書詳細
+    Invoice:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        invoice_number: { type: string, nullable: true }
+        customer_id: { type: string, format: uuid }
+        customer_name: { type: string }
+        site_id: { type: string, format: uuid, nullable: true }
+        site_name: { type: string, nullable: true }
+        title: { type: string, nullable: true }
+        subtotal: { type: integer }
+        tax_rate: { type: number }
+        tax_amount: { type: integer }
+        total_amount: { type: integer }
+        status: { type: string, enum: [draft, issued, canceled] }
+        issued_at: { type: string, format: date-time, nullable: true }
+        delivery_date: { type: string, format: date, nullable: true }
+        delivery_place: { type: string, nullable: true }
+        transaction_method: { type: string, nullable: true }
+        valid_until: { type: string, format: date, nullable: true }
+        note: { type: string, nullable: true }
+        discarded_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # 請求書項目
+    InvoiceItem:
+      type: object
+      required: [id, item_type, name, sort_order]
+      properties:
+        id: { type: string, format: uuid }
+        item_type: { type: string, enum: [header, product, material, labor, other] }
+        name: { type: string }
+        quantity: { type: number, nullable: true }
+        unit: { type: string, nullable: true }
+        unit_price: { type: integer, nullable: true }
+        amount: { type: integer, nullable: true }
+        sort_order: { type: integer }
+        source_product_id: { type: string, format: uuid, nullable: true }
+        source_material_id: { type: string, format: uuid, nullable: true }
+
+    # 請求書項目入力用
+    InvoiceItemInput:
+      type: object
+      required: [item_type, name]
+      properties:
+        item_type: { type: string, enum: [header, product, material, labor, other] }
+        name: { type: string }
+        quantity: { type: number, nullable: true }
+        unit: { type: string, nullable: true }
+        unit_price: { type: integer, nullable: true }
+        sort_order: { type: integer }
+        source_product_id: { type: string, format: uuid, nullable: true }
+        source_material_id: { type: string, format: uuid, nullable: true }
+
+    # 請求書に紐づく日報のサマリー
+    InvoiceDailyReportSummary:
+      type: object
+      required: [id, report_date]
+      properties:
+        id: { type: string, format: uuid }
+        report_date: { type: string, format: date }
+        site_name: { type: string, nullable: true }
+        summary: { type: string }
+
+    # 日報の製品
+    DailyReportProduct:
+      type: object
+      required: [id, product_id, quantity]
+      properties:
+        id: { type: string, format: uuid }
+        product_id: { type: string, format: uuid }
+        product_name: { type: string, nullable: true }
+        quantity: { type: number }
+        unit: { type: string, nullable: true }
+        unit_price: { type: integer, nullable: true }
+
+    # 日報の資材
+    DailyReportMaterial:
+      type: object
+      required: [id, material_id, quantity]
+      properties:
+        id: { type: string, format: uuid }
+        material_id: { type: string, format: uuid }
+        material_name: { type: string, nullable: true }
+        quantity: { type: number }
+        unit: { type: string, nullable: true }
+        unit_price: { type: integer, nullable: true }
