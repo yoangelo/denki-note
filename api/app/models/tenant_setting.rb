@@ -21,17 +21,17 @@ class TenantSetting < ApplicationRecord
   belongs_to :tenant
 
   validates :default_unit_rate,
-    presence: { message: '基本時間単価を入力してください' },
-    numericality: {
-      only_integer: true,
-      greater_than_or_equal_to: 0,
-      message: '基本時間単価は0以上の整数で入力してください'
-    }
+            presence: { message: "基本時間単価を入力してください" },
+            numericality: {
+              only_integer: true,
+              greater_than_or_equal_to: 0,
+              message: "基本時間単価は0以上の整数で入力してください",
+            }
 
   validates :money_rounding,
-    presence: { message: '金額丸め方式を選択してください' },
-    inclusion: {
-      in: %w[round ceil floor],
-      message: '金額丸め方式は四捨五入、切り上げ、切り捨てのいずれかを選択してください'
-    }
+            presence: { message: "金額丸め方式を選択してください" },
+            inclusion: {
+              in: ["round", "ceil", "floor"],
+              message: "金額丸め方式は四捨五入、切り上げ、切り捨てのいずれかを選択してください",
+            }
 end

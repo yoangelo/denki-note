@@ -31,6 +31,6 @@ class WorkEntry < ApplicationRecord
 
   validates :minutes, presence: true, numericality: {
     greater_than_or_equal_to: 0,
-    message: '工数は0以上の値を入力してください'
+    message: "工数は0以上の値を入力してください",
   }
 end

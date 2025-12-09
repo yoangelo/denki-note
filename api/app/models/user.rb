@@ -56,11 +56,11 @@ class User < ApplicationRecord
   validates :is_active, inclusion: { in: [true, false] }
 
   def admin?
-    roles.exists?(name: 'admin')
+    roles.exists?(name: "admin")
   end
 
   def member?
-    roles.exists?(name: 'member')
+    roles.exists?(name: "member")
   end
 
   def has_role?(role_name)

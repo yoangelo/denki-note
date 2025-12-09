@@ -25,10 +25,9 @@
 class UserRole < ApplicationRecord
   belongs_to :user
   belongs_to :role
-  belongs_to :assigned_by, class_name: 'User', optional: true
+  belongs_to :assigned_by, class_name: "User", optional: true
 
   validates :user_id, uniqueness: { scope: :role_id }
-  validates :role_id, presence: true
 
   before_create :set_assigned_at
 

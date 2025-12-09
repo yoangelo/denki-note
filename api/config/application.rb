@@ -26,7 +26,7 @@ module App
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w(assets tasks))
+    config.autoload_lib(ignore: ["assets", "tasks"])
 
     # Configuration for the application, engines, and railties goes here.
     #
@@ -43,7 +43,7 @@ module App
 
     # Enable session and cookies for API authentication
     config.middleware.use ActionDispatch::Cookies
-    config.middleware.use ActionDispatch::Session::CookieStore, key: '_denki_note_session'
+    config.middleware.use ActionDispatch::Session::CookieStore, key: "_denki_note_session"
 
     # ① CORS: 最前に差し込む（OPTIONSはここで204を返す）
     config.middleware.insert_before 0, Rack::Cors do
@@ -53,25 +53,25 @@ module App
 
         # credentials=true でCookieを送受信可能にする
         resource "*",
-          headers: :any,
-          methods: [:get, :post, :put, :patch, :delete, :options, :head],
-          credentials: true,
-          expose: ['Set-Cookie'],
-          max_age: 86_400
+                 headers: :any,
+                 methods: [:get, :post, :put, :patch, :delete, :options, :head],
+                 credentials: true,
+                 expose: ["Set-Cookie"],
+                 max_age: 86_400
       end
     end
 
     # OpenAPIFirst validation middleware
     # CORSミドルウェアの後に追加されるように、ここで設定
-    require_relative 'initializers/openapi_first'
+    require_relative "initializers/openapi_first"
 
     unless Rails.env.test?
       if Rails.env.development?
-        spec_path = File.expand_path('../../openapi/openapi.yaml', __dir__)
+        spec_path = File.expand_path("../../openapi/openapi.yaml", __dir__)
         config.middleware.use OpenapiSkippableRequestValidation, spec: spec_path
         config.middleware.use OpenapiSkippableResponseValidation, spec: spec_path
       else
-        spec_path = Rails.root.join('openapi', 'openapi.yaml').to_s
+        spec_path = Rails.root.join("openapi", "openapi.yaml").to_s
         config.middleware.use OpenapiFirst::Middlewares::RequestValidation, spec: spec_path
       end
     end

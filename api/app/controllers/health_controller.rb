@@ -3,7 +3,7 @@ class HealthController < ApplicationController
     render json: {
       status: "ok",
       time: Time.zone.now,
-      message: "Hello from Rails API 👋"
+      message: "Hello from Rails API 👋",
     }
   end
 end

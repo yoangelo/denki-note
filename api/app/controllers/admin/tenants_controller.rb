@@ -13,8 +13,8 @@ class Admin::TenantsController < AuthenticatedController
         default_unit_rate: tenant_setting&.default_unit_rate,
         money_rounding: tenant_setting&.money_rounding,
         created_at: tenant.created_at,
-        updated_at: tenant.updated_at
-      }
+        updated_at: tenant.updated_at,
+      },
     }
   end
 
@@ -25,21 +25,17 @@ class Admin::TenantsController < AuthenticatedController
 
     ActiveRecord::Base.transaction do
       # テナント基本情報の更新
-      if tenant_params.key?(:name)
-        unless tenant.update(name: tenant_params[:name])
-          render json: { errors: tenant.errors.messages }, status: :unprocessable_entity
-          raise ActiveRecord::Rollback
-        end
+      if tenant_params.key?(:name) && !tenant.update(name: tenant_params[:name])
+        render json: { errors: tenant.errors.messages }, status: :unprocessable_entity
+        raise ActiveRecord::Rollback
       end
 
       # 業務設定の更新
       # 存在しない場合は新規作成
       setting_params = tenant_params.slice(:default_unit_rate, :money_rounding)
-      if setting_params.present?
-        unless tenant_setting.update(setting_params)
-          render json: { errors: tenant_setting.errors.messages }, status: :unprocessable_entity
-          raise ActiveRecord::Rollback
-        end
+      if setting_params.present? && !tenant_setting.update(setting_params)
+        render json: { errors: tenant_setting.errors.messages }, status: :unprocessable_entity
+        raise ActiveRecord::Rollback
       end
 
       render json: {
@@ -49,8 +45,8 @@ class Admin::TenantsController < AuthenticatedController
           default_unit_rate: tenant_setting.default_unit_rate,
           money_rounding: tenant_setting.money_rounding,
           created_at: tenant.created_at,
-          updated_at: tenant.updated_at
-        }
+          updated_at: tenant.updated_at,
+        },
       }
     end
   end
@@ -62,8 +58,8 @@ class Admin::TenantsController < AuthenticatedController
   end
 
   def require_admin
-    unless current_user&.has_role?(:admin)
-      render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
-    end
+    return if current_user&.has_role?(:admin)
+
+    render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
   end
 end
