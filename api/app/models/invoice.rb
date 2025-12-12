@@ -1,3 +1,47 @@
+# == Schema Information
+#
+# Table name: invoices
+#
+#  id                                                              :uuid             not null, primary key
+#  billing_date                                                    :date             not null
+#  created_by(作成者ID)                                            :uuid
+#  customer_name(顧客名（コピー値、手動編集可）)                   :string           not null
+#  delivery_date(受渡期日)                                         :date
+#  delivery_place(受渡場所)                                        :string
+#  discarded_at(削除日時（論理削除）)                              :datetime
+#  invoice_number(請求書番号（自社内でユニーク、draftではNULL可）) :string
+#  issued_at(発行日時)                                             :datetime
+#  note(備考)                                                      :text
+#  status(ステータス（draft/issued/canceled）)                     :string           default("draft"), not null
+#  subtotal(税抜合計金額)                                          :decimal(12, )    default(0), not null
+#  tax_amount(消費税額)                                            :decimal(12, )    default(0), not null
+#  tax_rate(適用税率（%）)                                         :decimal(4, 2)    default(10.0), not null
+#  title(タイトル)                                                 :string
+#  total_amount(税込合計金額)                                      :decimal(12, )    default(0), not null
+#  transaction_method(取引方法)                                    :string
+#  valid_until(有効期限)                                           :date
+#  created_at                                                      :datetime         not null
+#  updated_at                                                      :datetime         not null
+#  customer_id(顧客ID)                                             :uuid             not null
+#  site_id(現場ID)                                                 :uuid
+#  tenant_id(自社ID)                                               :uuid             not null
+#
+# Indexes
+#
+#  index_invoices_on_customer_id                   (customer_id)
+#  index_invoices_on_discarded_at                  (discarded_at)
+#  index_invoices_on_site_id                       (site_id)
+#  index_invoices_on_status                        (status)
+#  index_invoices_on_tenant_id                     (tenant_id)
+#  index_invoices_on_tenant_id_and_invoice_number  (tenant_id,invoice_number) UNIQUE WHERE (invoice_number IS NOT NULL)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (created_by => users.id)
+#  fk_rails_...  (customer_id => customers.id)
+#  fk_rails_...  (site_id => sites.id)
+#  fk_rails_...  (tenant_id => tenants.id)
+#
 class Invoice < ApplicationRecord
   include Discard::Model
 
@@ -20,6 +64,7 @@ class Invoice < ApplicationRecord
 
   validates :customer_id, presence: { message: "顧客を選択してください" }
   validates :customer_name, presence: { message: "顧客名を入力してください" }
+  validates :billing_date, presence: true
   validates :tax_rate, presence: true,
                        numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
   validates :status, inclusion: { in: statuses.keys }
@@ -67,6 +112,7 @@ class Invoice < ApplicationRecord
     new_invoice.invoice_number = nil
     new_invoice.issued_at = nil
     new_invoice.discarded_at = nil
+    new_invoice.billing_date = Time.zone.today
 
     invoice_items.each do |item|
       new_invoice.invoice_items.build(item.attributes.except("id", "invoice_id", "created_at", "updated_at"))
@@ -79,7 +125,6 @@ class Invoice < ApplicationRecord
 
   def copy_customer_and_site_names
     self.customer_name ||= customer&.name
-    self.site_name ||= site&.name
   end
 
   def calculate_amounts

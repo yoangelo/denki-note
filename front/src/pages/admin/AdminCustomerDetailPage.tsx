@@ -12,7 +12,7 @@ interface CustomerDetailResponse {
 
 interface SiteFormData {
   name: string;
-  note: string;
+  address: string;
 }
 
 export function AdminCustomerDetailPage() {
@@ -31,7 +31,7 @@ export function AdminCustomerDetailPage() {
     open: false,
     site: null,
   });
-  const [siteFormData, setSiteFormData] = useState<SiteFormData>({ name: "", note: "" });
+  const [siteFormData, setSiteFormData] = useState<SiteFormData>({ name: "", address: "" });
   const [siteFormError, setSiteFormError] = useState("");
   const [showDiscardedSites, setShowDiscardedSites] = useState(false);
 
@@ -79,12 +79,12 @@ export function AdminCustomerDetailPage() {
           site: {
             customer_id: id,
             name: siteFormData.name,
-            note: siteFormData.note || undefined,
+            address: siteFormData.address || undefined,
           },
         },
       });
       setAddSiteModal(false);
-      setSiteFormData({ name: "", note: "" });
+      setSiteFormData({ name: "", address: "" });
       setSiteFormError("");
       toast.success("現場を追加しました");
       fetchCustomerDetail();
@@ -95,13 +95,13 @@ export function AdminCustomerDetailPage() {
   };
 
   const openAddSiteModal = () => {
-    setSiteFormData({ name: "", note: "" });
+    setSiteFormData({ name: "", address: "" });
     setSiteFormError("");
     setAddSiteModal(true);
   };
 
   const openEditSiteModal = (site: Site) => {
-    setSiteFormData({ name: site.name, note: site.note || "" });
+    setSiteFormData({ name: site.name, address: site.address || "" });
     setSiteFormError("");
     setEditSiteModal({ open: true, site });
   };
@@ -120,12 +120,12 @@ export function AdminCustomerDetailPage() {
         data: {
           site: {
             name: siteFormData.name,
-            note: siteFormData.note || undefined,
+            address: siteFormData.address || undefined,
           },
         },
       });
       setEditSiteModal({ open: false, site: null });
-      setSiteFormData({ name: "", note: "" });
+      setSiteFormData({ name: "", address: "" });
       setSiteFormError("");
       toast.success("現場を更新しました");
       fetchCustomerDetail();
@@ -239,7 +239,7 @@ export function AdminCustomerDetailPage() {
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border border-gray-300 px-4 py-2 text-left">現場名</th>
-                    <th className="border border-gray-300 px-4 py-2 text-left">概要</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">住所</th>
                     <th className="border border-gray-300 px-4 py-2 text-center w-24">操作</th>
                   </tr>
                 </thead>
@@ -261,7 +261,7 @@ export function AdminCustomerDetailPage() {
                             site.name
                           )}
                         </td>
-                        <td className="border border-gray-300 px-4 py-2">{site.note || "-"}</td>
+                        <td className="border border-gray-300 px-4 py-2">{site.address || "-"}</td>
                         <td className="border border-gray-300 px-4 py-2 text-center">
                           {isDiscarded ? (
                             <span className="text-gray-600 text-sm">削除済</span>
@@ -339,13 +339,13 @@ export function AdminCustomerDetailPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-semibold mb-2">概要</label>
-              <textarea
-                value={siteFormData.note}
-                onChange={(e) => setSiteFormData({ ...siteFormData, note: e.target.value })}
+              <label className="block text-sm font-semibold mb-2">住所</label>
+              <input
+                type="text"
+                value={siteFormData.address}
+                onChange={(e) => setSiteFormData({ ...siteFormData, address: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="例: エアコン外気復旧工事"
+                placeholder="例: 東京都新宿区西新宿1-1-1"
               />
             </div>
 
@@ -406,13 +406,13 @@ export function AdminCustomerDetailPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-semibold mb-2">概要</label>
-              <textarea
-                value={siteFormData.note}
-                onChange={(e) => setSiteFormData({ ...siteFormData, note: e.target.value })}
+              <label className="block text-sm font-semibold mb-2">住所</label>
+              <input
+                type="text"
+                value={siteFormData.address}
+                onChange={(e) => setSiteFormData({ ...siteFormData, address: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="例: エアコン外気復旧工事"
+                placeholder="例: 東京都新宿区西新宿1-1-1"
               />
             </div>
 

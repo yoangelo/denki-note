@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_12_08_084221) do
+ActiveRecord::Schema[7.1].define(version: 2025_12_12_230443) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
@@ -78,6 +78,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_08_084221) do
     t.datetime "updated_at", null: false, comment: "更新日時"
     t.text "summary", null: false, comment: "概要"
     t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.decimal "labor_cost", precision: 12, default: "0", null: false
     t.index ["discarded_at"], name: "index_daily_reports_on_discarded_at"
     t.index ["site_id"], name: "index_daily_reports_on_site_id"
     t.index ["tenant_id", "site_id", "work_date"], name: "index_daily_reports_on_tenant_id_and_site_id_and_work_date"
@@ -123,7 +124,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_08_084221) do
     t.string "invoice_number", comment: "請求書番号（自社内でユニーク、draftではNULL可）"
     t.string "title", comment: "タイトル"
     t.string "customer_name", null: false, comment: "顧客名（コピー値、手動編集可）"
-    t.string "site_name", comment: "現場名（コピー値、手動編集可）"
     t.decimal "subtotal", precision: 12, default: "0", null: false, comment: "税抜合計金額"
     t.decimal "tax_rate", precision: 4, scale: 2, default: "10.0", null: false, comment: "適用税率（%）"
     t.decimal "tax_amount", precision: 12, default: "0", null: false, comment: "消費税額"
@@ -138,6 +138,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_08_084221) do
     t.datetime "discarded_at", comment: "削除日時（論理削除）"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "billing_date", default: -> { "CURRENT_DATE" }, null: false
     t.index ["customer_id"], name: "index_invoices_on_customer_id"
     t.index ["discarded_at"], name: "index_invoices_on_discarded_at"
     t.index ["site_id"], name: "index_invoices_on_site_id"
@@ -204,10 +205,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_08_084221) do
     t.uuid "tenant_id", null: false, comment: "自社ID"
     t.uuid "customer_id", null: false, comment: "顧客ID"
     t.string "name", null: false, comment: "現場名"
-    t.text "note", comment: "メモ"
     t.datetime "created_at", null: false, comment: "作成日時"
     t.datetime "updated_at", null: false, comment: "更新日時"
     t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.string "address"
     t.index ["customer_id"], name: "index_sites_on_customer_id"
     t.index ["discarded_at"], name: "index_sites_on_discarded_at"
     t.index ["tenant_id", "customer_id", "name"], name: "index_sites_on_tenant_id_and_customer_id_and_name", unique: true

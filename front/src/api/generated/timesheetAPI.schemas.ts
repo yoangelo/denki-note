@@ -46,7 +46,7 @@ export interface Site {
   tenant_id?: string;
   name: string;
   /** @nullable */
-  note?: string | null;
+  address?: string | null;
   /** @nullable */
   discarded_at?: string | null;
   created_at?: string;
@@ -180,7 +180,7 @@ export type CreateSiteBodySite = {
   /** @maxLength 200 */
   name: string;
   /** @maxLength 500 */
-  note?: string;
+  address?: string;
 };
 
 export type CreateSiteBody = {
@@ -242,6 +242,7 @@ export type ListDailyReports200DailyReportsItem = {
   summary: string;
   work_entries: ListDailyReports200DailyReportsItemWorkEntriesItem[];
   total_minutes: number;
+  labor_cost: number;
   created_at: string;
   updated_at: string;
 };
@@ -286,6 +287,7 @@ export type GetDailyReport200DailyReport = {
   summary: string;
   work_entries: GetDailyReport200DailyReportWorkEntriesItem[];
   total_minutes: number;
+  labor_cost: number;
   created_at: string;
   updated_at: string;
 };
@@ -399,6 +401,7 @@ export type BulkUpdateDailyReport200DailyReport = {
   summary: string;
   work_entries: BulkUpdateDailyReport200DailyReportWorkEntriesItem[];
   total_minutes: number;
+  labor_cost: number;
   updated_at: string;
 };
 
@@ -668,7 +671,7 @@ export type CreateCustomerBulkBodyCustomer = {
 
 export type CreateCustomerBulkBodySitesItem = {
   name: string;
-  note?: string;
+  address?: string;
 };
 
 export type CreateCustomerBulkBody = {
@@ -735,7 +738,7 @@ export type CheckDuplicateCustomer200 = {
 export type CreateAdminSiteBodySite = {
   customer_id: string;
   name: string;
-  note?: string;
+  address?: string;
 };
 
 export type CreateAdminSiteBody = {
@@ -752,7 +755,7 @@ export type CreateAdminSite422 = {
 
 export type UpdateAdminSiteBodySite = {
   name?: string;
-  note?: string;
+  address?: string;
 };
 
 export type UpdateAdminSiteBody = {
