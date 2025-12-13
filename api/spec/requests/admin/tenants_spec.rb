@@ -1,10 +1,10 @@
 require "rails_helper"
 
 RSpec.describe "Admin::Tenants", type: :request do
-  let_it_be(:tenant) { create(:tenant) }
-  let_it_be(:admin_user) { create(:user, :admin, tenant: tenant) }
-  let_it_be(:member_user) { create(:user, :member, tenant: tenant) }
-  let_it_be(:tenant_setting) do
+  let!(:tenant) { create(:tenant) }
+  let!(:admin_user) { create(:user, :admin, tenant: tenant) }
+  let!(:member_user) { create(:user, :member, tenant: tenant) }
+  let!(:tenant_setting) do
     create(:tenant_setting, tenant: tenant, default_unit_rate: 3000, money_rounding: "round")
   end
 
