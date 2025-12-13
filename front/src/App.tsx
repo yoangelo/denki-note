@@ -21,6 +21,7 @@ import { AdminMaterialsPage } from "./pages/admin/AdminMaterialsPage";
 import { AdminBankAccountsPage } from "./pages/admin/AdminBankAccountsPage";
 import { AdminInvoicesPage } from "./pages/admin/AdminInvoicesPage";
 import { AdminInvoiceCreatePage } from "./pages/admin/AdminInvoiceCreatePage";
+import { AdminInvoiceDetailPage } from "./pages/admin/AdminInvoiceDetailPage";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
@@ -196,6 +197,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminInvoiceCreatePage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/invoices/:id"
+              element={
+                <AdminRoute>
+                  <AdminInvoiceDetailPage />
                 </AdminRoute>
               }
             />
