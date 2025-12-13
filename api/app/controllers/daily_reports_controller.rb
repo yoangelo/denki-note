@@ -68,10 +68,9 @@ class DailyReportsController < AuthenticatedController
   #
   # @return [Hash] 日報の詳細情報（daily_report）
   def show
-    daily_report = DailyReport.kept
-                              .where(sites: { tenant: current_tenant })
-                              .joins(:site)
-                              .includes(site: :customer, work_entries: :user)
+    daily_report = DailyReport.kept.where(sites: { tenant: current_tenant }).joins(:site)
+                              .includes(site: :customer, work_entries: :user,
+                                        daily_report_products: :product, daily_report_materials: :material)
                               .find_by(id: params[:id])
 
     return render json: { error: "日報が見つかりません" }, status: :not_found unless daily_report
@@ -308,8 +307,8 @@ class DailyReportsController < AuthenticatedController
 
   def format_daily_report(report)
     format_daily_report_summary(report).merge(
-      products: format_products(report.daily_report_products.includes(:product)),
-      materials: format_materials(report.daily_report_materials.includes(:material))
+      products: format_products(report.daily_report_products),
+      materials: format_materials(report.daily_report_materials)
     )
   end
 
