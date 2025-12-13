@@ -87,10 +87,12 @@ class Invoice < ApplicationRecord
   def issue
     return false unless draft?
 
+    reload
     transaction do
       self.status = :issued
       self.issued_at = Time.current
       self.invoice_number = generate_invoice_number
+      calculate_amounts
       save!
     end
     true
@@ -99,11 +101,8 @@ class Invoice < ApplicationRecord
   def cancel
     return false if canceled?
 
-    transaction do
-      self.status = :canceled
-      discard!
-    end
-    true
+    self.status = :canceled
+    save
   end
 
   def copy_to_new_invoice
@@ -159,8 +158,8 @@ class Invoice < ApplicationRecord
     when "issued"
       errors.add(:invoice_number, "は必須です") if invoice_number.blank?
       errors.add(:issued_at, "は必須です") if issued_at.blank?
-    when "canceled"
-      errors.add(:discarded_at, "は必須です") if discarded_at.blank?
+      errors.add(:total_amount, "は0より大きい値が必要です") if total_amount <= 0
+      errors.add(:base, "請求項目が必要です") if invoice_items.reject(&:header?).empty?
     end
   end
 end

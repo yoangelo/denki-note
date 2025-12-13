@@ -38,6 +38,7 @@ FactoryBot.define do
     sequence(:name) { |n| "テスト項目#{n}" }
     quantity { 1 }
     unit_price { 1000 }
+    amount { 1000 }
     unit { "個" }
     sort_order { 0 }
 

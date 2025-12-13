@@ -62,13 +62,42 @@ FactoryBot.define do
       status { "issued" }
       sequence(:invoice_number) { |n| "INV-#{Time.current.year}-#{format("%03d", n)}" }
       issued_at { Time.current }
+      subtotal { 1000 }
+      tax_amount { 100 }
+      total_amount { 1100 }
+
+      after(:build) do |invoice|
+        invoice.invoice_items.build(
+          item_type: "product",
+          name: "テスト製品",
+          quantity: 1,
+          unit: "個",
+          unit_price: 1000,
+          amount: 1000,
+          sort_order: 1
+        )
+      end
     end
 
     trait :canceled do
       status { "canceled" }
       sequence(:invoice_number) { |n| "INV-#{Time.current.year}-#{format("%03d", n)}" }
       issued_at { Time.current }
-      discarded_at { Time.current }
+      subtotal { 1000 }
+      tax_amount { 100 }
+      total_amount { 1100 }
+
+      after(:build) do |invoice|
+        invoice.invoice_items.build(
+          item_type: "product",
+          name: "テスト製品",
+          quantity: 1,
+          unit: "個",
+          unit_price: 1000,
+          amount: 1000,
+          sort_order: 1
+        )
+      end
     end
 
     trait :discarded do

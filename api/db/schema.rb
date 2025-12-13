@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_12_12_230443) do
+ActiveRecord::Schema[7.1].define(version: 2025_12_13_025045) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
@@ -145,7 +145,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_12_230443) do
     t.index ["status"], name: "index_invoices_on_status"
     t.index ["tenant_id", "invoice_number"], name: "index_invoices_on_tenant_id_and_invoice_number", unique: true, where: "(invoice_number IS NOT NULL)"
     t.index ["tenant_id"], name: "index_invoices_on_tenant_id"
-    t.check_constraint "status::text <> 'canceled'::text OR discarded_at IS NOT NULL", name: "invoices_canceled_check"
     t.check_constraint "status::text <> 'draft'::text OR issued_at IS NULL", name: "invoices_draft_issued_at_check"
     t.check_constraint "status::text <> 'issued'::text OR issued_at IS NOT NULL AND invoice_number IS NOT NULL", name: "invoices_issued_check"
   end
