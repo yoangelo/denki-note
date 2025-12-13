@@ -2232,7 +2232,7 @@ paths:
                       type: string
                       enum:
                         - ordinary
-                        - checking
+                        - current
                         - savings
                     account_number:
                       type: string
@@ -2319,7 +2319,7 @@ paths:
                       type: string
                       enum:
                         - ordinary
-                        - checking
+                        - current
                         - savings
                     account_number:
                       type: string
@@ -3085,7 +3085,7 @@ components:
           type: string
           enum:
             - ordinary
-            - checking
+            - current
             - savings
         account_type_label:
           type: string

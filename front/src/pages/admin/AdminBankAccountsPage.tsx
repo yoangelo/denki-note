@@ -60,7 +60,7 @@ const getAccountTypeLabel = (type: string) => {
   switch (type) {
     case "ordinary":
       return "普通";
-    case "checking":
+    case "current":
       return "当座";
     case "savings":
       return "貯蓄";
@@ -476,7 +476,7 @@ export function AdminBankAccountsPage() {
             }
           >
             <option value="ordinary">普通</option>
-            <option value="checking">当座</option>
+            <option value="current">当座</option>
             <option value="savings">貯蓄</option>
           </Select>
           <Input
@@ -567,7 +567,7 @@ export function AdminBankAccountsPage() {
             }
           >
             <option value="ordinary">普通</option>
-            <option value="checking">当座</option>
+            <option value="current">当座</option>
             <option value="savings">貯蓄</option>
           </Select>
           <Input
