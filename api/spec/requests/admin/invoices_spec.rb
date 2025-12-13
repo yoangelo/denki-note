@@ -91,12 +91,17 @@ RSpec.describe "Admin::Invoices", type: :request do
     let!(:invoice_daily_report) { create(:invoice_daily_report, invoice: invoice, daily_report: daily_report) }
     let!(:bank_account) { create(:bank_account, :default, tenant: tenant) }
 
-    it "請求書詳細を返す（請求項目・日報含む）" do
+    it "請求書詳細を返す" do
       get "/admin/invoices/#{invoice.id}"
 
       expect(response).to have_http_status(:ok)
       expect(json_response["invoice"]["id"]).to eq(invoice.id)
       expect(json_response["invoice"]["site_name"]).to eq(site.name)
+    end
+
+    it "請求項目・日報・口座情報を含む" do
+      get "/admin/invoices/#{invoice.id}"
+
       expect(json_response["invoice_items"].length).to eq(1)
       expect(json_response["invoice_items"].first["name"]).to eq("テスト製品")
       expect(json_response["daily_reports"].length).to eq(1)
@@ -321,9 +326,14 @@ RSpec.describe "Admin::Invoices", type: :request do
 
       expect(response).to have_http_status(:created)
       expect(json_response["invoice"]["status"]).to eq("draft")
+      expect(json_response["invoice"]["title"]).to eq("コピー元")
+    end
+
+    it "コピー時に請求書番号と発行日時はクリアされる" do
+      post "/admin/invoices/#{invoice.id}/copy"
+
       expect(json_response["invoice"]["invoice_number"]).to be_nil
       expect(json_response["invoice"]["issued_at"]).to be_nil
-      expect(json_response["invoice"]["title"]).to eq("コピー元")
     end
 
     it "請求項目もコピーされる" do
