@@ -52,35 +52,7 @@ class DailyReportsController < AuthenticatedController
     daily_reports = scope.distinct.order(work_date: :desc).limit(limit)
 
     # レスポンス形式にフォーマット
-    formatted_reports = daily_reports.map do |report|
-      {
-        id: report.id,
-        work_date: report.work_date.to_s,
-        customer: {
-          id: report.site.customer.id,
-          name: report.site.customer.name,
-        },
-        site: {
-          id: report.site.id,
-          name: report.site.name,
-        },
-        summary: report.summary || "",
-        work_entries: report.work_entries.map do |entry|
-          {
-            id: entry.id,
-            user: {
-              id: entry.user.id,
-              display_name: entry.user.display_name,
-            },
-            minutes: entry.minutes,
-          }
-        end,
-        total_minutes: report.work_entries.sum(:minutes),
-        labor_cost: report.labor_cost.to_i,
-        created_at: report.created_at.iso8601,
-        updated_at: report.updated_at.iso8601,
-      }
-    end
+    formatted_reports = daily_reports.map { |report| format_daily_report_summary(report) }
 
     render json: {
       daily_reports: formatted_reports,
@@ -96,10 +68,9 @@ class DailyReportsController < AuthenticatedController
   #
   # @return [Hash] 日報の詳細情報（daily_report）
   def show
-    daily_report = DailyReport.kept
-                              .where(sites: { tenant: current_tenant })
-                              .joins(:site)
-                              .includes(site: :customer, work_entries: :user)
+    daily_report = DailyReport.kept.where(sites: { tenant: current_tenant }).joins(:site)
+                              .includes(site: :customer, work_entries: :user,
+                                        daily_report_products: :product, daily_report_materials: :material)
                               .find_by(id: params[:id])
 
     return render json: { error: "日報が見つかりません" }, status: :not_found unless daily_report
@@ -142,14 +113,32 @@ class DailyReportsController < AuthenticatedController
           }
         end
 
-        # 日報とwork_entriesを同時に作成
+        # 製品データの準備
+        products_attrs = (report_params[:products] || []).map do |product_params|
+          {
+            product_id: product_params[:product_id],
+            quantity: product_params[:quantity],
+          }
+        end
+
+        # 資材データの準備
+        materials_attrs = (report_params[:materials] || []).map do |material_params|
+          {
+            material_id: material_params[:material_id],
+            quantity: material_params[:quantity],
+          }
+        end
+
+        # 日報とwork_entries、products、materialsを同時に作成
         daily_report = DailyReport.new(
           tenant_id: current_tenant.id,
           site_id: report_params[:site_id],
           work_date: report_params[:work_date],
           summary: report_params[:summary],
           created_by: current_user.id,
-          work_entries_attributes: work_entries_attrs
+          work_entries_attributes: work_entries_attrs,
+          daily_report_products_attributes: products_attrs,
+          daily_report_materials_attributes: materials_attrs
         )
 
         if daily_report.save
@@ -231,6 +220,26 @@ class DailyReportsController < AuthenticatedController
         )
       end
 
+      # 既存の製品・資材を全削除
+      daily_report.daily_report_products.destroy_all
+      daily_report.daily_report_materials.destroy_all
+
+      # 新しい製品を一括作成
+      (bulk_update_params[:products] || []).each do |product_params|
+        daily_report.daily_report_products.create!(
+          product_id: product_params[:product_id],
+          quantity: product_params[:quantity]
+        )
+      end
+
+      # 新しい資材を一括作成
+      (bulk_update_params[:materials] || []).each do |material_params|
+        daily_report.daily_report_materials.create!(
+          material_id: material_params[:material_id],
+          quantity: material_params[:quantity]
+        )
+      end
+
       # 最新データを再読み込み
       daily_report.reload
       daily_report.site.reload
@@ -281,38 +290,44 @@ class DailyReportsController < AuthenticatedController
     render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
   end
 
-  # 日報をレスポンス用のハッシュにフォーマットする
-  #
-  # @param report [DailyReport] 日報オブジェクト
-  # @return [Hash] フォーマット済みの日報データ
-  def format_daily_report(report)
+  def format_daily_report_summary(report)
     {
       id: report.id,
       work_date: report.work_date.to_s,
-      customer: {
-        id: report.site.customer.id,
-        name: report.site.customer.name,
-      },
-      site: {
-        id: report.site.id,
-        name: report.site.name,
-      },
+      customer: { id: report.site.customer.id, name: report.site.customer.name },
+      site: { id: report.site.id, name: report.site.name },
       summary: report.summary || "",
-      work_entries: report.work_entries.map do |entry|
-        {
-          id: entry.id,
-          user: {
-            id: entry.user.id,
-            display_name: entry.user.display_name,
-          },
-          minutes: entry.minutes,
-        }
-      end,
+      work_entries: format_work_entries(report.work_entries),
       total_minutes: report.work_entries.sum(:minutes),
       labor_cost: report.labor_cost.to_i,
       created_at: report.created_at.iso8601,
       updated_at: report.updated_at.iso8601,
     }
+  end
+
+  def format_daily_report(report)
+    format_daily_report_summary(report).merge(
+      products: format_products(report.daily_report_products),
+      materials: format_materials(report.daily_report_materials)
+    )
+  end
+
+  def format_work_entries(entries)
+    entries.map { |e| { id: e.id, user: { id: e.user.id, display_name: e.user.display_name }, minutes: e.minutes } }
+  end
+
+  def format_products(daily_report_products)
+    daily_report_products.map do |drp|
+      { id: drp.id, product_id: drp.product_id, name: drp.product.name,
+        quantity: drp.quantity.to_f, unit: drp.product.unit, unit_price: drp.product.unit_price.to_f, }
+    end
+  end
+
+  def format_materials(daily_report_materials)
+    daily_report_materials.map do |drm|
+      { id: drm.id, material_id: drm.material_id, name: drm.material.name,
+        quantity: drm.quantity.to_f, unit: drm.material.unit, unit_price: drm.material.unit_price.to_f, }
+    end
   end
 
   # bulk_createアクション用のパラメータを許可する
@@ -325,6 +340,8 @@ class DailyReportsController < AuthenticatedController
         :work_date,
         :summary,
         { work_entries: [:user_id, :minutes] },
+        { products: [:product_id, :quantity] },
+        { materials: [:material_id, :quantity] },
       ]
     )
   end
@@ -336,7 +353,9 @@ class DailyReportsController < AuthenticatedController
     params.require(:daily_report).permit(
       :site_id,
       :summary,
-      work_entries: [:user_id, :minutes]
+      work_entries: [:user_id, :minutes],
+      products: [:product_id, :quantity],
+      materials: [:material_id, :quantity]
     )
   end
 end

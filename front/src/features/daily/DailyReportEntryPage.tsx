@@ -1,7 +1,12 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { DailyReportEntry, type WorkRow } from "./DailyReportEntry";
+import {
+  DailyReportEntry,
+  type WorkRow,
+  type SelectedProduct,
+  type SelectedMaterial,
+} from "./DailyReportEntry";
 import { useBulkCreateDailyReports } from "@/api/generated/daily-reports/daily-reports";
 
 export function DailyReportEntryPage() {
@@ -47,6 +52,8 @@ export function DailyReportEntryPage() {
         summary: "",
         selectedWorkers: [],
         workerHours: {},
+        products: [],
+        materials: [],
       },
     ]);
   }, []);
@@ -114,6 +121,16 @@ export function DailyReportEntryPage() {
     );
   }, []);
 
+  // 製品選択更新
+  const handleProductsChange = useCallback((rowId: string, products: SelectedProduct[]) => {
+    setWorkRows((prev) => prev.map((row) => (row.id === rowId ? { ...row, products } : row)));
+  }, []);
+
+  // 資材選択更新
+  const handleMaterialsChange = useCallback((rowId: string, materials: SelectedMaterial[]) => {
+    setWorkRows((prev) => prev.map((row) => (row.id === rowId ? { ...row, materials } : row)));
+  }, []);
+
   // 行の合計時間を計算
   const calculateRowTotal = useCallback((row: WorkRow) => {
     return Object.values(row.workerHours).reduce((sum, h) => sum + h, 0);
@@ -156,11 +173,21 @@ export function DailyReportEntryPage() {
         user_id: string;
         minutes: number;
       }>;
+      products?: Array<{
+        product_id: string;
+        quantity: number;
+      }>;
+      materials?: Array<{
+        material_id: string;
+        quantity: number;
+      }>;
     }> = [];
 
     reportsBySite.forEach((rows, key) => {
       const [siteId, summary] = key.split("_");
       const work_entries: Array<{ user_id: string; minutes: number }> = [];
+      const products: Array<{ product_id: string; quantity: number }> = [];
+      const materials: Array<{ material_id: string; quantity: number }> = [];
 
       rows.forEach((row) => {
         Object.entries(row.workerHours).forEach(([workerId, hours]) => {
@@ -168,6 +195,26 @@ export function DailyReportEntryPage() {
             work_entries.push({
               user_id: workerId,
               minutes: Math.round(hours * 60),
+            });
+          }
+        });
+
+        // 製品を追加
+        row.products.forEach((product) => {
+          if (product.quantity > 0) {
+            products.push({
+              product_id: product.product_id,
+              quantity: product.quantity,
+            });
+          }
+        });
+
+        // 資材を追加
+        row.materials.forEach((material) => {
+          if (material.quantity > 0) {
+            materials.push({
+              material_id: material.material_id,
+              quantity: material.quantity,
             });
           }
         });
@@ -179,6 +226,8 @@ export function DailyReportEntryPage() {
           work_date: workDate,
           summary: summary || "作業実施",
           work_entries,
+          products: products.length > 0 ? products : undefined,
+          materials: materials.length > 0 ? materials : undefined,
         });
       }
     });
@@ -214,6 +263,8 @@ export function DailyReportEntryPage() {
         summary: "",
         selectedWorkers: [],
         workerHours: {},
+        products: [],
+        materials: [],
       },
     ]);
   }, []);
@@ -249,6 +300,8 @@ export function DailyReportEntryPage() {
           handleCustomerSiteSelect={handleCustomerSiteSelect}
           handleWorkersChange={handleWorkersChange}
           updateWorkerHours={updateWorkerHours}
+          handleProductsChange={handleProductsChange}
+          handleMaterialsChange={handleMaterialsChange}
           calculateRowTotal={calculateRowTotal}
           calculateTotalHours={calculateTotalHours}
           handleSave={handleSave}

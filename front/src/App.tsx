@@ -19,6 +19,10 @@ import { AdminTenantSettingsEditPage } from "./pages/admin/AdminTenantSettingsEd
 import { AdminProductsPage } from "./pages/admin/AdminProductsPage";
 import { AdminMaterialsPage } from "./pages/admin/AdminMaterialsPage";
 import { AdminBankAccountsPage } from "./pages/admin/AdminBankAccountsPage";
+import { AdminInvoicesPage } from "./pages/admin/AdminInvoicesPage";
+import { AdminInvoiceCreatePage } from "./pages/admin/AdminInvoiceCreatePage";
+import { AdminInvoiceDetailPage } from "./pages/admin/AdminInvoiceDetailPage";
+import { AdminInvoiceEditPage } from "./pages/admin/AdminInvoiceEditPage";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
@@ -178,6 +182,38 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminBankAccountsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/invoices"
+              element={
+                <AdminRoute>
+                  <AdminInvoicesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/invoices/new"
+              element={
+                <AdminRoute>
+                  <AdminInvoiceCreatePage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/invoices/:id"
+              element={
+                <AdminRoute>
+                  <AdminInvoiceDetailPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/invoices/:id/edit"
+              element={
+                <AdminRoute>
+                  <AdminInvoiceEditPage />
                 </AdminRoute>
               }
             />

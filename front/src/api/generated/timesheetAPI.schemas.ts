@@ -586,6 +586,26 @@ export type GetDailyReport200DailyReportWorkEntriesItem = {
   minutes: number;
 };
 
+export type GetDailyReport200DailyReportProductsItem = {
+  id: string;
+  product_id: string;
+  name: string;
+  quantity: number;
+  /** @nullable */
+  unit: string | null;
+  unit_price: number;
+};
+
+export type GetDailyReport200DailyReportMaterialsItem = {
+  id: string;
+  material_id: string;
+  name: string;
+  quantity: number;
+  /** @nullable */
+  unit: string | null;
+  unit_price: number;
+};
+
 export type GetDailyReport200DailyReport = {
   id: string;
   work_date: string;
@@ -593,6 +613,8 @@ export type GetDailyReport200DailyReport = {
   site: GetDailyReport200DailyReportSite;
   summary: string;
   work_entries: GetDailyReport200DailyReportWorkEntriesItem[];
+  products?: GetDailyReport200DailyReportProductsItem[];
+  materials?: GetDailyReport200DailyReportMaterialsItem[];
   total_minutes: number;
   labor_cost: number;
   created_at: string;
@@ -613,12 +635,26 @@ export type BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem = {
   minutes: number;
 };
 
+export type BulkCreateDailyReportsBodyDailyReportsItemProductsItem = {
+  product_id: string;
+  /** @minimum 0.01 */
+  quantity: number;
+};
+
+export type BulkCreateDailyReportsBodyDailyReportsItemMaterialsItem = {
+  material_id: string;
+  /** @minimum 0.01 */
+  quantity: number;
+};
+
 export type BulkCreateDailyReportsBodyDailyReportsItem = {
   site_id: string;
   work_date: string;
   summary: string;
   /** @minItems 1 */
   work_entries: BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem[];
+  products?: BulkCreateDailyReportsBodyDailyReportsItemProductsItem[];
+  materials?: BulkCreateDailyReportsBodyDailyReportsItemMaterialsItem[];
 };
 
 export type BulkCreateDailyReportsBody = {
@@ -668,11 +704,25 @@ export type BulkUpdateDailyReportBodyDailyReportWorkEntriesItem = {
   minutes: number;
 };
 
+export type BulkUpdateDailyReportBodyDailyReportProductsItem = {
+  product_id: string;
+  /** @minimum 0.01 */
+  quantity: number;
+};
+
+export type BulkUpdateDailyReportBodyDailyReportMaterialsItem = {
+  material_id: string;
+  /** @minimum 0.01 */
+  quantity: number;
+};
+
 export type BulkUpdateDailyReportBodyDailyReport = {
   site_id: string;
   summary: string;
   /** @minItems 1 */
   work_entries: BulkUpdateDailyReportBodyDailyReportWorkEntriesItem[];
+  products?: BulkUpdateDailyReportBodyDailyReportProductsItem[];
+  materials?: BulkUpdateDailyReportBodyDailyReportMaterialsItem[];
 };
 
 export type BulkUpdateDailyReportBody = {
@@ -700,6 +750,26 @@ export type BulkUpdateDailyReport200DailyReportWorkEntriesItem = {
   minutes: number;
 };
 
+export type BulkUpdateDailyReport200DailyReportProductsItem = {
+  id: string;
+  product_id: string;
+  name: string;
+  quantity: number;
+  /** @nullable */
+  unit: string | null;
+  unit_price: number;
+};
+
+export type BulkUpdateDailyReport200DailyReportMaterialsItem = {
+  id: string;
+  material_id: string;
+  name: string;
+  quantity: number;
+  /** @nullable */
+  unit: string | null;
+  unit_price: number;
+};
+
 export type BulkUpdateDailyReport200DailyReport = {
   id: string;
   work_date: string;
@@ -707,6 +777,8 @@ export type BulkUpdateDailyReport200DailyReport = {
   site: BulkUpdateDailyReport200DailyReportSite;
   summary: string;
   work_entries: BulkUpdateDailyReport200DailyReportWorkEntriesItem[];
+  products?: BulkUpdateDailyReport200DailyReportProductsItem[];
+  materials?: BulkUpdateDailyReport200DailyReportMaterialsItem[];
   total_minutes: number;
   labor_cost: number;
   updated_at: string;
