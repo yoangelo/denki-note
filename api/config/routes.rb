@@ -52,6 +52,11 @@ Rails.application.routes.draw do
         post :copy
       end
     end
+    resources :daily_reports, only: [] do
+      collection do
+        get :for_invoice
+      end
+    end
   end
 
   resources :customers, only: [:index] do
