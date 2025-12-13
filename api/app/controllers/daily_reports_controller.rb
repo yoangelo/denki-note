@@ -76,6 +76,7 @@ class DailyReportsController < AuthenticatedController
           }
         end,
         total_minutes: report.work_entries.sum(:minutes),
+        labor_cost: report.labor_cost.to_i,
         created_at: report.created_at.iso8601,
         updated_at: report.updated_at.iso8601,
       }
@@ -308,6 +309,7 @@ class DailyReportsController < AuthenticatedController
         }
       end,
       total_minutes: report.work_entries.sum(:minutes),
+      labor_cost: report.labor_cost.to_i,
       created_at: report.created_at.iso8601,
       updated_at: report.updated_at.iso8601,
     }

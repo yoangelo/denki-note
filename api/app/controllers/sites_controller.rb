@@ -7,7 +7,7 @@ class SitesController < AuthenticatedController
 
     scope = Site.kept.where(tenant: current_tenant, customer_id: customer_id)
     scope = scope.where("name ILIKE ?", "%#{q}%") if q.present?
-    render json: scope.order(:name).select(:id, :name, :note, :customer_id)
+    render json: scope.order(:name).select(:id, :name, :address, :customer_id)
   end
 
   def create
@@ -15,7 +15,7 @@ class SitesController < AuthenticatedController
 
     site = Site.new(site_params.merge(tenant: current_tenant))
     if site.save
-      render json: site.slice(:id, :name, :note, :customer_id), status: :created
+      render json: site.slice(:id, :name, :address, :customer_id), status: :created
     else
       render json: { error: site.errors.full_messages.to_sentence }, status: :unprocessable_entity
     end
@@ -24,6 +24,6 @@ class SitesController < AuthenticatedController
   private
 
   def site_params
-    params.require(:site).permit(:customer_id, :name, :note)
+    params.require(:site).permit(:customer_id, :name, :address)
   end
 end

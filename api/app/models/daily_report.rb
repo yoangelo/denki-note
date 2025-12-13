@@ -5,12 +5,13 @@
 #  id(ID)                             :uuid             not null, primary key
 #  created_by(作成者ID)               :uuid
 #  discarded_at(削除日時（論理削除）) :datetime
+#  labor_cost                         :decimal(12, )    default(0), not null
 #  summary(概要)                      :text             not null
 #  work_date(作業日)                  :date             not null
 #  created_at(作成日時)               :datetime         not null
 #  updated_at(更新日時)               :datetime         not null
 #  site_id(現場ID)                    :uuid             not null
-#  tenant_id(テナントID)              :uuid             not null
+#  tenant_id(自社ID)                  :uuid             not null
 #
 # Indexes
 #
@@ -46,7 +47,17 @@ class DailyReport < ApplicationRecord
   validates :summary, presence: { message: "作業概要を入力してください" }
   validate :must_have_work_entries
 
+  before_save :calculate_labor_cost
+
   private
+
+  def calculate_labor_cost
+    hours = work_entries.sum(:minutes) / 60.0
+    tenant_setting = tenant.tenant_setting
+    unit_rate = tenant_setting&.default_unit_rate || 0
+    rate = site.customer.rate_percent / 100.0
+    self.labor_cost = (hours * unit_rate * rate).round
+  end
 
   def must_have_work_entries
     return unless work_entries.empty? || work_entries.all? { |e| e.minutes.zero? }

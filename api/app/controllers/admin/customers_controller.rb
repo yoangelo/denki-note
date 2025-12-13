@@ -57,7 +57,7 @@ class Admin::CustomersController < AuthenticatedController
         site = @customer.sites.build(
           tenant: current_tenant,
           name: site_data[:name],
-          note: site_data[:note]
+          address: site_data[:address]
         )
 
         unless site.save
@@ -71,7 +71,7 @@ class Admin::CustomersController < AuthenticatedController
       render json: {
         customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note,
                                            :created_at, :updated_at,]),
-        sites: @sites.as_json(only: [:id, :customer_id, :name, :note, :created_at, :updated_at]),
+        sites: @sites.as_json(only: [:id, :customer_id, :name, :address, :created_at, :updated_at]),
       }, status: :created
     end
   end
@@ -84,7 +84,7 @@ class Admin::CustomersController < AuthenticatedController
     render json: {
       customer: @customer.as_json(only: [:id, :name, :customer_type, :corporation_number, :rate_percent, :note,
                                          :created_at, :updated_at,]),
-      sites: sites.as_json(only: [:id, :customer_id, :name, :note, :discarded_at, :created_at, :updated_at]),
+      sites: sites.as_json(only: [:id, :customer_id, :name, :address, :discarded_at, :created_at, :updated_at]),
     }
   end
 
