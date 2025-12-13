@@ -17,6 +17,7 @@ import { AdminCustomerEditPage } from "./pages/admin/AdminCustomerEditPage";
 import { AdminTenantSettingsPage } from "./pages/admin/AdminTenantSettingsPage";
 import { AdminTenantSettingsEditPage } from "./pages/admin/AdminTenantSettingsEditPage";
 import { AdminProductsPage } from "./pages/admin/AdminProductsPage";
+import { AdminMaterialsPage } from "./pages/admin/AdminMaterialsPage";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
@@ -160,6 +161,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminProductsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/materials"
+              element={
+                <AdminRoute>
+                  <AdminMaterialsPage />
                 </AdminRoute>
               }
             />
