@@ -99,11 +99,8 @@ class Invoice < ApplicationRecord
   def cancel
     return false if canceled?
 
-    transaction do
-      self.status = :canceled
-      discard!
-    end
-    true
+    self.status = :canceled
+    save
   end
 
   def copy_to_new_invoice
@@ -159,8 +156,6 @@ class Invoice < ApplicationRecord
     when "issued"
       errors.add(:invoice_number, "は必須です") if invoice_number.blank?
       errors.add(:issued_at, "は必須です") if issued_at.blank?
-    when "canceled"
-      errors.add(:discarded_at, "は必須です") if discarded_at.blank?
     end
   end
 end

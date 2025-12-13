@@ -76,7 +76,7 @@ class Admin::InvoicesController < AuthenticatedController
     end
 
     ActiveRecord::Base.transaction do
-      @invoice.update!(invoice_params)
+      @invoice.update!(invoice_params) if params[:invoice].present?
 
       update_invoice_items(params[:invoice_items]) if params[:invoice_items].present?
 

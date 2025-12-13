@@ -68,7 +68,6 @@ FactoryBot.define do
       status { "canceled" }
       sequence(:invoice_number) { |n| "INV-#{Time.current.year}-#{format("%03d", n)}" }
       issued_at { Time.current }
-      discarded_at { Time.current }
     end
 
     trait :discarded do
