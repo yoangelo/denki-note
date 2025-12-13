@@ -163,7 +163,7 @@ export type BankAccountAccountType =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const BankAccountAccountType = {
   ordinary: "ordinary",
-  checking: "checking",
+  current: "current",
   savings: "savings",
 } as const;
 
@@ -1201,7 +1201,7 @@ export type AdminCreateBankAccountBodyBankAccountAccountType =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AdminCreateBankAccountBodyBankAccountAccountType = {
   ordinary: "ordinary",
-  checking: "checking",
+  current: "current",
   savings: "savings",
 } as const;
 
@@ -1232,7 +1232,7 @@ export type AdminUpdateBankAccountBodyBankAccountAccountType =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AdminUpdateBankAccountBodyBankAccountAccountType = {
   ordinary: "ordinary",
-  checking: "checking",
+  current: "current",
   savings: "savings",
 } as const;
 
