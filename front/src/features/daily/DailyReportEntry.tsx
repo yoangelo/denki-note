@@ -1,7 +1,14 @@
 import { CustomerSiteSelector } from "@/components/CustomerSiteSelector";
 import { TimeInput } from "@/components/TimeInput";
 import { WorkerSelect } from "@/components/WorkerSelect";
+import {
+  ProductMaterialSelect,
+  type SelectedProduct,
+  type SelectedMaterial,
+} from "@/components/ProductMaterialSelect";
 import { useListUsers } from "@/api/generated/users/users";
+
+export type { SelectedProduct, SelectedMaterial };
 
 // 作業内容の入力行
 export type WorkRow = {
@@ -11,6 +18,8 @@ export type WorkRow = {
   summary: string;
   selectedWorkers: string[];
   workerHours: Record<string, number>;
+  products: SelectedProduct[];
+  materials: SelectedMaterial[];
 };
 
 type DailyReportEntryProps = {
@@ -33,6 +42,8 @@ type DailyReportEntryProps = {
   ) => void;
   handleWorkersChange: (rowId: string, workers: string[]) => void;
   updateWorkerHours: (rowId: string, workerId: string, hours: number) => void;
+  handleProductsChange: (rowId: string, products: SelectedProduct[]) => void;
+  handleMaterialsChange: (rowId: string, materials: SelectedMaterial[]) => void;
   calculateRowTotal: (row: WorkRow) => number;
   calculateTotalHours: () => number;
   handleSave: () => void;
@@ -51,6 +62,8 @@ export function DailyReportEntry({
   handleCustomerSiteSelect,
   handleWorkersChange,
   updateWorkerHours,
+  handleProductsChange,
+  handleMaterialsChange,
   calculateRowTotal,
   calculateTotalHours,
   handleSave,
@@ -179,6 +192,19 @@ export function DailyReportEntry({
                     </div>
                   </div>
                 )}
+
+                {/* 製品・資材選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    製品・資材（任意）
+                  </label>
+                  <ProductMaterialSelect
+                    selectedProducts={row.products}
+                    selectedMaterials={row.materials}
+                    onProductsChange={(products) => handleProductsChange(row.id, products)}
+                    onMaterialsChange={(materials) => handleMaterialsChange(row.id, materials)}
+                  />
+                </div>
               </div>
             </div>
           ))}

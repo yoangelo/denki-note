@@ -74,6 +74,14 @@ export function Layout() {
         {user?.is_admin && (
           <>
             <Link
+              to="/admin/invoices"
+              className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
+                isActive("/admin/invoices") ? "bg-indigo-600" : "bg-indigo-700 hover:bg-indigo-800"
+              }`}
+            >
+              請求書
+            </Link>
+            <Link
               to="/admin/customers"
               className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
                 isActive("/admin/customers") ? "bg-green-600" : "bg-green-700 hover:bg-green-800"
@@ -82,12 +90,38 @@ export function Layout() {
               顧客管理
             </Link>
             <Link
+              to="/admin/products"
+              className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
+                isActive("/admin/products") ? "bg-orange-600" : "bg-orange-700 hover:bg-orange-800"
+              }`}
+            >
+              製品
+            </Link>
+            <Link
+              to="/admin/materials"
+              className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
+                isActive("/admin/materials") ? "bg-orange-600" : "bg-orange-700 hover:bg-orange-800"
+              }`}
+            >
+              資材
+            </Link>
+            <Link
+              to="/admin/bank-accounts"
+              className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
+                isActive("/admin/bank-accounts")
+                  ? "bg-orange-600"
+                  : "bg-orange-700 hover:bg-orange-800"
+              }`}
+            >
+              口座
+            </Link>
+            <Link
               to="/admin/users"
               className={`px-5 py-2.5 text-white border-none rounded-t cursor-pointer text-base transition-colors no-underline ${
                 isActive("/admin/users") ? "bg-green-600" : "bg-green-700 hover:bg-green-800"
               }`}
             >
-              ユーザー管理
+              ユーザー
             </Link>
             <Link
               to="/admin/settings"

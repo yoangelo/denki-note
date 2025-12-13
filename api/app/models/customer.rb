@@ -29,6 +29,7 @@ class Customer < ApplicationRecord
 
   belongs_to :tenant
   has_many :sites, dependent: :destroy
+  has_many :invoices, dependent: :restrict_with_error
 
   after_discard do
     sites.discard_all

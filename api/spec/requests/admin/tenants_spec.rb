@@ -1,10 +1,12 @@
 require "rails_helper"
 
 RSpec.describe "Admin::Tenants", type: :request do
-  let(:tenant) { create(:tenant, name: "テスト会社") }
-  let(:admin_user) { create(:user, :admin, tenant: tenant) }
-  let(:member_user) { create(:user, :member, tenant: tenant) }
-  let!(:tenant_setting) { create(:tenant_setting, tenant: tenant, default_unit_rate: 3000, money_rounding: "round") }
+  let!(:tenant) { create(:tenant) }
+  let!(:admin_user) { create(:user, :admin, tenant: tenant) }
+  let!(:member_user) { create(:user, :member, tenant: tenant) }
+  let!(:tenant_setting) do
+    create(:tenant_setting, tenant: tenant, default_unit_rate: 3000, money_rounding: "round")
+  end
 
   describe "GET /admin/tenant" do
     context "管理者の場合" do
@@ -14,7 +16,7 @@ RSpec.describe "Admin::Tenants", type: :request do
         get "/admin/tenant"
 
         expect(response).to have_http_status(:ok)
-        expect(json_response["tenant"]["name"]).to eq("テスト会社")
+        expect(json_response["tenant"]["name"]).to eq(tenant.name)
         expect(json_response["tenant"]["default_unit_rate"]).to eq(3000)
         expect(json_response["tenant"]["money_rounding"]).to eq("round")
       end

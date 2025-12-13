@@ -63,6 +63,9 @@ Metrics/PerceivedComplexity:
 Naming/PredicatePrefix:
   Enabled: false
 
+Naming/PredicateMethod:
+  Enabled: false
+
 # ===== Performance =====
 Performance/CollectionLiteralInLoop:
   Exclude:
@@ -150,4 +153,7 @@ RSpec/LetSetup:
   Enabled: false
 
 RSpec/IndexedLet:
+  Enabled: false
+
+RSpec/NamedSubject:
   Enabled: false

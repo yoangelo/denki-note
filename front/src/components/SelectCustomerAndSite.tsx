@@ -190,10 +190,10 @@ export function SelectCustomerAndSite({ onSelect }: SelectCustomerAndSiteProps) 
                 }`}
               >
                 {site.name}
-                {site.note && (
+                {site.address && (
                   <span className={selectedSiteId === site.id ? "text-blue-100" : "text-gray-600"}>
                     {" "}
-                    - {site.note}
+                    - {site.address}
                   </span>
                 )}
               </button>

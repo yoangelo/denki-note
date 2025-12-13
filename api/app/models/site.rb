@@ -3,13 +3,13 @@
 # Table name: sites
 #
 #  id(ID)                             :uuid             not null, primary key
+#  address                            :string
 #  discarded_at(削除日時（論理削除）) :datetime
 #  name(現場名)                       :string           not null
-#  note(メモ)                         :text
 #  created_at(作成日時)               :datetime         not null
 #  updated_at(更新日時)               :datetime         not null
 #  customer_id(顧客ID)                :uuid             not null
-#  tenant_id(テナントID)              :uuid             not null
+#  tenant_id(自社ID)                  :uuid             not null
 #
 # Indexes
 #
@@ -29,6 +29,7 @@ class Site < ApplicationRecord
   belongs_to :tenant
   belongs_to :customer
   has_many :daily_reports, dependent: :destroy
+  has_many :invoices, dependent: :restrict_with_error
 
   validates :name, presence: { message: "現場名を入力してください" }
   validates :name, uniqueness: {

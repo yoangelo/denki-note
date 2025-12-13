@@ -205,8 +205,8 @@ export function CustomerSiteSelectModal({
                       <div className="flex justify-between items-center">
                         <div>
                           <span className="font-medium text-gray-900">{site.name}</span>
-                          {site.note && (
-                            <span className="text-sm text-gray-600 ml-2">- {site.note}</span>
+                          {site.address && (
+                            <span className="text-sm text-gray-600 ml-2">- {site.address}</span>
                           )}
                         </div>
                         {selectedSiteId === site.id && (
