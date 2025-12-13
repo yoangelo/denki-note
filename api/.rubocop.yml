@@ -154,3 +154,6 @@ RSpec/LetSetup:
 
 RSpec/IndexedLet:
   Enabled: false
+
+RSpec/NamedSubject:
+  Enabled: false
