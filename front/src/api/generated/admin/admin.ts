@@ -18,12 +18,41 @@ import type {
 import type {
   AdminAddRole200,
   AdminAddRoleBody,
+  AdminCancelInvoice200,
+  AdminCreateBankAccount201,
+  AdminCreateBankAccountBody,
+  AdminCreateMaterial201,
+  AdminCreateMaterialBody,
+  AdminCreateProduct201,
+  AdminCreateProductBody,
   AdminDeleteUser200,
+  AdminGetBankAccount200,
+  AdminGetDailyReportsForInvoice200,
+  AdminGetDailyReportsForInvoiceParams,
+  AdminGetMaterial200,
+  AdminGetMaterialTypes200,
+  AdminGetProduct200,
   AdminGetTenant200,
   AdminGetUser200,
+  AdminIssueInvoice200,
+  AdminListBankAccounts200,
+  AdminListInvoices200,
+  AdminListInvoicesParams,
+  AdminListManufacturers200,
+  AdminListManufacturersParams,
+  AdminListMaterials200,
+  AdminListMaterialsParams,
+  AdminListProducts200,
+  AdminListProductsParams,
   AdminListUsers200,
   AdminListUsersParams,
   AdminRemoveRole200,
+  AdminUpdateBankAccount200,
+  AdminUpdateBankAccountBody,
+  AdminUpdateMaterial200,
+  AdminUpdateMaterialBody,
+  AdminUpdateProduct200,
+  AdminUpdateProductBody,
   AdminUpdateTenant200,
   AdminUpdateTenant422,
   AdminUpdateTenantBody,
@@ -42,6 +71,9 @@ import type {
   GetAdminCustomersParams,
   InviteUser201,
   InviteUserBody,
+  InvoiceCreateRequest,
+  InvoiceDetailResponse,
+  InvoiceUpdateRequest,
   ListPendingInvitations200Item,
   UpdateAdminCustomer200,
   UpdateAdminCustomer422,
@@ -1221,6 +1253,1730 @@ export const useDeleteAdminSite = <TError = void | void, TContext = unknown>(opt
 
   return useMutation(mutationOptions);
 };
+/**
+ * @summary Get products list
+ */
+export const adminListProducts = (params?: AdminListProductsParams, signal?: AbortSignal) => {
+  return httpClient<AdminListProducts200>({
+    url: `/admin/products`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminListProductsQueryKey = (params?: AdminListProductsParams) => {
+  return [`/admin/products`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminListProductsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListProducts>>,
+  TError = void,
+>(
+  params?: AdminListProductsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminListProducts>>, TError, TData>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListProductsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListProducts>>> = ({ signal }) =>
+    adminListProducts(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListProducts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListProductsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListProducts>>
+>;
+export type AdminListProductsQueryError = void;
+
+/**
+ * @summary Get products list
+ */
+
+export function useAdminListProducts<
+  TData = Awaited<ReturnType<typeof adminListProducts>>,
+  TError = void,
+>(
+  params?: AdminListProductsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminListProducts>>, TError, TData>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListProductsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Create product
+ */
+export const adminCreateProduct = (
+  adminCreateProductBody: AdminCreateProductBody,
+  signal?: AbortSignal
+) => {
+  return httpClient<AdminCreateProduct201>({
+    url: `/admin/products`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminCreateProductBody,
+    signal,
+  });
+};
+
+export const getAdminCreateProductMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateProduct>>,
+    TError,
+    { data: AdminCreateProductBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateProduct>>,
+  TError,
+  { data: AdminCreateProductBody },
+  TContext
+> => {
+  const mutationKey = ["adminCreateProduct"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateProduct>>,
+    { data: AdminCreateProductBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateProduct(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateProductMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateProduct>>
+>;
+export type AdminCreateProductMutationBody = AdminCreateProductBody;
+export type AdminCreateProductMutationError = void | void;
+
+/**
+ * @summary Create product
+ */
+export const useAdminCreateProduct = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateProduct>>,
+    TError,
+    { data: AdminCreateProductBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateProduct>>,
+  TError,
+  { data: AdminCreateProductBody },
+  TContext
+> => {
+  const mutationOptions = getAdminCreateProductMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get product detail
+ */
+export const adminGetProduct = (id: string, signal?: AbortSignal) => {
+  return httpClient<AdminGetProduct200>({ url: `/admin/products/${id}`, method: "GET", signal });
+};
+
+export const getAdminGetProductQueryKey = (id?: string) => {
+  return [`/admin/products/${id}`] as const;
+};
+
+export const getAdminGetProductQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetProduct>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetProduct>>, TError, TData> }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetProductQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetProduct>>> = ({ signal }) =>
+    adminGetProduct(id, signal);
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetProduct>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetProductQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetProduct>>>;
+export type AdminGetProductQueryError = void | void;
+
+/**
+ * @summary Get product detail
+ */
+
+export function useAdminGetProduct<
+  TData = Awaited<ReturnType<typeof adminGetProduct>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetProduct>>, TError, TData> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetProductQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Update product
+ */
+export const adminUpdateProduct = (id: string, adminUpdateProductBody: AdminUpdateProductBody) => {
+  return httpClient<AdminUpdateProduct200>({
+    url: `/admin/products/${id}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: adminUpdateProductBody,
+  });
+};
+
+export const getAdminUpdateProductMutationOptions = <
+  TError = void | void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateProduct>>,
+    TError,
+    { id: string; data: AdminUpdateProductBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateProduct>>,
+  TError,
+  { id: string; data: AdminUpdateProductBody },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateProduct"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateProduct>>,
+    { id: string; data: AdminUpdateProductBody }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateProduct(id, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateProductMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateProduct>>
+>;
+export type AdminUpdateProductMutationBody = AdminUpdateProductBody;
+export type AdminUpdateProductMutationError = void | void | void;
+
+/**
+ * @summary Update product
+ */
+export const useAdminUpdateProduct = <TError = void | void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateProduct>>,
+    TError,
+    { id: string; data: AdminUpdateProductBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateProduct>>,
+  TError,
+  { id: string; data: AdminUpdateProductBody },
+  TContext
+> => {
+  const mutationOptions = getAdminUpdateProductMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Delete product (soft delete)
+ */
+export const adminDeleteProduct = (id: string) => {
+  return httpClient<void>({ url: `/admin/products/${id}`, method: "DELETE" });
+};
+
+export const getAdminDeleteProductMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteProduct>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeleteProduct>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminDeleteProduct"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeleteProduct>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeleteProduct(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeleteProductMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeleteProduct>>
+>;
+
+export type AdminDeleteProductMutationError = void | void;
+
+/**
+ * @summary Delete product (soft delete)
+ */
+export const useAdminDeleteProduct = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteProduct>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeleteProduct>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminDeleteProductMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get materials list
+ */
+export const adminListMaterials = (params?: AdminListMaterialsParams, signal?: AbortSignal) => {
+  return httpClient<AdminListMaterials200>({
+    url: `/admin/materials`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminListMaterialsQueryKey = (params?: AdminListMaterialsParams) => {
+  return [`/admin/materials`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminListMaterialsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListMaterials>>,
+  TError = void,
+>(
+  params?: AdminListMaterialsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminListMaterials>>, TError, TData>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListMaterialsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListMaterials>>> = ({ signal }) =>
+    adminListMaterials(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListMaterials>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListMaterialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListMaterials>>
+>;
+export type AdminListMaterialsQueryError = void;
+
+/**
+ * @summary Get materials list
+ */
+
+export function useAdminListMaterials<
+  TData = Awaited<ReturnType<typeof adminListMaterials>>,
+  TError = void,
+>(
+  params?: AdminListMaterialsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminListMaterials>>, TError, TData>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListMaterialsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Create material
+ */
+export const adminCreateMaterial = (
+  adminCreateMaterialBody: AdminCreateMaterialBody,
+  signal?: AbortSignal
+) => {
+  return httpClient<AdminCreateMaterial201>({
+    url: `/admin/materials`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminCreateMaterialBody,
+    signal,
+  });
+};
+
+export const getAdminCreateMaterialMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateMaterial>>,
+    TError,
+    { data: AdminCreateMaterialBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateMaterial>>,
+  TError,
+  { data: AdminCreateMaterialBody },
+  TContext
+> => {
+  const mutationKey = ["adminCreateMaterial"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateMaterial>>,
+    { data: AdminCreateMaterialBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateMaterial(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateMaterialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateMaterial>>
+>;
+export type AdminCreateMaterialMutationBody = AdminCreateMaterialBody;
+export type AdminCreateMaterialMutationError = void | void;
+
+/**
+ * @summary Create material
+ */
+export const useAdminCreateMaterial = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateMaterial>>,
+    TError,
+    { data: AdminCreateMaterialBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateMaterial>>,
+  TError,
+  { data: AdminCreateMaterialBody },
+  TContext
+> => {
+  const mutationOptions = getAdminCreateMaterialMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get material types list
+ */
+export const adminGetMaterialTypes = (signal?: AbortSignal) => {
+  return httpClient<AdminGetMaterialTypes200>({
+    url: `/admin/materials/types`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminGetMaterialTypesQueryKey = () => {
+  return [`/admin/materials/types`] as const;
+};
+
+export const getAdminGetMaterialTypesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetMaterialTypes>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetMaterialTypes>>, TError, TData>;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetMaterialTypesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetMaterialTypes>>> = ({ signal }) =>
+    adminGetMaterialTypes(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetMaterialTypes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetMaterialTypesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetMaterialTypes>>
+>;
+export type AdminGetMaterialTypesQueryError = void;
+
+/**
+ * @summary Get material types list
+ */
+
+export function useAdminGetMaterialTypes<
+  TData = Awaited<ReturnType<typeof adminGetMaterialTypes>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetMaterialTypes>>, TError, TData>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetMaterialTypesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Get material detail
+ */
+export const adminGetMaterial = (id: string, signal?: AbortSignal) => {
+  return httpClient<AdminGetMaterial200>({ url: `/admin/materials/${id}`, method: "GET", signal });
+};
+
+export const getAdminGetMaterialQueryKey = (id?: string) => {
+  return [`/admin/materials/${id}`] as const;
+};
+
+export const getAdminGetMaterialQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetMaterial>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetMaterial>>, TError, TData> }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetMaterialQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetMaterial>>> = ({ signal }) =>
+    adminGetMaterial(id, signal);
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetMaterial>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetMaterialQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetMaterial>>>;
+export type AdminGetMaterialQueryError = void | void;
+
+/**
+ * @summary Get material detail
+ */
+
+export function useAdminGetMaterial<
+  TData = Awaited<ReturnType<typeof adminGetMaterial>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetMaterial>>, TError, TData> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetMaterialQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Update material
+ */
+export const adminUpdateMaterial = (
+  id: string,
+  adminUpdateMaterialBody: AdminUpdateMaterialBody
+) => {
+  return httpClient<AdminUpdateMaterial200>({
+    url: `/admin/materials/${id}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: adminUpdateMaterialBody,
+  });
+};
+
+export const getAdminUpdateMaterialMutationOptions = <
+  TError = void | void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateMaterial>>,
+    TError,
+    { id: string; data: AdminUpdateMaterialBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateMaterial>>,
+  TError,
+  { id: string; data: AdminUpdateMaterialBody },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateMaterial"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateMaterial>>,
+    { id: string; data: AdminUpdateMaterialBody }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateMaterial(id, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateMaterialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateMaterial>>
+>;
+export type AdminUpdateMaterialMutationBody = AdminUpdateMaterialBody;
+export type AdminUpdateMaterialMutationError = void | void | void;
+
+/**
+ * @summary Update material
+ */
+export const useAdminUpdateMaterial = <TError = void | void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateMaterial>>,
+    TError,
+    { id: string; data: AdminUpdateMaterialBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateMaterial>>,
+  TError,
+  { id: string; data: AdminUpdateMaterialBody },
+  TContext
+> => {
+  const mutationOptions = getAdminUpdateMaterialMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Delete material (soft delete)
+ */
+export const adminDeleteMaterial = (id: string) => {
+  return httpClient<void>({ url: `/admin/materials/${id}`, method: "DELETE" });
+};
+
+export const getAdminDeleteMaterialMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteMaterial>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeleteMaterial>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminDeleteMaterial"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeleteMaterial>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeleteMaterial(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeleteMaterialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeleteMaterial>>
+>;
+
+export type AdminDeleteMaterialMutationError = void | void;
+
+/**
+ * @summary Delete material (soft delete)
+ */
+export const useAdminDeleteMaterial = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteMaterial>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeleteMaterial>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminDeleteMaterialMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get manufacturers list for autocomplete
+ */
+export const adminListManufacturers = (
+  params?: AdminListManufacturersParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<AdminListManufacturers200>({
+    url: `/admin/manufacturers`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminListManufacturersQueryKey = (params?: AdminListManufacturersParams) => {
+  return [`/admin/manufacturers`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminListManufacturersQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListManufacturers>>,
+  TError = void,
+>(
+  params?: AdminListManufacturersParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminListManufacturers>>, TError, TData>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListManufacturersQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListManufacturers>>> = ({ signal }) =>
+    adminListManufacturers(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListManufacturers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListManufacturersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListManufacturers>>
+>;
+export type AdminListManufacturersQueryError = void;
+
+/**
+ * @summary Get manufacturers list for autocomplete
+ */
+
+export function useAdminListManufacturers<
+  TData = Awaited<ReturnType<typeof adminListManufacturers>>,
+  TError = void,
+>(
+  params?: AdminListManufacturersParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminListManufacturers>>, TError, TData>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListManufacturersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Get bank accounts list
+ */
+export const adminListBankAccounts = (signal?: AbortSignal) => {
+  return httpClient<AdminListBankAccounts200>({
+    url: `/admin/bank_accounts`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminListBankAccountsQueryKey = () => {
+  return [`/admin/bank_accounts`] as const;
+};
+
+export const getAdminListBankAccountsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListBankAccounts>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof adminListBankAccounts>>, TError, TData>;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListBankAccountsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListBankAccounts>>> = ({ signal }) =>
+    adminListBankAccounts(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListBankAccounts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListBankAccountsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListBankAccounts>>
+>;
+export type AdminListBankAccountsQueryError = void;
+
+/**
+ * @summary Get bank accounts list
+ */
+
+export function useAdminListBankAccounts<
+  TData = Awaited<ReturnType<typeof adminListBankAccounts>>,
+  TError = void,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof adminListBankAccounts>>, TError, TData>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListBankAccountsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Create bank account
+ */
+export const adminCreateBankAccount = (
+  adminCreateBankAccountBody: AdminCreateBankAccountBody,
+  signal?: AbortSignal
+) => {
+  return httpClient<AdminCreateBankAccount201>({
+    url: `/admin/bank_accounts`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminCreateBankAccountBody,
+    signal,
+  });
+};
+
+export const getAdminCreateBankAccountMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateBankAccount>>,
+    TError,
+    { data: AdminCreateBankAccountBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateBankAccount>>,
+  TError,
+  { data: AdminCreateBankAccountBody },
+  TContext
+> => {
+  const mutationKey = ["adminCreateBankAccount"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateBankAccount>>,
+    { data: AdminCreateBankAccountBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateBankAccount(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateBankAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateBankAccount>>
+>;
+export type AdminCreateBankAccountMutationBody = AdminCreateBankAccountBody;
+export type AdminCreateBankAccountMutationError = void | void;
+
+/**
+ * @summary Create bank account
+ */
+export const useAdminCreateBankAccount = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateBankAccount>>,
+    TError,
+    { data: AdminCreateBankAccountBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateBankAccount>>,
+  TError,
+  { data: AdminCreateBankAccountBody },
+  TContext
+> => {
+  const mutationOptions = getAdminCreateBankAccountMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get bank account detail
+ */
+export const adminGetBankAccount = (id: string, signal?: AbortSignal) => {
+  return httpClient<AdminGetBankAccount200>({
+    url: `/admin/bank_accounts/${id}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminGetBankAccountQueryKey = (id?: string) => {
+  return [`/admin/bank_accounts/${id}`] as const;
+};
+
+export const getAdminGetBankAccountQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetBankAccount>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetBankAccount>>, TError, TData>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetBankAccountQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetBankAccount>>> = ({ signal }) =>
+    adminGetBankAccount(id, signal);
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetBankAccount>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetBankAccountQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetBankAccount>>
+>;
+export type AdminGetBankAccountQueryError = void | void;
+
+/**
+ * @summary Get bank account detail
+ */
+
+export function useAdminGetBankAccount<
+  TData = Awaited<ReturnType<typeof adminGetBankAccount>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetBankAccount>>, TError, TData>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetBankAccountQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Update bank account
+ */
+export const adminUpdateBankAccount = (
+  id: string,
+  adminUpdateBankAccountBody: AdminUpdateBankAccountBody
+) => {
+  return httpClient<AdminUpdateBankAccount200>({
+    url: `/admin/bank_accounts/${id}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: adminUpdateBankAccountBody,
+  });
+};
+
+export const getAdminUpdateBankAccountMutationOptions = <
+  TError = void | void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateBankAccount>>,
+    TError,
+    { id: string; data: AdminUpdateBankAccountBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateBankAccount>>,
+  TError,
+  { id: string; data: AdminUpdateBankAccountBody },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateBankAccount"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateBankAccount>>,
+    { id: string; data: AdminUpdateBankAccountBody }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateBankAccount(id, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateBankAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateBankAccount>>
+>;
+export type AdminUpdateBankAccountMutationBody = AdminUpdateBankAccountBody;
+export type AdminUpdateBankAccountMutationError = void | void | void;
+
+/**
+ * @summary Update bank account
+ */
+export const useAdminUpdateBankAccount = <
+  TError = void | void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateBankAccount>>,
+    TError,
+    { id: string; data: AdminUpdateBankAccountBody },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateBankAccount>>,
+  TError,
+  { id: string; data: AdminUpdateBankAccountBody },
+  TContext
+> => {
+  const mutationOptions = getAdminUpdateBankAccountMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Delete bank account (soft delete)
+ */
+export const adminDeleteBankAccount = (id: string) => {
+  return httpClient<void>({ url: `/admin/bank_accounts/${id}`, method: "DELETE" });
+};
+
+export const getAdminDeleteBankAccountMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteBankAccount>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeleteBankAccount>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminDeleteBankAccount"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeleteBankAccount>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeleteBankAccount(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeleteBankAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeleteBankAccount>>
+>;
+
+export type AdminDeleteBankAccountMutationError = void | void;
+
+/**
+ * @summary Delete bank account (soft delete)
+ */
+export const useAdminDeleteBankAccount = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteBankAccount>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeleteBankAccount>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminDeleteBankAccountMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get invoices list
+ */
+export const adminListInvoices = (params?: AdminListInvoicesParams, signal?: AbortSignal) => {
+  return httpClient<AdminListInvoices200>({
+    url: `/admin/invoices`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminListInvoicesQueryKey = (params?: AdminListInvoicesParams) => {
+  return [`/admin/invoices`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminListInvoicesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListInvoices>>,
+  TError = void,
+>(
+  params?: AdminListInvoicesParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminListInvoices>>, TError, TData>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListInvoicesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListInvoices>>> = ({ signal }) =>
+    adminListInvoices(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListInvoices>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListInvoicesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListInvoices>>
+>;
+export type AdminListInvoicesQueryError = void;
+
+/**
+ * @summary Get invoices list
+ */
+
+export function useAdminListInvoices<
+  TData = Awaited<ReturnType<typeof adminListInvoices>>,
+  TError = void,
+>(
+  params?: AdminListInvoicesParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof adminListInvoices>>, TError, TData>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListInvoicesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Create invoice
+ */
+export const adminCreateInvoice = (
+  invoiceCreateRequest: InvoiceCreateRequest,
+  signal?: AbortSignal
+) => {
+  return httpClient<InvoiceDetailResponse>({
+    url: `/admin/invoices`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: invoiceCreateRequest,
+    signal,
+  });
+};
+
+export const getAdminCreateInvoiceMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateInvoice>>,
+    TError,
+    { data: InvoiceCreateRequest },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateInvoice>>,
+  TError,
+  { data: InvoiceCreateRequest },
+  TContext
+> => {
+  const mutationKey = ["adminCreateInvoice"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateInvoice>>,
+    { data: InvoiceCreateRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateInvoice(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateInvoiceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateInvoice>>
+>;
+export type AdminCreateInvoiceMutationBody = InvoiceCreateRequest;
+export type AdminCreateInvoiceMutationError = void | void;
+
+/**
+ * @summary Create invoice
+ */
+export const useAdminCreateInvoice = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateInvoice>>,
+    TError,
+    { data: InvoiceCreateRequest },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateInvoice>>,
+  TError,
+  { data: InvoiceCreateRequest },
+  TContext
+> => {
+  const mutationOptions = getAdminCreateInvoiceMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get invoice detail
+ */
+export const adminGetInvoice = (id: string, signal?: AbortSignal) => {
+  return httpClient<InvoiceDetailResponse>({ url: `/admin/invoices/${id}`, method: "GET", signal });
+};
+
+export const getAdminGetInvoiceQueryKey = (id?: string) => {
+  return [`/admin/invoices/${id}`] as const;
+};
+
+export const getAdminGetInvoiceQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetInvoice>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetInvoice>>, TError, TData> }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetInvoiceQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetInvoice>>> = ({ signal }) =>
+    adminGetInvoice(id, signal);
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetInvoice>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetInvoiceQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetInvoice>>>;
+export type AdminGetInvoiceQueryError = void | void;
+
+/**
+ * @summary Get invoice detail
+ */
+
+export function useAdminGetInvoice<
+  TData = Awaited<ReturnType<typeof adminGetInvoice>>,
+  TError = void | void,
+>(
+  id: string,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof adminGetInvoice>>, TError, TData> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetInvoiceQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Update invoice (draft/issued only)
+ */
+export const adminUpdateInvoice = (id: string, invoiceUpdateRequest: InvoiceUpdateRequest) => {
+  return httpClient<InvoiceDetailResponse>({
+    url: `/admin/invoices/${id}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: invoiceUpdateRequest,
+  });
+};
+
+export const getAdminUpdateInvoiceMutationOptions = <
+  TError = void | void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateInvoice>>,
+    TError,
+    { id: string; data: InvoiceUpdateRequest },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateInvoice>>,
+  TError,
+  { id: string; data: InvoiceUpdateRequest },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateInvoice"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateInvoice>>,
+    { id: string; data: InvoiceUpdateRequest }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateInvoice(id, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateInvoiceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateInvoice>>
+>;
+export type AdminUpdateInvoiceMutationBody = InvoiceUpdateRequest;
+export type AdminUpdateInvoiceMutationError = void | void | void;
+
+/**
+ * @summary Update invoice (draft/issued only)
+ */
+export const useAdminUpdateInvoice = <TError = void | void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateInvoice>>,
+    TError,
+    { id: string; data: InvoiceUpdateRequest },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateInvoice>>,
+  TError,
+  { id: string; data: InvoiceUpdateRequest },
+  TContext
+> => {
+  const mutationOptions = getAdminUpdateInvoiceMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Issue invoice
+ */
+export const adminIssueInvoice = (id: string, signal?: AbortSignal) => {
+  return httpClient<AdminIssueInvoice200>({
+    url: `/admin/invoices/${id}/issue`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getAdminIssueInvoiceMutationOptions = <
+  TError = void | void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminIssueInvoice>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminIssueInvoice>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminIssueInvoice"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminIssueInvoice>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminIssueInvoice(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminIssueInvoiceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminIssueInvoice>>
+>;
+
+export type AdminIssueInvoiceMutationError = void | void | void;
+
+/**
+ * @summary Issue invoice
+ */
+export const useAdminIssueInvoice = <TError = void | void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminIssueInvoice>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminIssueInvoice>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminIssueInvoiceMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Cancel invoice
+ */
+export const adminCancelInvoice = (id: string, signal?: AbortSignal) => {
+  return httpClient<AdminCancelInvoice200>({
+    url: `/admin/invoices/${id}/cancel`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getAdminCancelInvoiceMutationOptions = <
+  TError = void | void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCancelInvoice>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCancelInvoice>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminCancelInvoice"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCancelInvoice>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminCancelInvoice(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCancelInvoiceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCancelInvoice>>
+>;
+
+export type AdminCancelInvoiceMutationError = void | void | void;
+
+/**
+ * @summary Cancel invoice
+ */
+export const useAdminCancelInvoice = <TError = void | void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCancelInvoice>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCancelInvoice>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminCancelInvoiceMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Copy invoice as new draft
+ */
+export const adminCopyInvoice = (id: string, signal?: AbortSignal) => {
+  return httpClient<InvoiceDetailResponse>({
+    url: `/admin/invoices/${id}/copy`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getAdminCopyInvoiceMutationOptions = <
+  TError = void | void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCopyInvoice>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCopyInvoice>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminCopyInvoice"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCopyInvoice>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminCopyInvoice(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCopyInvoiceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCopyInvoice>>
+>;
+
+export type AdminCopyInvoiceMutationError = void | void;
+
+/**
+ * @summary Copy invoice as new draft
+ */
+export const useAdminCopyInvoice = <TError = void | void, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCopyInvoice>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCopyInvoice>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getAdminCopyInvoiceMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Get daily reports for invoice creation
+ */
+export const adminGetDailyReportsForInvoice = (
+  params: AdminGetDailyReportsForInvoiceParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<AdminGetDailyReportsForInvoice200>({
+    url: `/admin/daily_reports/for_invoice`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminGetDailyReportsForInvoiceQueryKey = (
+  params?: AdminGetDailyReportsForInvoiceParams
+) => {
+  return [`/admin/daily_reports/for_invoice`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminGetDailyReportsForInvoiceQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetDailyReportsForInvoice>>,
+  TError = void | void,
+>(
+  params: AdminGetDailyReportsForInvoiceParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetDailyReportsForInvoice>>,
+      TError,
+      TData
+    >;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetDailyReportsForInvoiceQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetDailyReportsForInvoice>>> = ({
+    signal,
+  }) => adminGetDailyReportsForInvoice(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetDailyReportsForInvoice>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetDailyReportsForInvoiceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetDailyReportsForInvoice>>
+>;
+export type AdminGetDailyReportsForInvoiceQueryError = void | void;
+
+/**
+ * @summary Get daily reports for invoice creation
+ */
+
+export function useAdminGetDailyReportsForInvoice<
+  TData = Awaited<ReturnType<typeof adminGetDailyReportsForInvoice>>,
+  TError = void | void,
+>(
+  params: AdminGetDailyReportsForInvoiceParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetDailyReportsForInvoice>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetDailyReportsForInvoiceQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary Get tenant settings (admin only)
  */
