@@ -18,6 +18,7 @@ import { AdminTenantSettingsPage } from "./pages/admin/AdminTenantSettingsPage";
 import { AdminTenantSettingsEditPage } from "./pages/admin/AdminTenantSettingsEditPage";
 import { AdminProductsPage } from "./pages/admin/AdminProductsPage";
 import { AdminMaterialsPage } from "./pages/admin/AdminMaterialsPage";
+import { AdminBankAccountsPage } from "./pages/admin/AdminBankAccountsPage";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
@@ -169,6 +170,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminMaterialsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/bank-accounts"
+              element={
+                <AdminRoute>
+                  <AdminBankAccountsPage />
                 </AdminRoute>
               }
             />
