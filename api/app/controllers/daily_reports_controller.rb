@@ -52,35 +52,7 @@ class DailyReportsController < AuthenticatedController
     daily_reports = scope.distinct.order(work_date: :desc).limit(limit)
 
     # レスポンス形式にフォーマット
-    formatted_reports = daily_reports.map do |report|
-      {
-        id: report.id,
-        work_date: report.work_date.to_s,
-        customer: {
-          id: report.site.customer.id,
-          name: report.site.customer.name,
-        },
-        site: {
-          id: report.site.id,
-          name: report.site.name,
-        },
-        summary: report.summary || "",
-        work_entries: report.work_entries.map do |entry|
-          {
-            id: entry.id,
-            user: {
-              id: entry.user.id,
-              display_name: entry.user.display_name,
-            },
-            minutes: entry.minutes,
-          }
-        end,
-        total_minutes: report.work_entries.sum(:minutes),
-        labor_cost: report.labor_cost.to_i,
-        created_at: report.created_at.iso8601,
-        updated_at: report.updated_at.iso8601,
-      }
-    end
+    formatted_reports = daily_reports.map { |report| format_daily_report_summary(report) }
 
     render json: {
       daily_reports: formatted_reports,
@@ -319,58 +291,44 @@ class DailyReportsController < AuthenticatedController
     render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
   end
 
-  # 日報をレスポンス用のハッシュにフォーマットする
-  #
-  # @param report [DailyReport] 日報オブジェクト
-  # @return [Hash] フォーマット済みの日報データ
-  def format_daily_report(report)
+  def format_daily_report_summary(report)
     {
       id: report.id,
       work_date: report.work_date.to_s,
-      customer: {
-        id: report.site.customer.id,
-        name: report.site.customer.name,
-      },
-      site: {
-        id: report.site.id,
-        name: report.site.name,
-      },
+      customer: { id: report.site.customer.id, name: report.site.customer.name },
+      site: { id: report.site.id, name: report.site.name },
       summary: report.summary || "",
-      work_entries: report.work_entries.map do |entry|
-        {
-          id: entry.id,
-          user: {
-            id: entry.user.id,
-            display_name: entry.user.display_name,
-          },
-          minutes: entry.minutes,
-        }
-      end,
-      products: report.daily_report_products.includes(:product).map do |drp|
-        {
-          id: drp.id,
-          product_id: drp.product_id,
-          name: drp.product.name,
-          quantity: drp.quantity.to_f,
-          unit: drp.product.unit,
-          unit_price: drp.product.unit_price.to_f,
-        }
-      end,
-      materials: report.daily_report_materials.includes(:material).map do |drm|
-        {
-          id: drm.id,
-          material_id: drm.material_id,
-          name: drm.material.name,
-          quantity: drm.quantity.to_f,
-          unit: drm.material.unit,
-          unit_price: drm.material.unit_price.to_f,
-        }
-      end,
+      work_entries: format_work_entries(report.work_entries),
       total_minutes: report.work_entries.sum(:minutes),
       labor_cost: report.labor_cost.to_i,
       created_at: report.created_at.iso8601,
       updated_at: report.updated_at.iso8601,
     }
+  end
+
+  def format_daily_report(report)
+    format_daily_report_summary(report).merge(
+      products: format_products(report.daily_report_products.includes(:product)),
+      materials: format_materials(report.daily_report_materials.includes(:material))
+    )
+  end
+
+  def format_work_entries(entries)
+    entries.map { |e| { id: e.id, user: { id: e.user.id, display_name: e.user.display_name }, minutes: e.minutes } }
+  end
+
+  def format_products(daily_report_products)
+    daily_report_products.map do |drp|
+      { id: drp.id, product_id: drp.product_id, name: drp.product.name,
+        quantity: drp.quantity.to_f, unit: drp.product.unit, unit_price: drp.product.unit_price.to_f, }
+    end
+  end
+
+  def format_materials(daily_report_materials)
+    daily_report_materials.map do |drm|
+      { id: drm.id, material_id: drm.material_id, name: drm.material.name,
+        quantity: drm.quantity.to_f, unit: drm.material.unit, unit_price: drm.material.unit_price.to_f, }
+    end
   end
 
   # bulk_createアクション用のパラメータを許可する
