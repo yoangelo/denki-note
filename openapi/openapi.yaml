@@ -328,6 +328,30 @@ paths:
                                 id: { type: string, format: uuid }
                                 display_name: { type: string }
                             minutes: { type: integer }
+                      products:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, product_id, name, quantity, unit, unit_price]
+                          properties:
+                            id: { type: string, format: uuid }
+                            product_id: { type: string, format: uuid }
+                            name: { type: string }
+                            quantity: { type: number }
+                            unit: { type: string, nullable: true }
+                            unit_price: { type: number }
+                      materials:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, material_id, name, quantity, unit, unit_price]
+                          properties:
+                            id: { type: string, format: uuid }
+                            material_id: { type: string, format: uuid }
+                            name: { type: string }
+                            quantity: { type: number }
+                            unit: { type: string, nullable: true }
+                            unit_price: { type: number }
                       total_minutes: { type: integer }
                       labor_cost: { type: integer }
                       created_at: { type: string, format: date-time }
@@ -375,6 +399,22 @@ paths:
                             minutes:
                               type: integer
                               minimum: 0
+                      products:
+                        type: array
+                        items:
+                          type: object
+                          required: [product_id, quantity]
+                          properties:
+                            product_id: { type: string, format: uuid }
+                            quantity: { type: number, minimum: 0.01 }
+                      materials:
+                        type: array
+                        items:
+                          type: object
+                          required: [material_id, quantity]
+                          properties:
+                            material_id: { type: string, format: uuid }
+                            quantity: { type: number, minimum: 0.01 }
       responses:
         '200':
           description: Success
@@ -458,6 +498,22 @@ paths:
                           minutes:
                             type: integer
                             minimum: 0
+                    products:
+                      type: array
+                      items:
+                        type: object
+                        required: [product_id, quantity]
+                        properties:
+                          product_id: { type: string, format: uuid }
+                          quantity: { type: number, minimum: 0.01 }
+                    materials:
+                      type: array
+                      items:
+                        type: object
+                        required: [material_id, quantity]
+                        properties:
+                          material_id: { type: string, format: uuid }
+                          quantity: { type: number, minimum: 0.01 }
       responses:
         '200':
           description: Success
@@ -501,6 +557,30 @@ paths:
                                 id: { type: string, format: uuid }
                                 display_name: { type: string }
                             minutes: { type: integer }
+                      products:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, product_id, name, quantity, unit, unit_price]
+                          properties:
+                            id: { type: string, format: uuid }
+                            product_id: { type: string, format: uuid }
+                            name: { type: string }
+                            quantity: { type: number }
+                            unit: { type: string, nullable: true }
+                            unit_price: { type: number }
+                      materials:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, material_id, name, quantity, unit, unit_price]
+                          properties:
+                            id: { type: string, format: uuid }
+                            material_id: { type: string, format: uuid }
+                            name: { type: string }
+                            quantity: { type: number }
+                            unit: { type: string, nullable: true }
+                            unit_price: { type: number }
                       total_minutes: { type: integer }
                       labor_cost: { type: integer }
                       updated_at: { type: string, format: date-time }

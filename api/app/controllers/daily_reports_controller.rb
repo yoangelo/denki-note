@@ -142,14 +142,32 @@ class DailyReportsController < AuthenticatedController
           }
         end
 
-        # 日報とwork_entriesを同時に作成
+        # 製品データの準備
+        products_attrs = (report_params[:products] || []).map do |product_params|
+          {
+            product_id: product_params[:product_id],
+            quantity: product_params[:quantity],
+          }
+        end
+
+        # 資材データの準備
+        materials_attrs = (report_params[:materials] || []).map do |material_params|
+          {
+            material_id: material_params[:material_id],
+            quantity: material_params[:quantity],
+          }
+        end
+
+        # 日報とwork_entries、products、materialsを同時に作成
         daily_report = DailyReport.new(
           tenant_id: current_tenant.id,
           site_id: report_params[:site_id],
           work_date: report_params[:work_date],
           summary: report_params[:summary],
           created_by: current_user.id,
-          work_entries_attributes: work_entries_attrs
+          work_entries_attributes: work_entries_attrs,
+          daily_report_products_attributes: products_attrs,
+          daily_report_materials_attributes: materials_attrs
         )
 
         if daily_report.save
@@ -231,6 +249,26 @@ class DailyReportsController < AuthenticatedController
         )
       end
 
+      # 既存の製品・資材を全削除
+      daily_report.daily_report_products.destroy_all
+      daily_report.daily_report_materials.destroy_all
+
+      # 新しい製品を一括作成
+      (bulk_update_params[:products] || []).each do |product_params|
+        daily_report.daily_report_products.create!(
+          product_id: product_params[:product_id],
+          quantity: product_params[:quantity]
+        )
+      end
+
+      # 新しい資材を一括作成
+      (bulk_update_params[:materials] || []).each do |material_params|
+        daily_report.daily_report_materials.create!(
+          material_id: material_params[:material_id],
+          quantity: material_params[:quantity]
+        )
+      end
+
       # 最新データを再読み込み
       daily_report.reload
       daily_report.site.reload
@@ -308,6 +346,26 @@ class DailyReportsController < AuthenticatedController
           minutes: entry.minutes,
         }
       end,
+      products: report.daily_report_products.includes(:product).map do |drp|
+        {
+          id: drp.id,
+          product_id: drp.product_id,
+          name: drp.product.name,
+          quantity: drp.quantity.to_f,
+          unit: drp.product.unit,
+          unit_price: drp.product.unit_price.to_f,
+        }
+      end,
+      materials: report.daily_report_materials.includes(:material).map do |drm|
+        {
+          id: drm.id,
+          material_id: drm.material_id,
+          name: drm.material.name,
+          quantity: drm.quantity.to_f,
+          unit: drm.material.unit,
+          unit_price: drm.material.unit_price.to_f,
+        }
+      end,
       total_minutes: report.work_entries.sum(:minutes),
       labor_cost: report.labor_cost.to_i,
       created_at: report.created_at.iso8601,
@@ -325,6 +383,8 @@ class DailyReportsController < AuthenticatedController
         :work_date,
         :summary,
         { work_entries: [:user_id, :minutes] },
+        { products: [:product_id, :quantity] },
+        { materials: [:material_id, :quantity] },
       ]
     )
   end
@@ -336,7 +396,9 @@ class DailyReportsController < AuthenticatedController
     params.require(:daily_report).permit(
       :site_id,
       :summary,
-      work_entries: [:user_id, :minutes]
+      work_entries: [:user_id, :minutes],
+      products: [:product_id, :quantity],
+      materials: [:material_id, :quantity]
     )
   end
 end
