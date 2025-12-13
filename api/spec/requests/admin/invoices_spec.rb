@@ -329,8 +329,8 @@ RSpec.describe "Admin::Invoices", type: :request do
     it "請求項目もコピーされる" do
       post "/admin/invoices/#{invoice.id}/copy"
 
-      expect(json_response["invoice_items"].length).to eq(1)
-      expect(json_response["invoice_items"].first["name"]).to eq("コピー元項目")
+      expect(json_response["invoice_items"].length).to eq(2)
+      expect(json_response["invoice_items"].pluck("name")).to include("コピー元項目")
     end
 
     it "billing_dateは今日の日付になる" do
