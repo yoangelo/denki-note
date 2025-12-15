@@ -135,8 +135,8 @@ export function ProductMaterialSelect({
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        min="0.01"
-                        step="0.01"
+                        min="0"
+                        step="1"
                         value={product.quantity}
                         onChange={(e) =>
                           handleProductQuantityChange(
@@ -182,8 +182,8 @@ export function ProductMaterialSelect({
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        min="0.01"
-                        step="0.01"
+                        min="1"
+                        step="1"
                         value={material.quantity}
                         onChange={(e) =>
                           handleMaterialQuantityChange(
