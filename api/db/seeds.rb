@@ -132,7 +132,7 @@ if Rails.env.development?
   ) do |p|
     p.manufacturer = manufacturer1
     p.model_number = "S22ZTES-W"
-    p.unit_price = 85000
+    p.unit_price = 85_000
     p.unit = "台"
   end
 
@@ -142,7 +142,7 @@ if Rails.env.development?
   ) do |p|
     p.manufacturer = manufacturer1
     p.model_number = "S28ZTES-W"
-    p.unit_price = 115000
+    p.unit_price = 115_000
     p.unit = "台"
   end
 
@@ -152,7 +152,7 @@ if Rails.env.development?
   ) do |p|
     p.manufacturer = manufacturer2
     p.model_number = "LGC55120"
-    p.unit_price = 18000
+    p.unit_price = 18_000
     p.unit = "台"
   end
 
@@ -162,7 +162,7 @@ if Rails.env.development?
   ) do |p|
     p.manufacturer = manufacturer3
     p.model_number = "VD-15Z12"
-    p.unit_price = 12000
+    p.unit_price = 12_000
     p.unit = "台"
   end
   products = [product1, product2, product3, product4]
@@ -212,7 +212,7 @@ if Rails.env.development?
   Rails.logger.debug "資材マスタ作成完了"
 
   # 口座情報作成（2件以上、デフォルト設定あり）
-  bank_account1 = BankAccount.find_or_create_by!(
+  BankAccount.find_or_create_by!(
     tenant: tenant,
     bank_name: "みずほ銀行",
     branch_name: "新宿支店"
@@ -223,7 +223,7 @@ if Rails.env.development?
     ba.is_default_for_invoice = true
   end
 
-  bank_account2 = BankAccount.find_or_create_by!(
+  BankAccount.find_or_create_by!(
     tenant: tenant,
     bank_name: "三菱UFJ銀行",
     branch_name: "渋谷支店"
