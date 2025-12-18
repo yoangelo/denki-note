@@ -52,7 +52,8 @@ class DailyReport < ApplicationRecord
   private
 
   def calculate_labor_cost
-    hours = work_entries.sum(:minutes) / 60.0
+    total_minutes = work_entries.sum { |e| e.minutes.to_i }
+    hours = total_minutes / 60.0
     tenant_setting = tenant.tenant_setting
     unit_rate = tenant_setting&.default_unit_rate || 0
     rate = site.customer.rate_percent / 100.0
