@@ -71,6 +71,9 @@ export function DailyReportEditPage() {
             exact: false,
           }),
           queryClient.invalidateQueries({
+            queryKey: [`/daily_reports/${id}`],
+          }),
+          queryClient.invalidateQueries({
             queryKey: ["/summaries/customer-month"],
             exact: false,
           }),
