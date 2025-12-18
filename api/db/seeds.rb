@@ -123,93 +123,108 @@ if Rails.env.development?
   manufacturer1 = Manufacturer.find_or_create_by!(name: "ダイキン工業")
   manufacturer2 = Manufacturer.find_or_create_by!(name: "パナソニック")
   manufacturer3 = Manufacturer.find_or_create_by!(name: "三菱電機")
+  manufacturer4 = Manufacturer.find_or_create_by!(name: "東芝")
+  manufacturer5 = Manufacturer.find_or_create_by!(name: "日立")
+  manufacturer6 = Manufacturer.find_or_create_by!(name: "シャープ")
+  manufacturer7 = Manufacturer.find_or_create_by!(name: "富士通ゼネラル")
+  manufacturer8 = Manufacturer.find_or_create_by!(name: "コロナ")
+  manufacturers = [manufacturer1, manufacturer2, manufacturer3, manufacturer4, manufacturer5, manufacturer6, manufacturer7, manufacturer8]
   Rails.logger.debug "メーカー作成完了"
 
-  # 製品マスタ作成（3件以上）
-  product1 = Product.find_or_create_by!(
-    tenant: tenant,
-    name: "ルームエアコン 6畳用"
-  ) do |p|
-    p.manufacturer = manufacturer1
-    p.model_number = "S22ZTES-W"
-    p.unit_price = 85_000
-    p.unit = "台"
-  end
+  # 製品マスタ作成（100件）
+  products = []
 
-  product2 = Product.find_or_create_by!(
-    tenant: tenant,
-    name: "ルームエアコン 10畳用"
-  ) do |p|
-    p.manufacturer = manufacturer1
-    p.model_number = "S28ZTES-W"
-    p.unit_price = 115_000
-    p.unit = "台"
-  end
+  product_templates = [
+    { name: "ルームエアコン", unit: "台", base_price: 80_000 },
+    { name: "LED照明器具", unit: "台", base_price: 15_000 },
+    { name: "換気扇", unit: "台", base_price: 10_000 },
+    { name: "IHクッキングヒーター", unit: "台", base_price: 120_000 },
+    { name: "エコキュート", unit: "台", base_price: 350_000 },
+    { name: "電気温水器", unit: "台", base_price: 180_000 },
+    { name: "分電盤", unit: "台", base_price: 25_000 },
+    { name: "インターホン", unit: "台", base_price: 35_000 },
+    { name: "火災報知器", unit: "個", base_price: 8_000 },
+    { name: "ダウンライト", unit: "個", base_price: 5_000 },
+    { name: "シーリングライト", unit: "台", base_price: 12_000 },
+    { name: "蛍光灯器具", unit: "台", base_price: 8_000 },
+    { name: "スポットライト", unit: "個", base_price: 6_000 },
+    { name: "ブラケットライト", unit: "個", base_price: 9_000 },
+    { name: "ペンダントライト", unit: "台", base_price: 15_000 },
+    { name: "浴室換気乾燥機", unit: "台", base_price: 45_000 },
+    { name: "レンジフード", unit: "台", base_price: 55_000 },
+    { name: "食器洗い乾燥機", unit: "台", base_price: 85_000 },
+    { name: "電気コンロ", unit: "台", base_price: 25_000 },
+    { name: "電気ストーブ", unit: "台", base_price: 18_000 },
+  ]
 
-  product3 = Product.find_or_create_by!(
-    tenant: tenant,
-    name: "LED照明器具"
-  ) do |p|
-    p.manufacturer = manufacturer2
-    p.model_number = "LGC55120"
-    p.unit_price = 18_000
-    p.unit = "台"
-  end
+  sizes = ["小型", "標準", "大型", "業務用"]
+  model_prefixes = ["X", "Z", "A", "B", "C", "D", "E", "F", "G", "H"]
 
-  product4 = Product.find_or_create_by!(
-    tenant: tenant,
-    name: "換気扇"
-  ) do |p|
-    p.manufacturer = manufacturer3
-    p.model_number = "VD-15Z12"
-    p.unit_price = 12_000
-    p.unit = "台"
-  end
-  products = [product1, product2, product3, product4]
-  Rails.logger.debug "製品マスタ作成完了"
+  100.times do |i|
+    template = product_templates[i % product_templates.size]
+    size = sizes[i % sizes.size]
+    manufacturer = manufacturers[i % manufacturers.size]
+    model_prefix = model_prefixes[i % model_prefixes.size]
 
-  # 資材マスタ作成（3件以上）
-  material1 = Material.find_or_create_by!(
-    tenant: tenant,
-    name: "VVFケーブル 2.0mm"
-  ) do |m|
-    m.material_type = "電線"
-    m.model_number = "VVF2.0-2C"
-    m.unit_price = 120
-    m.unit = "m"
+    product = Product.find_or_create_by!(
+      tenant: tenant,
+      name: "#{template[:name]} #{size} #{i + 1}号"
+    ) do |p|
+      p.manufacturer = manufacturer
+      p.model_number = "#{model_prefix}#{100 + i}-#{manufacturer.name[0..1]}"
+      p.unit_price = template[:base_price] + (i * 1000)
+      p.unit = template[:unit]
+    end
+    products << product
   end
+  Rails.logger.debug "製品マスタ作成完了（#{products.size}件）"
 
-  material2 = Material.find_or_create_by!(
-    tenant: tenant,
-    name: "配管パイプ"
-  ) do |m|
-    m.material_type = "配管材"
-    m.model_number = "EP-20"
-    m.unit_price = 350
-    m.unit = "m"
-  end
+  # 資材マスタ作成（100件）
+  materials = []
 
-  material3 = Material.find_or_create_by!(
-    tenant: tenant,
-    name: "コンセント（2口）"
-  ) do |m|
-    m.material_type = "配線器具"
-    m.model_number = "WN1302"
-    m.unit_price = 450
-    m.unit = "個"
-  end
+  material_templates = [
+    { name: "VVFケーブル", type: "電線", unit: "m", base_price: 100 },
+    { name: "CVケーブル", type: "電線", unit: "m", base_price: 250 },
+    { name: "IV電線", type: "電線", unit: "m", base_price: 50 },
+    { name: "配管パイプ", type: "配管材", unit: "m", base_price: 300 },
+    { name: "フレキ管", type: "配管材", unit: "m", base_price: 450 },
+    { name: "PF管", type: "配管材", unit: "m", base_price: 80 },
+    { name: "コンセント", type: "配線器具", unit: "個", base_price: 400 },
+    { name: "スイッチ", type: "配線器具", unit: "個", base_price: 250 },
+    { name: "プレート", type: "配線器具", unit: "枚", base_price: 150 },
+    { name: "ジョイントボックス", type: "配線器具", unit: "個", base_price: 200 },
+    { name: "ブレーカー", type: "分電盤部材", unit: "個", base_price: 2_500 },
+    { name: "端子台", type: "分電盤部材", unit: "個", base_price: 800 },
+    { name: "ステップル", type: "支持材", unit: "箱", base_price: 500 },
+    { name: "サドル", type: "支持材", unit: "個", base_price: 50 },
+    { name: "ビス", type: "ネジ類", unit: "箱", base_price: 300 },
+    { name: "アンカー", type: "ネジ類", unit: "箱", base_price: 600 },
+    { name: "絶縁テープ", type: "テープ類", unit: "巻", base_price: 200 },
+    { name: "ビニールテープ", type: "テープ類", unit: "巻", base_price: 150 },
+    { name: "圧着端子", type: "端子類", unit: "袋", base_price: 350 },
+    { name: "リングスリーブ", type: "端子類", unit: "袋", base_price: 400 },
+  ]
 
-  material4 = Material.find_or_create_by!(
-    tenant: tenant,
-    name: "スイッチ（片切）"
-  ) do |m|
-    m.material_type = "配線器具"
-    m.model_number = "WN5001"
-    m.unit_price = 280
-    m.unit = "個"
+  specs = ["1.6mm", "2.0mm", "2.6mm", "5.5sq", "8sq", "14sq", "22sq", "38sq", "60sq", "100sq"]
+  model_numbers = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K"]
+
+  100.times do |i|
+    template = material_templates[i % material_templates.size]
+    spec = specs[i % specs.size]
+    model_num = model_numbers[i % model_numbers.size]
+
+    material = Material.find_or_create_by!(
+      tenant: tenant,
+      name: "#{template[:name]} #{spec} #{i + 1}番"
+    ) do |m|
+      m.material_type = template[:type]
+      m.model_number = "#{model_num}#{1000 + i}"
+      m.unit_price = template[:base_price] + (i * 10)
+      m.unit = template[:unit]
+    end
+    materials << material
   end
-  materials = [material1, material2, material3, material4]
-  Rails.logger.debug "資材マスタ作成完了"
+  Rails.logger.debug "資材マスタ作成完了（#{materials.size}件）"
 
   # 口座情報作成（2件以上、デフォルト設定あり）
   BankAccount.find_or_create_by!(

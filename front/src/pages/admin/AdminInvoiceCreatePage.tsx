@@ -14,7 +14,11 @@ import type {
   DailyReportForInvoice,
   InvoiceCreateRequestInvoiceItemsItem,
   InvoiceCreateRequestInvoiceItemsItemItemType,
+  Product,
+  Material,
 } from "../../api/generated/timesheetAPI.schemas";
+import { ProductSearchModal } from "../../components/ProductSearchModal";
+import { MaterialSearchModal } from "../../components/MaterialSearchModal";
 import {
   Button,
   Input,
@@ -29,7 +33,7 @@ import {
   TableHead,
   TableCell,
 } from "../../components/ui";
-import { formatCurrency, formatDate } from "../../utils";
+import { formatCurrency, formatDate, formatProductName, formatMaterialName } from "../../utils";
 
 type ItemType = InvoiceCreateRequestInvoiceItemsItemItemType;
 
@@ -94,6 +98,11 @@ export function AdminInvoiceCreatePage() {
 
   // Modals
   const [showIssueConfirmModal, setShowIssueConfirmModal] = useState(false);
+
+  // Product/Material search modals
+  const [showProductSearchModal, setShowProductSearchModal] = useState(false);
+  const [showMaterialSearchModal, setShowMaterialSearchModal] = useState(false);
+  const [searchTargetItemId, setSearchTargetItemId] = useState<string | null>(null);
 
   // API
   const { data: customers = [] } = useListCustomers();
@@ -210,6 +219,46 @@ export function AdminInvoiceCreatePage() {
 
   const handleDeleteItem = (id: string) => {
     setItems(items.filter((item) => item.id !== id));
+  };
+
+  const handleOpenProductSearch = (itemId: string) => {
+    setSearchTargetItemId(itemId);
+    setShowProductSearchModal(true);
+  };
+
+  const handleOpenMaterialSearch = (itemId: string) => {
+    setSearchTargetItemId(itemId);
+    setShowMaterialSearchModal(true);
+  };
+
+  const handleSelectProduct = (product: Product) => {
+    if (!searchTargetItemId) return;
+    handleUpdateItem(searchTargetItemId, {
+      name: formatProductName(product),
+      unit: product.unit || "",
+      unit_price: product.unit_price,
+      quantity: 1,
+      amount: product.unit_price,
+      source_product_id: product.id,
+      source_material_id: undefined,
+    });
+    setShowProductSearchModal(false);
+    setSearchTargetItemId(null);
+  };
+
+  const handleSelectMaterial = (material: Material) => {
+    if (!searchTargetItemId) return;
+    handleUpdateItem(searchTargetItemId, {
+      name: formatMaterialName(material),
+      unit: material.unit || "",
+      unit_price: material.unit_price,
+      quantity: 1,
+      amount: material.unit_price,
+      source_material_id: material.id,
+      source_product_id: undefined,
+    });
+    setShowMaterialSearchModal(false);
+    setSearchTargetItemId(null);
   };
 
   const handleDailyReportToggle = (reportId: string) => {
@@ -679,6 +728,8 @@ export function AdminInvoiceCreatePage() {
                         item={item}
                         onUpdate={handleUpdateItem}
                         onDelete={handleDeleteItem}
+                        onOpenProductSearch={handleOpenProductSearch}
+                        onOpenMaterialSearch={handleOpenMaterialSearch}
                       />
                     ))}
                   </TableBody>
@@ -890,6 +941,26 @@ export function AdminInvoiceCreatePage() {
         confirmText="発行する"
         loading={createMutation.isPending || issueMutation.isPending}
       />
+
+      {/* Product Search Modal */}
+      <ProductSearchModal
+        isOpen={showProductSearchModal}
+        onClose={() => {
+          setShowProductSearchModal(false);
+          setSearchTargetItemId(null);
+        }}
+        onSelect={handleSelectProduct}
+      />
+
+      {/* Material Search Modal */}
+      <MaterialSearchModal
+        isOpen={showMaterialSearchModal}
+        onClose={() => {
+          setShowMaterialSearchModal(false);
+          setSearchTargetItemId(null);
+        }}
+        onSelect={handleSelectMaterial}
+      />
     </div>
   );
 }
@@ -930,28 +1001,54 @@ function InvoiceItemRow({
   item,
   onUpdate,
   onDelete,
+  onOpenProductSearch,
+  onOpenMaterialSearch,
 }: {
   item: InvoiceItem;
   onUpdate: (id: string, updates: Partial<InvoiceItem>) => void;
   onDelete: (id: string) => void;
+  onOpenProductSearch: (itemId: string) => void;
+  onOpenMaterialSearch: (itemId: string) => void;
 }) {
   const isHeader = item.item_type === "header";
   const isLabor = item.item_type === "labor";
+  const isProduct = item.item_type === "product";
+  const isMaterial = item.item_type === "material";
 
   return (
     <TableRow>
       <TableCell>
-        <select
-          value={item.item_type}
-          onChange={(e) => onUpdate(item.id, { item_type: e.target.value as ItemType })}
-          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-        >
-          {Object.entries(ITEM_TYPE_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1">
+          <select
+            value={item.item_type}
+            onChange={(e) => onUpdate(item.id, { item_type: e.target.value as ItemType })}
+            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm min-w-0"
+          >
+            {Object.entries(ITEM_TYPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {isProduct && (
+            <button
+              type="button"
+              onClick={() => onOpenProductSearch(item.id)}
+              className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 whitespace-nowrap"
+            >
+              検索
+            </button>
+          )}
+          {isMaterial && (
+            <button
+              type="button"
+              onClick={() => onOpenMaterialSearch(item.id)}
+              className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 whitespace-nowrap"
+            >
+              検索
+            </button>
+          )}
+        </div>
       </TableCell>
       <TableCell>
         <input

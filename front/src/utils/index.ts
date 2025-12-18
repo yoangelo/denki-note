@@ -5,3 +5,4 @@ export {
   calculateTotalAmount,
   calculateItemAmount,
 } from "./invoiceCalculation";
+export { formatProductName, formatMaterialName } from "./itemName";
