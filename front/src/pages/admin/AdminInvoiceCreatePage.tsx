@@ -8,8 +8,6 @@ import {
   useAdminGetDailyReportsForInvoice,
   getAdminListInvoicesQueryKey,
 } from "../../api/generated/admin/admin";
-import { useListCustomers } from "../../api/generated/customers/customers";
-import { useListSites } from "../../api/generated/sites/sites";
 import type {
   DailyReportForInvoice,
   InvoiceCreateRequestInvoiceItemsItem,
@@ -19,6 +17,7 @@ import type {
 import { ProductSearchModal } from "../../components/ProductSearchModal";
 import { MaterialSearchModal } from "../../components/MaterialSearchModal";
 import { InvoiceItemRow } from "../../components/InvoiceItemRow";
+import { CustomerSiteSelectModal } from "../../components/CustomerSiteSelectModal";
 import {
   Button,
   Input,
@@ -58,6 +57,10 @@ export function AdminInvoiceCreatePage() {
   // Customer/Site selection
   const [customerId, setCustomerId] = useState("");
   const [siteId, setSiteId] = useState("");
+  const [selectedCustomerType, setSelectedCustomerType] = useState<
+    "corporate" | "individual" | undefined
+  >();
+  const [selectedSiteName, setSelectedSiteName] = useState("");
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
   // Basic info
@@ -97,11 +100,6 @@ export function AdminInvoiceCreatePage() {
   const [searchTargetItemId, setSearchTargetItemId] = useState<string | null>(null);
 
   // API
-  const { data: customers = [] } = useListCustomers();
-  const { data: sites = [] } = useListSites(
-    customerId ? { customer_id: customerId } : { customer_id: "" }
-  );
-
   const { data: dailyReportsData } = useAdminGetDailyReportsForInvoice(
     customerId
       ? {
@@ -160,20 +158,20 @@ export function AdminInvoiceCreatePage() {
   const totalAmount = subtotal + taxAmount;
 
   // Handlers
-  const handleCustomerSelect = (cId: string) => {
-    const customer = customers.find((c) => c.id === cId);
-    setCustomerId(cId);
-    setSiteId("");
+  const handleCustomerSiteSelect = (data: {
+    customerId: string;
+    siteId: string;
+    customerName: string;
+    siteName: string;
+    customerType: "corporate" | "individual";
+  }) => {
+    setCustomerId(data.customerId);
+    setSiteId(data.siteId);
+    setCustomerName(data.customerName);
+    setSelectedCustomerType(data.customerType);
+    setSelectedSiteName(data.siteName);
     setSelectedDailyReportIds([]);
-    if (customer) {
-      setCustomerName(customer.name);
-    }
     setShowCustomerModal(false);
-  };
-
-  const handleSiteSelect = (sId: string) => {
-    setSiteId(sId);
-    setSelectedDailyReportIds([]);
   };
 
   const handleAddItem = () => {
@@ -565,9 +563,6 @@ export function AdminInvoiceCreatePage() {
     setShowIssueConfirmModal(false);
   };
 
-  const selectedCustomer = customers.find((c) => c.id === customerId);
-  const selectedSite = sites.find((s) => s.id === siteId);
-
   const selectedDailyReportsTotal = useMemo(() => {
     return dailyReports
       .filter((r) => selectedDailyReportIds.includes(r.id))
@@ -589,14 +584,19 @@ export function AdminInvoiceCreatePage() {
         {customerId ? (
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium">{selectedCustomer?.name}</span>
-              {selectedCustomer?.customer_type === "corporate" && (
+              <span className="font-medium">{customerName}</span>
+              {selectedCustomerType === "corporate" && (
                 <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
                   法人
                 </span>
               )}
+              {selectedCustomerType === "individual" && (
+                <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                  個人
+                </span>
+              )}
             </div>
-            {siteId && <div className="text-sm text-gray-600">現場: {selectedSite?.name}</div>}
+            {siteId && <div className="text-sm text-gray-600">現場: {selectedSiteName}</div>}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">顧客を選択してください</div>
@@ -854,42 +854,14 @@ export function AdminInvoiceCreatePage() {
       )}
 
       {/* Customer Selection Modal */}
-      <Modal
+      <CustomerSiteSelectModal
         isOpen={showCustomerModal}
         onClose={() => setShowCustomerModal(false)}
-        title="顧客・現場選択"
-        size="lg"
-      >
-        <div className="space-y-4">
-          <Select
-            label="顧客"
-            value={customerId}
-            onChange={(e) => handleCustomerSelect(e.target.value)}
-          >
-            <option value="">選択してください</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </Select>
-
-          {customerId && (
-            <Select
-              label="現場（任意）"
-              value={siteId}
-              onChange={(e) => handleSiteSelect(e.target.value)}
-            >
-              <option value="">選択しない</option>
-              {sites.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.name}
-                </option>
-              ))}
-            </Select>
-          )}
-        </div>
-      </Modal>
+        onSelect={handleCustomerSiteSelect}
+        initialCustomerId={customerId}
+        initialSiteId={siteId}
+        siteRequired={false}
+      />
 
       {/* Daily Report Selection Modal */}
       <Modal
