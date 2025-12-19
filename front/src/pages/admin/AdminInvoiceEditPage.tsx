@@ -46,6 +46,8 @@ import {
   clearItemErrors,
   clearFieldError,
   isFieldValid,
+  taxRateToApi,
+  taxRateFromApi,
   type InvoiceItemValidationError,
 } from "../../utils";
 
@@ -155,7 +157,7 @@ export function AdminInvoiceEditPage() {
       setBillingDate(invoice.billing_date || "");
       setCustomerName(invoice.customer_name || "");
       setTitle(invoice.title || "");
-      setTaxRate(String(invoice.tax_rate || 0.1));
+      setTaxRate(taxRateFromApi(invoice.tax_rate));
       setDeliveryDate(invoice.delivery_date || "");
       setDeliveryPlace(invoice.delivery_place || "");
       setTransactionMethod(invoice.transaction_method || "");
@@ -566,7 +568,7 @@ export function AdminInvoiceEditPage() {
           billing_date: billingDate,
           customer_name: customerName || undefined,
           title: title || undefined,
-          tax_rate: parseFloat(taxRate),
+          tax_rate: taxRateToApi(taxRate),
           delivery_date: deliveryDate || undefined,
           delivery_place: deliveryPlace || undefined,
           transaction_method: transactionMethod || undefined,
@@ -624,7 +626,7 @@ export function AdminInvoiceEditPage() {
             billing_date: billingDate,
             customer_name: customerName || undefined,
             title: title || undefined,
-            tax_rate: parseFloat(taxRate),
+            tax_rate: taxRateToApi(taxRate),
             delivery_date: deliveryDate || undefined,
             delivery_place: deliveryPlace || undefined,
             transaction_method: transactionMethod || undefined,

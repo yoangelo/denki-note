@@ -4,6 +4,8 @@ export {
   calculateTaxAmount,
   calculateTotalAmount,
   calculateItemAmount,
+  taxRateToApi,
+  taxRateFromApi,
 } from "./invoiceCalculation";
 export { formatProductName, formatMaterialName } from "./itemName";
 export {

@@ -43,6 +43,7 @@ import {
   clearItemErrors,
   clearFieldError,
   isFieldValid,
+  taxRateToApi,
   type InvoiceItemValidationError,
 } from "../../utils";
 
@@ -497,7 +498,7 @@ export function AdminInvoiceCreatePage() {
           billing_date: billingDate,
           customer_name: customerName || undefined,
           title: title || undefined,
-          tax_rate: parseFloat(taxRate),
+          tax_rate: taxRateToApi(taxRate),
           delivery_date: deliveryDate || undefined,
           delivery_place: deliveryPlace || undefined,
           transaction_method: transactionMethod || undefined,
@@ -553,7 +554,7 @@ export function AdminInvoiceCreatePage() {
             billing_date: billingDate,
             customer_name: customerName || undefined,
             title: title || undefined,
-            tax_rate: parseFloat(taxRate),
+            tax_rate: taxRateToApi(taxRate),
             delivery_date: deliveryDate || undefined,
             delivery_place: deliveryPlace || undefined,
             transaction_method: transactionMethod || undefined,
