@@ -109,6 +109,18 @@ export const TenantSettingsMoneyRounding = {
 export interface TenantSettings {
   id: string;
   name: string;
+  /** @nullable */
+  postal_code?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone_number?: string | null;
+  /** @nullable */
+  fax_number?: string | null;
+  /** @nullable */
+  corporate_number?: string | null;
+  /** @nullable */
+  representative_name?: string | null;
   default_unit_rate: number;
   money_rounding: TenantSettingsMoneyRounding;
   created_at: string;
@@ -295,11 +307,28 @@ export interface InvoiceDailyReport {
   labor_cost?: number;
 }
 
+export type InvoiceDetailResponseTenant = {
+  name?: string;
+  /** @nullable */
+  postal_code?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone_number?: string | null;
+  /** @nullable */
+  fax_number?: string | null;
+  /** @nullable */
+  corporate_number?: string | null;
+  /** @nullable */
+  representative_name?: string | null;
+};
+
 export interface InvoiceDetailResponse {
   invoice: Invoice;
   invoice_items: InvoiceItem[];
   daily_reports: InvoiceDailyReport[];
   bank_account?: BankAccount;
+  tenant?: InvoiceDetailResponseTenant;
 }
 
 export type InvoiceCreateRequestInvoice = {
@@ -1429,6 +1458,18 @@ export const AdminUpdateTenantBodyTenantMoneyRounding = {
 
 export type AdminUpdateTenantBodyTenant = {
   name?: string;
+  /** @nullable */
+  postal_code?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone_number?: string | null;
+  /** @nullable */
+  fax_number?: string | null;
+  /** @nullable */
+  corporate_number?: string | null;
+  /** @nullable */
+  representative_name?: string | null;
   /** @minimum 0 */
   default_unit_rate?: number;
   money_rounding?: AdminUpdateTenantBodyTenantMoneyRounding;

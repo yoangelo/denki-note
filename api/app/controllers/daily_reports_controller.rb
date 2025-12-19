@@ -240,9 +240,10 @@ class DailyReportsController < AuthenticatedController
         )
       end
 
-      # 最新データを再読み込み
+      # 最新データを再読み込みして工賃を再計算
       daily_report.reload
       daily_report.site.reload
+      daily_report.save!
     end
 
     render json: {

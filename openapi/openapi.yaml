@@ -2237,6 +2237,12 @@ paths:
                   type: object
                   properties:
                     name: { type: string }
+                    postal_code: { type: string, nullable: true }
+                    address: { type: string, nullable: true }
+                    phone_number: { type: string, nullable: true }
+                    fax_number: { type: string, nullable: true }
+                    corporate_number: { type: string, nullable: true }
+                    representative_name: { type: string, nullable: true }
                     default_unit_rate: { type: integer, minimum: 0 }
                     money_rounding: { type: string, enum: [round, ceil, floor] }
       responses:
@@ -2352,6 +2358,12 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
+        postal_code: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        phone_number: { type: string, nullable: true }
+        fax_number: { type: string, nullable: true }
+        corporate_number: { type: string, nullable: true }
+        representative_name: { type: string, nullable: true }
         default_unit_rate: { type: integer }
         money_rounding: { type: string, enum: [round, ceil, floor] }
         created_at: { type: string, format: date-time }
@@ -2495,6 +2507,16 @@ components:
           type: array
           items: { $ref: '#/components/schemas/InvoiceDailyReport' }
         bank_account: { $ref: '#/components/schemas/BankAccount' }
+        tenant:
+          type: object
+          properties:
+            name: { type: string }
+            postal_code: { type: string, nullable: true }
+            address: { type: string, nullable: true }
+            phone_number: { type: string, nullable: true }
+            fax_number: { type: string, nullable: true }
+            corporate_number: { type: string, nullable: true }
+            representative_name: { type: string, nullable: true }
 
     InvoiceCreateRequest:
       type: object

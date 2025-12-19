@@ -212,6 +212,7 @@ class Admin::InvoicesController < AuthenticatedController
 
   def invoice_detail_json(invoice)
     bank_account = current_tenant.bank_accounts.kept.default_for_invoice.first
+    tenant = current_tenant
 
     {
       invoice: {
@@ -223,10 +224,10 @@ class Admin::InvoicesController < AuthenticatedController
         site_id: invoice.site_id,
         site_name: invoice.site&.name,
         title: invoice.title,
-        subtotal: invoice.subtotal,
-        tax_rate: invoice.tax_rate,
-        tax_amount: invoice.tax_amount,
-        total_amount: invoice.total_amount,
+        subtotal: invoice.subtotal.to_f,
+        tax_rate: invoice.tax_rate.to_f,
+        tax_amount: invoice.tax_amount.to_f,
+        total_amount: invoice.total_amount.to_f,
         status: invoice.status,
         issued_at: invoice.issued_at,
         delivery_date: invoice.delivery_date,
@@ -240,6 +241,15 @@ class Admin::InvoicesController < AuthenticatedController
       invoice_items: invoice.invoice_items.map { |item| invoice_item_json(item) },
       daily_reports: invoice.daily_reports.kept.map { |dr| daily_report_json(dr) },
       bank_account: bank_account ? bank_account_json(bank_account) : nil,
+      tenant: {
+        name: tenant.name,
+        postal_code: tenant.postal_code,
+        address: tenant.address,
+        phone_number: tenant.phone_number,
+        fax_number: tenant.fax_number,
+        corporate_number: tenant.corporate_number,
+        representative_name: tenant.representative_name,
+      },
     }
   end
 
@@ -248,10 +258,10 @@ class Admin::InvoicesController < AuthenticatedController
       id: item.id,
       item_type: item.item_type,
       name: item.name,
-      quantity: item.quantity,
+      quantity: item.quantity&.to_f,
       unit: item.unit,
-      unit_price: item.unit_price,
-      amount: item.amount,
+      unit_price: item.unit_price&.to_f,
+      amount: item.amount&.to_f,
       sort_order: item.sort_order,
       note: item.note,
       source_product_id: item.source_product_id,
@@ -265,7 +275,7 @@ class Admin::InvoicesController < AuthenticatedController
       work_date: daily_report.work_date,
       site_name: daily_report.site&.name,
       summary: daily_report.summary,
-      labor_cost: daily_report.labor_cost,
+      labor_cost: daily_report.labor_cost&.to_i,
     }
   end
 

@@ -92,6 +92,30 @@ export function AdminTenantSettingsPage() {
                   <dt className="w-40 text-sm font-medium text-gray-500">自社名:</dt>
                   <dd className="text-sm text-gray-900">{tenant.name}</dd>
                 </div>
+                <div className="flex">
+                  <dt className="w-40 text-sm font-medium text-gray-500">郵便番号:</dt>
+                  <dd className="text-sm text-gray-900">{tenant.postal_code || "-"}</dd>
+                </div>
+                <div className="flex">
+                  <dt className="w-40 text-sm font-medium text-gray-500">住所:</dt>
+                  <dd className="text-sm text-gray-900">{tenant.address || "-"}</dd>
+                </div>
+                <div className="flex">
+                  <dt className="w-40 text-sm font-medium text-gray-500">電話番号:</dt>
+                  <dd className="text-sm text-gray-900">{tenant.phone_number || "-"}</dd>
+                </div>
+                <div className="flex">
+                  <dt className="w-40 text-sm font-medium text-gray-500">FAX番号:</dt>
+                  <dd className="text-sm text-gray-900">{tenant.fax_number || "-"}</dd>
+                </div>
+                <div className="flex">
+                  <dt className="w-40 text-sm font-medium text-gray-500">登録番号:</dt>
+                  <dd className="text-sm text-gray-900">{tenant.corporate_number || "-"}</dd>
+                </div>
+                <div className="flex">
+                  <dt className="w-40 text-sm font-medium text-gray-500">代表者名:</dt>
+                  <dd className="text-sm text-gray-900">{tenant.representative_name || "-"}</dd>
+                </div>
               </div>
             </div>
 

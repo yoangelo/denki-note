@@ -90,7 +90,7 @@ export function AdminInvoiceDetailPage() {
     );
   }
 
-  const { invoice, invoice_items, daily_reports, bank_account } = data;
+  const { invoice, invoice_items, daily_reports, bank_account, tenant } = data;
   const canEdit = invoice.status === "draft" || invoice.status === "issued";
   const canCancel = invoice.status === "draft" || invoice.status === "issued";
 
@@ -294,6 +294,52 @@ export function AdminInvoiceDetailPage() {
               ))}
             </TableBody>
           </Table>
+        </Card>
+      )}
+
+      {/* Company Info */}
+      {tenant && (
+        <Card className="mb-6">
+          <h2 className="text-lg font-medium mb-4">発行元情報</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <dt className="text-sm text-gray-600">会社名</dt>
+              <dd className="font-medium">{tenant.name}</dd>
+            </div>
+            {tenant.representative_name && (
+              <div>
+                <dt className="text-sm text-gray-600">代表者</dt>
+                <dd className="font-medium">{tenant.representative_name}</dd>
+              </div>
+            )}
+            {(tenant.postal_code || tenant.address) && (
+              <div className="md:col-span-2">
+                <dt className="text-sm text-gray-600">住所</dt>
+                <dd className="font-medium">
+                  {tenant.postal_code && `〒${tenant.postal_code} `}
+                  {tenant.address}
+                </dd>
+              </div>
+            )}
+            {tenant.phone_number && (
+              <div>
+                <dt className="text-sm text-gray-600">電話番号</dt>
+                <dd className="font-medium">{tenant.phone_number}</dd>
+              </div>
+            )}
+            {tenant.fax_number && (
+              <div>
+                <dt className="text-sm text-gray-600">FAX番号</dt>
+                <dd className="font-medium">{tenant.fax_number}</dd>
+              </div>
+            )}
+            {tenant.corporate_number && (
+              <div className="md:col-span-2">
+                <dt className="text-sm text-gray-600">登録番号</dt>
+                <dd className="font-medium">{tenant.corporate_number}</dd>
+              </div>
+            )}
+          </div>
         </Card>
       )}
 

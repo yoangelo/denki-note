@@ -9,7 +9,7 @@ RSpec.describe "Admin::Products", type: :request do
     context "管理者の場合" do
       before { sign_in admin_user }
 
-      let!(:manufacturer) { create(:manufacturer, name: "パナソニック") }
+      let!(:manufacturer) { create(:manufacturer) }
       let!(:product1) { create(:product, tenant: tenant, name: "製品A", model_number: "ABC-001") }
       let!(:product2) do
         create(:product, tenant: tenant, name: "製品B", manufacturer: manufacturer, model_number: "DEF-002")
@@ -59,7 +59,7 @@ RSpec.describe "Admin::Products", type: :request do
         get "/admin/products"
 
         product_with_manufacturer = json_response["products"].find { |p| p["manufacturer_id"] == manufacturer.id }
-        expect(product_with_manufacturer["manufacturer_name"]).to eq("パナソニック")
+        expect(product_with_manufacturer["manufacturer_name"]).to eq(manufacturer.name)
       end
 
       it "ページネーションが動作する" do

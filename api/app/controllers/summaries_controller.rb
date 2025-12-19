@@ -23,8 +23,8 @@ class SummariesController < AuthenticatedController
     # 顧客に紐づく現場のIDを取得
     site_ids = Site.where(tenant: current_tenant, customer_id: summary_params[:customer_id]).pluck(:id)
 
-    # 現場に紐づく日報を取得
-    reports = DailyReport.where(tenant: current_tenant, site_id: site_ids, work_date: month_range)
+    # 現場に紐づく日報を取得（論理削除されていないもののみ）
+    reports = DailyReport.kept.where(tenant: current_tenant, site_id: site_ids, work_date: month_range)
     report_map = reports.index_by(&:id)
 
     # 作業エントリを集計
