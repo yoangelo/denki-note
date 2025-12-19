@@ -36,7 +36,18 @@ import {
   TableHead,
   TableCell,
 } from "../../components/ui";
-import { formatCurrency, formatDate, formatProductName, formatMaterialName } from "../../utils";
+import {
+  formatCurrency,
+  formatDate,
+  formatProductName,
+  formatMaterialName,
+  validateInvoiceItems,
+  hasFieldError,
+  clearItemErrors,
+  clearFieldError,
+  isFieldValid,
+  type InvoiceItemValidationError,
+} from "../../utils";
 
 type ItemType = InvoiceUpdateRequestInvoiceItemsItemItemType;
 
@@ -100,6 +111,9 @@ export function AdminInvoiceEditPage() {
 
   // Invoice items
   const [items, setItems] = useState<InvoiceItem[]>([]);
+  const [itemValidationErrors, setItemValidationErrors] = useState<InvoiceItemValidationError[]>(
+    []
+  );
 
   // Modals
   const [showIssueConfirmModal, setShowIssueConfirmModal] = useState(false);
@@ -260,8 +274,13 @@ export function AdminInvoiceEditPage() {
   };
 
   const handleUpdateItem = (itemId: string, updates: Partial<InvoiceItem>) => {
-    setItems(
-      items.map((item) => {
+    // If item_type is being changed, clear all errors for this item
+    if ("item_type" in updates) {
+      setItemValidationErrors((prev) => clearItemErrors(prev, itemId));
+    }
+
+    setItems((prevItems) => {
+      const newItems = prevItems.map((item) => {
         if (item.id !== itemId) return item;
         const updated = { ...item, ...updates };
         // Recalculate amount if quantity or unit_price changed
@@ -274,12 +293,34 @@ export function AdminInvoiceEditPage() {
           updated.amount = updated.quantity * updated.unit_price;
         }
         return updated;
-      })
-    );
+      });
+
+      // Clear field errors if the field is now valid (except for item_type changes which are handled above)
+      if (!("item_type" in updates)) {
+        const updatedItem = newItems.find((item) => item.id === itemId);
+        if (updatedItem) {
+          const fieldsToCheck: Array<"name" | "quantity" | "unit" | "unit_price" | "amount"> = [];
+          if ("name" in updates) fieldsToCheck.push("name");
+          if ("quantity" in updates) fieldsToCheck.push("quantity");
+          if ("unit" in updates) fieldsToCheck.push("unit");
+          if ("unit_price" in updates) fieldsToCheck.push("unit_price");
+          if ("amount" in updates) fieldsToCheck.push("amount");
+
+          fieldsToCheck.forEach((field) => {
+            if (isFieldValid(updatedItem, field)) {
+              setItemValidationErrors((prev) => clearFieldError(prev, itemId, field));
+            }
+          });
+        }
+      }
+
+      return newItems;
+    });
   };
 
   const handleDeleteItem = (itemId: string) => {
     setItems(items.filter((item) => item.id !== itemId));
+    setItemValidationErrors((prev) => clearItemErrors(prev, itemId));
   };
 
   const handleOpenProductSearch = (targetItemId: string) => {
@@ -495,6 +536,14 @@ export function AdminInvoiceEditPage() {
       return;
     }
 
+    // Validate invoice items
+    const errors = validateInvoiceItems(items);
+    setItemValidationErrors(errors);
+    if (errors.length > 0) {
+      toast.error("請求項目に入力エラーがあります");
+      return;
+    }
+
     const invoiceItems: InvoiceUpdateRequestInvoiceItemsItem[] = items.map((item, index) => ({
       id: item.isNew ? undefined : item.id,
       item_type: item.item_type,
@@ -539,6 +588,15 @@ export function AdminInvoiceEditPage() {
       toast.error("請求日を入力してください");
       return;
     }
+
+    // Validate invoice items
+    const errors = validateInvoiceItems(items);
+    setItemValidationErrors(errors);
+    if (errors.length > 0) {
+      toast.error("請求項目に入力エラーがあります");
+      return;
+    }
+
     setShowIssueConfirmModal(true);
   };
 
@@ -834,10 +892,29 @@ export function AdminInvoiceEditPage() {
                         onDelete={handleDeleteItem}
                         onOpenProductSearch={handleOpenProductSearch}
                         onOpenMaterialSearch={handleOpenMaterialSearch}
+                        validationErrors={itemValidationErrors}
                       />
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+
+            {/* Validation Errors */}
+            {itemValidationErrors.length > 0 && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm font-medium text-red-800 mb-2">入力エラーがあります:</p>
+                <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                  {itemValidationErrors.map((error, index) => {
+                    const item = items.find((i) => i.id === error.itemId);
+                    const itemIndex = items.findIndex((i) => i.id === error.itemId) + 1;
+                    return (
+                      <li key={index}>
+                        {itemIndex}行目 ({item?.name || "未入力"}): {error.message}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             )}
 
@@ -1105,17 +1182,29 @@ function InvoiceItemRow({
   onDelete,
   onOpenProductSearch,
   onOpenMaterialSearch,
+  validationErrors,
 }: {
   item: InvoiceItem;
   onUpdate: (id: string, updates: Partial<InvoiceItem>) => void;
   onDelete: (id: string) => void;
   onOpenProductSearch: (itemId: string) => void;
   onOpenMaterialSearch: (itemId: string) => void;
+  validationErrors: InvoiceItemValidationError[];
 }) {
   const isHeader = item.item_type === "header";
   const isLabor = item.item_type === "labor";
   const isProduct = item.item_type === "product";
   const isMaterial = item.item_type === "material";
+
+  const hasNameError = hasFieldError(validationErrors, item.id, "name");
+  const hasQuantityError = hasFieldError(validationErrors, item.id, "quantity");
+  const hasUnitError = hasFieldError(validationErrors, item.id, "unit");
+  const hasUnitPriceError = hasFieldError(validationErrors, item.id, "unit_price");
+  const hasAmountError = hasFieldError(validationErrors, item.id, "amount");
+
+  const baseInputClass = "w-full px-2 py-1 border rounded text-sm";
+  const normalBorder = "border-gray-300";
+  const errorBorder = "border-red-500 bg-red-50";
 
   return (
     <TableRow>
@@ -1157,7 +1246,7 @@ function InvoiceItemRow({
           type="text"
           value={item.name}
           onChange={(e) => onUpdate(item.id, { name: e.target.value })}
-          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+          className={`${baseInputClass} ${hasNameError ? errorBorder : normalBorder}`}
           placeholder="品名"
         />
       </TableCell>
@@ -1173,7 +1262,7 @@ function InvoiceItemRow({
             onChange={(e) =>
               onUpdate(item.id, { quantity: e.target.value ? parseFloat(e.target.value) : null })
             }
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+            className={`${baseInputClass} text-right ${hasQuantityError ? errorBorder : normalBorder}`}
             min="0"
             step="0.01"
           />
@@ -1189,7 +1278,7 @@ function InvoiceItemRow({
             type="text"
             value={item.unit}
             onChange={(e) => onUpdate(item.id, { unit: e.target.value })}
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+            className={`${baseInputClass} ${hasUnitError ? errorBorder : normalBorder}`}
             placeholder="単位"
           />
         )}
@@ -1204,7 +1293,7 @@ function InvoiceItemRow({
             onChange={(e) =>
               onUpdate(item.id, { unit_price: e.target.value ? parseInt(e.target.value) : null })
             }
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+            className={`${baseInputClass} text-right ${hasUnitPriceError ? errorBorder : normalBorder}`}
             min="0"
           />
         )}
@@ -1219,7 +1308,7 @@ function InvoiceItemRow({
             onChange={(e) =>
               onUpdate(item.id, { amount: e.target.value ? parseInt(e.target.value) : 0 })
             }
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+            className={`${baseInputClass} text-right ${hasAmountError ? errorBorder : normalBorder}`}
             min="0"
           />
         ) : (
