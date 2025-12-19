@@ -1158,12 +1158,14 @@ function InvoiceItemRow({
           <input
             type="number"
             value={item.quantity ?? ""}
-            onChange={(e) =>
-              onUpdate(item.id, { quantity: e.target.value ? parseFloat(e.target.value) : null })
-            }
+            onChange={(e) => {
+              const parsed = parseFloat(e.target.value);
+              const value = isNaN(parsed) ? null : Math.max(0, parsed);
+              onUpdate(item.id, { quantity: value });
+            }}
             className={`${baseInputClass} text-right ${hasQuantityError ? errorBorder : normalBorder}`}
             min="0"
-            step="0.01"
+            step="1"
           />
         )}
       </TableCell>
