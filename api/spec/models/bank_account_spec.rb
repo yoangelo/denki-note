@@ -112,7 +112,7 @@ RSpec.describe BankAccount do
 
     describe ".default_for_invoice" do
       it "returns only default accounts" do
-        expect(described_class.default_for_invoice).to contain_exactly(account1)
+        expect(tenant.bank_accounts.default_for_invoice).to contain_exactly(account1)
       end
     end
 
@@ -177,7 +177,7 @@ RSpec.describe BankAccount do
 
       it "is excluded from kept scope" do
         default_account.discard
-        expect(described_class.kept.default_for_invoice).to be_empty
+        expect(tenant.bank_accounts.kept.default_for_invoice).to be_empty
       end
     end
   end
