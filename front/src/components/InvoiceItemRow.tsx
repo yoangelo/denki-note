@@ -123,9 +123,10 @@ export function InvoiceItemRow({
           <input
             type="number"
             value={item.unit_price ?? ""}
-            onChange={(e) =>
-              onUpdate(item.id, { unit_price: e.target.value ? parseInt(e.target.value) : null })
-            }
+            onChange={(e) => {
+              const parsed = parseInt(e.target.value);
+              onUpdate(item.id, { unit_price: Number.isNaN(parsed) ? null : parsed });
+            }}
             className={`${baseInputClass} text-right ${hasUnitPriceError ? errorBorder : normalBorder}`}
             min="0"
           />
@@ -138,9 +139,10 @@ export function InvoiceItemRow({
           <input
             type="number"
             value={item.amount}
-            onChange={(e) =>
-              onUpdate(item.id, { amount: e.target.value ? parseInt(e.target.value) : 0 })
-            }
+            onChange={(e) => {
+              const parsed = parseInt(e.target.value);
+              onUpdate(item.id, { amount: Number.isNaN(parsed) ? 0 : parsed });
+            }}
             className={`${baseInputClass} text-right ${hasAmountError ? errorBorder : normalBorder}`}
             min="0"
           />

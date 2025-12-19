@@ -8,7 +8,8 @@ type InvoiceItem = {
 export function calculateSubtotal(items: InvoiceItem[]): number {
   return items.reduce((sum, item) => {
     if (item.item_type === "header") return sum;
-    return sum + item.amount;
+    const amount = Number.isNaN(item.amount) ? 0 : item.amount;
+    return sum + amount;
   }, 0);
 }
 
