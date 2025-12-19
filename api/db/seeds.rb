@@ -128,7 +128,8 @@ if Rails.env.development?
   manufacturer6 = Manufacturer.find_or_create_by!(name: "シャープ")
   manufacturer7 = Manufacturer.find_or_create_by!(name: "富士通ゼネラル")
   manufacturer8 = Manufacturer.find_or_create_by!(name: "コロナ")
-  manufacturers = [manufacturer1, manufacturer2, manufacturer3, manufacturer4, manufacturer5, manufacturer6, manufacturer7, manufacturer8]
+  manufacturers = [manufacturer1, manufacturer2, manufacturer3, manufacturer4, manufacturer5, manufacturer6,
+                   manufacturer7, manufacturer8,]
   Rails.logger.debug "メーカー作成完了"
 
   # 製品マスタ作成（100件）
@@ -177,7 +178,7 @@ if Rails.env.development?
     end
     products << product
   end
-  Rails.logger.debug "製品マスタ作成完了（#{products.size}件）"
+  Rails.logger.debug { "製品マスタ作成完了（#{products.size}件）" }
 
   # 資材マスタ作成（100件）
   materials = []
@@ -224,7 +225,7 @@ if Rails.env.development?
     end
     materials << material
   end
-  Rails.logger.debug "資材マスタ作成完了（#{materials.size}件）"
+  Rails.logger.debug { "資材マスタ作成完了（#{materials.size}件）" }
 
   # 口座情報作成（2件以上、デフォルト設定あり）
   BankAccount.find_or_create_by!(
