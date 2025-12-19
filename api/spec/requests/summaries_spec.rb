@@ -17,6 +17,7 @@ RSpec.describe "Summaries", type: :request do
 
       before do
         daily_report.work_entries.first.update!(minutes: 120)
+        daily_report.save!
       end
 
       it "顧客月次サマリーを返す" do
@@ -27,18 +28,28 @@ RSpec.describe "Summaries", type: :request do
         expect(json_response["total_hours"]).to eq(2.0)
       end
 
-      it "掛率を適用できる" do
-        get "/summaries/customer-month", params: { customer_id: customer.id, yyyymm: "2024-01", rate_toggle: "on" }
+      it "工賃を正しく返す" do
+        get "/summaries/customer-month", params: { customer_id: customer.id, yyyymm: "2024-01" }
 
         expect(response).to have_http_status(:ok)
-        expect(json_response["amount_jpy"]).to eq(7200)
+        expect(json_response["labor_cost_jpy"]).to eq(daily_report.reload.labor_cost.to_i)
+        expect(json_response["product_amount_jpy"]).to eq(0)
+        expect(json_response["material_amount_jpy"]).to eq(0)
+        expect(json_response["total_amount_jpy"]).to eq(daily_report.labor_cost.to_i)
       end
 
-      it "掛率なしの場合" do
-        get "/summaries/customer-month", params: { customer_id: customer.id, yyyymm: "2024-01", rate_toggle: "off" }
+      it "製品・資材金額を含めた合計を返す" do
+        product = create(:product, tenant: tenant, unit_price: 1000)
+        material = create(:material, tenant: tenant, unit_price: 500)
+        create(:daily_report_product, daily_report: daily_report, product: product, quantity: 2)
+        create(:daily_report_material, daily_report: daily_report, material: material, quantity: 3)
+
+        get "/summaries/customer-month", params: { customer_id: customer.id, yyyymm: "2024-01" }
 
         expect(response).to have_http_status(:ok)
-        expect(json_response["amount_jpy"]).to eq(6000)
+        expect(json_response["product_amount_jpy"]).to eq(2000)
+        expect(json_response["material_amount_jpy"]).to eq(1500)
+        expect(json_response["total_amount_jpy"]).to eq(daily_report.reload.labor_cost.to_i + 2000 + 1500)
       end
 
       it "不正な日付形式の場合はエラー" do
