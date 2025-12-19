@@ -88,6 +88,7 @@ export function AdminInvoiceCreatePage() {
   );
 
   // Modals
+  const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
   const [showIssueConfirmModal, setShowIssueConfirmModal] = useState(false);
 
   // Product/Material search modals
@@ -462,6 +463,10 @@ export function AdminInvoiceCreatePage() {
       return;
     }
 
+    setShowDraftConfirmModal(true);
+  };
+
+  const handleConfirmDraft = () => {
     const invoiceItems: InvoiceCreateRequestInvoiceItemsItem[] = items.map((item, index) => ({
       item_type: item.item_type,
       name: item.name,
@@ -493,6 +498,7 @@ export function AdminInvoiceCreatePage() {
         daily_report_ids: selectedDailyReportIds.length > 0 ? selectedDailyReportIds : undefined,
       },
     });
+    setShowDraftConfirmModal(false);
   };
 
   const handleIssue = () => {
@@ -993,6 +999,17 @@ export function AdminInvoiceCreatePage() {
           </div>
         </div>
       </Modal>
+
+      {/* Draft Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDraftConfirmModal}
+        onClose={() => setShowDraftConfirmModal(false)}
+        onConfirm={handleConfirmDraft}
+        title="下書き保存の確認"
+        message={`この請求書を下書き保存しますか？\n\n顧客: ${customerName}\n合計金額: ${formatCurrency(totalAmount)}`}
+        confirmText="下書き保存"
+        loading={createMutation.isPending}
+      />
 
       {/* Issue Confirmation Modal */}
       <ConfirmModal
