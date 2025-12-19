@@ -212,6 +212,7 @@ class Admin::InvoicesController < AuthenticatedController
 
   def invoice_detail_json(invoice)
     bank_account = current_tenant.bank_accounts.kept.default_for_invoice.first
+    tenant = current_tenant
 
     {
       invoice: {
@@ -240,6 +241,15 @@ class Admin::InvoicesController < AuthenticatedController
       invoice_items: invoice.invoice_items.map { |item| invoice_item_json(item) },
       daily_reports: invoice.daily_reports.kept.map { |dr| daily_report_json(dr) },
       bank_account: bank_account ? bank_account_json(bank_account) : nil,
+      tenant: {
+        name: tenant.name,
+        postal_code: tenant.postal_code,
+        address: tenant.address,
+        phone_number: tenant.phone_number,
+        fax_number: tenant.fax_number,
+        corporate_number: tenant.corporate_number,
+        representative_name: tenant.representative_name,
+      },
     }
   end
 
