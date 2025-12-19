@@ -8,6 +8,7 @@ import {
   type SelectedMaterial,
 } from "./DailyReportEntry";
 import { useBulkCreateDailyReports } from "@/api/generated/daily-reports/daily-reports";
+import { ConfirmModal } from "@/components/ui";
 
 export function DailyReportEntryPage() {
   const [workDate, setWorkDate] = useState(() => {
@@ -17,6 +18,7 @@ export function DailyReportEntryPage() {
 
   const [showWorkArea, setShowWorkArea] = useState(false);
   const [workRows, setWorkRows] = useState<WorkRow[]>([]);
+  const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -141,7 +143,7 @@ export function DailyReportEntryPage() {
     return workRows.reduce((sum, row) => sum + calculateRowTotal(row), 0);
   }, [workRows, calculateRowTotal]);
 
-  // 保存処理
+  // 保存処理（確認モーダルを表示）
   const handleSave = useCallback(() => {
     // バリデーション
     const validRows = workRows.filter(
@@ -153,6 +155,16 @@ export function DailyReportEntryPage() {
       toast.error("保存可能な作業がありません");
       return;
     }
+
+    setShowSaveConfirmModal(true);
+  }, [workRows, calculateRowTotal]);
+
+  // 保存確定処理
+  const handleConfirmSave = useCallback(() => {
+    const validRows = workRows.filter(
+      (row) =>
+        row.customerId && row.siteId && row.selectedWorkers.length > 0 && calculateRowTotal(row) > 0
+    );
 
     // 現場ごとに日報をグループ化
     const reportsBySite = new Map<string, WorkRow[]>();
@@ -237,6 +249,7 @@ export function DailyReportEntryPage() {
         daily_reports: daily_reports as never,
       },
     });
+    setShowSaveConfirmModal(false);
   }, [workRows, workDate, calculateRowTotal, bulkCreate]);
 
   // 行が有効かチェック
@@ -309,6 +322,17 @@ export function DailyReportEntryPage() {
           bulkCreateIsPending={bulkCreate.isPending}
         />
       </div>
+
+      {/* Save Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showSaveConfirmModal}
+        onClose={() => setShowSaveConfirmModal(false)}
+        onConfirm={handleConfirmSave}
+        title="日報の保存確認"
+        message={`日報を保存しますか？\n\n作業日: ${workDate}\n作業件数: ${workRows.filter(isRowValid).length}件\n合計時間: ${calculateTotalHours()}時間`}
+        confirmText="保存する"
+        loading={bulkCreate.isPending}
+      />
     </div>
   );
 }
