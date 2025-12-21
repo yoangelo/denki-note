@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -28,7 +28,7 @@ import {
   Select,
   Modal,
   ConfirmModal,
-  PageHeader,
+  FullScreenModal,
   Table,
   TableHeader,
   TableBody,
@@ -54,6 +54,22 @@ const TAX_RATE_OPTIONS = [
   { value: "0.1", label: "10%" },
   { value: "0.08", label: "8%" },
 ];
+
+interface OriginalFormData {
+  customerId: string;
+  siteId: string;
+  billingDate: string;
+  customerName: string;
+  title: string;
+  taxRate: string;
+  deliveryDate: string;
+  deliveryPlace: string;
+  transactionMethod: string;
+  validUntil: string;
+  note: string;
+  itemsJson: string;
+  dailyReportIds: string[];
+}
 
 export function AdminInvoiceEditPage() {
   const navigate = useNavigate();
@@ -103,6 +119,10 @@ export function AdminInvoiceEditPage() {
   // Initialized flag to prevent re-initialization
   const [initialized, setInitialized] = useState(false);
 
+  // Leave confirmation modal
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
+  const originalDataRef = useRef<OriginalFormData | null>(null);
+
   // API
   const { data: customers = [] } = useListCustomers();
   const { data: sites = [] } = useListSites(
@@ -127,22 +147,33 @@ export function AdminInvoiceEditPage() {
     if (data && !initialized) {
       const { invoice, invoice_items, daily_reports } = data;
 
-      setCustomerId(invoice.customer_id || "");
-      setSiteId(invoice.site_id || "");
-      setBillingDate(invoice.billing_date || "");
-      setCustomerName(invoice.customer_name || "");
-      setTitle(invoice.title || "");
-      setTaxRate(taxRateFromApi(invoice.tax_rate));
-      setDeliveryDate(invoice.delivery_date || "");
-      setDeliveryPlace(invoice.delivery_place || "");
-      setTransactionMethod(invoice.transaction_method || "");
-      setValidUntil(invoice.valid_until || "");
-      setNote(invoice.note || "");
+      const initialCustomerId = invoice.customer_id || "";
+      const initialSiteId = invoice.site_id || "";
+      const initialBillingDate = invoice.billing_date || "";
+      const initialCustomerName = invoice.customer_name || "";
+      const initialTitle = invoice.title || "";
+      const initialTaxRate = taxRateFromApi(invoice.tax_rate);
+      const initialDeliveryDate = invoice.delivery_date || "";
+      const initialDeliveryPlace = invoice.delivery_place || "";
+      const initialTransactionMethod = invoice.transaction_method || "";
+      const initialValidUntil = invoice.valid_until || "";
+      const initialNote = invoice.note || "";
+
+      setCustomerId(initialCustomerId);
+      setSiteId(initialSiteId);
+      setBillingDate(initialBillingDate);
+      setCustomerName(initialCustomerName);
+      setTitle(initialTitle);
+      setTaxRate(initialTaxRate);
+      setDeliveryDate(initialDeliveryDate);
+      setDeliveryPlace(initialDeliveryPlace);
+      setTransactionMethod(initialTransactionMethod);
+      setValidUntil(initialValidUntil);
+      setNote(initialNote);
 
       // Set invoice items
-      if (invoice_items) {
-        setItems(
-          invoice_items.map((item) => ({
+      const initialItems = invoice_items
+        ? invoice_items.map((item) => ({
             id: item.id,
             item_type: item.item_type as ItemType,
             name: item.name,
@@ -154,13 +185,29 @@ export function AdminInvoiceEditPage() {
             source_product_id: item.source_product_id || undefined,
             source_material_id: item.source_material_id || undefined,
           }))
-        );
-      }
+        : [];
+      setItems(initialItems);
 
       // Set selected daily report IDs
-      if (daily_reports) {
-        setSelectedDailyReportIds(daily_reports.map((r) => r.id));
-      }
+      const initialDailyReportIds = daily_reports ? daily_reports.map((r) => r.id) : [];
+      setSelectedDailyReportIds(initialDailyReportIds);
+
+      // Store original data for dirty check
+      originalDataRef.current = {
+        customerId: initialCustomerId,
+        siteId: initialSiteId,
+        billingDate: initialBillingDate,
+        customerName: initialCustomerName,
+        title: initialTitle,
+        taxRate: initialTaxRate,
+        deliveryDate: initialDeliveryDate,
+        deliveryPlace: initialDeliveryPlace,
+        transactionMethod: initialTransactionMethod,
+        validUntil: initialValidUntil,
+        note: initialNote,
+        itemsJson: JSON.stringify(initialItems),
+        dailyReportIds: initialDailyReportIds,
+      };
 
       // Show other info if any optional field is filled
       if (
@@ -175,6 +222,59 @@ export function AdminInvoiceEditPage() {
       setInitialized(true);
     }
   }, [data, initialized]);
+
+  // Check if form has unsaved changes
+  const isDirty = useMemo(() => {
+    if (!originalDataRef.current || !initialized) return false;
+    const original = originalDataRef.current;
+    const currentItemsJson = JSON.stringify(items);
+    const dailyReportIdsSorted = [...selectedDailyReportIds].sort();
+    const originalDailyReportIdsSorted = [...original.dailyReportIds].sort();
+
+    return (
+      customerId !== original.customerId ||
+      siteId !== original.siteId ||
+      billingDate !== original.billingDate ||
+      customerName !== original.customerName ||
+      title !== original.title ||
+      taxRate !== original.taxRate ||
+      deliveryDate !== original.deliveryDate ||
+      deliveryPlace !== original.deliveryPlace ||
+      transactionMethod !== original.transactionMethod ||
+      validUntil !== original.validUntil ||
+      note !== original.note ||
+      currentItemsJson !== original.itemsJson ||
+      JSON.stringify(dailyReportIdsSorted) !== JSON.stringify(originalDailyReportIdsSorted)
+    );
+  }, [
+    initialized,
+    customerId,
+    siteId,
+    billingDate,
+    customerName,
+    title,
+    taxRate,
+    deliveryDate,
+    deliveryPlace,
+    transactionMethod,
+    validUntil,
+    note,
+    items,
+    selectedDailyReportIds,
+  ]);
+
+  // Warn before browser tab close/reload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   const updateMutation = useAdminUpdateInvoice({
     mutation: {
@@ -628,6 +728,27 @@ export function AdminInvoiceEditPage() {
     setShowIssueConfirmModal(false);
   };
 
+  // Handle close button click
+  const handleCloseRequest = () => {
+    if (isDirty) {
+      setShowLeaveConfirmModal(true);
+    } else {
+      navigate(`/admin/invoices/${id}`);
+    }
+  };
+
+  // Handle discard and leave
+  const handleDiscardAndLeave = () => {
+    setShowLeaveConfirmModal(false);
+    navigate(`/admin/invoices/${id}`);
+  };
+
+  // Handle save and leave
+  const handleSaveAndLeave = () => {
+    setShowLeaveConfirmModal(false);
+    handleSave();
+  };
+
   const selectedCustomer = customers.find((c) => c.id === customerId);
   const selectedSite = sites.find((s) => s.id === siteId);
 
@@ -675,470 +796,495 @@ export function AdminInvoiceEditPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <PageHeader title="請求書の編集" action={<InvoiceStatusBadge status={invoice.status} />} />
-
-      {/* Customer/Site Selection */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium">顧客・現場</h2>
-          <Button onClick={() => setShowCustomerModal(true)}>変更</Button>
-        </div>
-        {customerId ? (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium">{selectedCustomer?.name}</span>
-              {selectedCustomer?.customer_type === "corporate" && (
-                <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
-                  法人
-                </span>
-              )}
-            </div>
-            {siteId && <div className="text-sm text-gray-600">現場: {selectedSite?.name}</div>}
+    <FullScreenModal
+      title="請求書の編集"
+      onCloseRequest={handleCloseRequest}
+      rightHeaderContent={<InvoiceStatusBadge status={invoice.status} />}
+    >
+      <div className="max-w-6xl mx-auto">
+        {/* Customer/Site Selection */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium">顧客・現場</h2>
+            <Button onClick={() => setShowCustomerModal(true)}>変更</Button>
           </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">顧客を選択してください</div>
-        )}
-      </div>
+          {customerId ? (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium">{selectedCustomer?.name}</span>
+                {selectedCustomer?.customer_type === "corporate" && (
+                  <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                    法人
+                  </span>
+                )}
+              </div>
+              {siteId && <div className="text-sm text-gray-600">現場: {selectedSite?.name}</div>}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">顧客を選択してください</div>
+          )}
+        </div>
 
-      {/* Main Form - Only show when customer is selected */}
-      {customerId && (
-        <>
-          {/* Two column layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Basic Info */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-medium mb-4">基本情報</h2>
-              <div className="space-y-4">
-                <Input
-                  label="日付（請求日）"
-                  type="date"
-                  value={billingDate}
-                  onChange={(e) => setBillingDate(e.target.value)}
-                  required
-                />
-                <Input
-                  label="顧客表示名"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  required
-                />
-                <Input
-                  label="タイトル"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="例: 1月分工事代金"
-                />
+        {/* Main Form - Only show when customer is selected */}
+        {customerId && (
+          <>
+            {/* Two column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Basic Info */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-medium mb-4">基本情報</h2>
+                <div className="space-y-4">
+                  <Input
+                    label="日付（請求日）"
+                    type="date"
+                    value={billingDate}
+                    onChange={(e) => setBillingDate(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="顧客表示名"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="タイトル"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="例: 1月分工事代金"
+                  />
 
-                <button
-                  type="button"
-                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
-                  onClick={() => setShowOtherInfo(!showOtherInfo)}
-                >
-                  <span>{showOtherInfo ? "▼" : "▶"}</span>
-                  <span>その他情報</span>
-                </button>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+                    onClick={() => setShowOtherInfo(!showOtherInfo)}
+                  >
+                    <span>{showOtherInfo ? "▼" : "▶"}</span>
+                    <span>その他情報</span>
+                  </button>
 
-                {showOtherInfo && (
-                  <div className="space-y-4 pl-4 border-l-2 border-gray-200">
-                    <Input
-                      label="受渡期日"
-                      type="date"
-                      value={deliveryDate}
-                      onChange={(e) => setDeliveryDate(e.target.value)}
-                    />
-                    <Input
-                      label="受渡場所"
-                      value={deliveryPlace}
-                      onChange={(e) => setDeliveryPlace(e.target.value)}
-                      placeholder="例: ○○工場"
-                    />
-                    <Input
-                      label="取引方法"
-                      value={transactionMethod}
-                      onChange={(e) => setTransactionMethod(e.target.value)}
-                      placeholder="例: 銀行振込"
-                    />
-                    <Input
-                      label="有効期限"
-                      type="date"
-                      value={validUntil}
-                      onChange={(e) => setValidUntil(e.target.value)}
+                  {showOtherInfo && (
+                    <div className="space-y-4 pl-4 border-l-2 border-gray-200">
+                      <Input
+                        label="受渡期日"
+                        type="date"
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                      />
+                      <Input
+                        label="受渡場所"
+                        value={deliveryPlace}
+                        onChange={(e) => setDeliveryPlace(e.target.value)}
+                        placeholder="例: ○○工場"
+                      />
+                      <Input
+                        label="取引方法"
+                        value={transactionMethod}
+                        onChange={(e) => setTransactionMethod(e.target.value)}
+                        placeholder="例: 銀行振込"
+                      />
+                      <Input
+                        label="有効期限"
+                        type="date"
+                        value={validUntil}
+                        onChange={(e) => setValidUntil(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <Select
+                    label="税率"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(e.target.value)}
+                    required
+                  >
+                    {TAX_RATE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </Select>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">備考</label>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
                     />
                   </div>
-                )}
-
-                <Select
-                  label="税率"
-                  value={taxRate}
-                  onChange={(e) => setTaxRate(e.target.value)}
-                  required
-                >
-                  {TAX_RATE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </Select>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">備考</label>
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                  />
                 </div>
+              </div>
+
+              {/* Daily Reports */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium">関連する日報の設定</h2>
+                  <Button variant="secondary" onClick={() => setShowDailyReportModal(true)}>
+                    日報を選択
+                  </Button>
+                </div>
+
+                {selectedDailyReportIds.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    日報を選択すると、請求項目を自動生成できます
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {dailyReports
+                      .filter((r) => selectedDailyReportIds.includes(r.id))
+                      .map((report) => (
+                        <DailyReportCard
+                          key={report.id}
+                          report={report}
+                          onRemove={() => handleDailyReportToggle(report.id)}
+                        />
+                      ))}
+                    <div className="pt-2 border-t border-gray-200 flex justify-end">
+                      <span className="text-sm text-gray-600">
+                        合計金額(税込):{" "}
+                        <span className="font-bold text-blue-600">
+                          {formatCurrency(selectedDailyReportsTotal)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Daily Reports */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            {/* Invoice Items */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium">関連する日報の設定</h2>
-                <Button variant="secondary" onClick={() => setShowDailyReportModal(true)}>
-                  日報を選択
-                </Button>
+                <h2 className="text-lg font-medium">請求項目</h2>
+                <div className="flex gap-2">
+                  {selectedDailyReportIds.length > 0 && (
+                    <Button variant="secondary" onClick={() => setShowAutoGenerateModal(true)}>
+                      日報から自動生成
+                    </Button>
+                  )}
+                  <Button onClick={handleAddItem}>+ 項目追加</Button>
+                </div>
               </div>
 
-              {selectedDailyReportIds.length === 0 ? (
+              {items.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  日報を選択すると、請求項目を自動生成できます
+                  請求項目がありません。「+ 項目追加」で追加するか、日報から自動生成してください。
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {dailyReports
-                    .filter((r) => selectedDailyReportIds.includes(r.id))
-                    .map((report) => (
-                      <DailyReportCard
-                        key={report.id}
-                        report={report}
-                        onRemove={() => handleDailyReportToggle(report.id)}
-                      />
-                    ))}
-                  <div className="pt-2 border-t border-gray-200 flex justify-end">
-                    <span className="text-sm text-gray-600">
-                      合計金額(税込):{" "}
-                      <span className="font-bold text-blue-600">
-                        {formatCurrency(selectedDailyReportsTotal)}
-                      </span>
-                    </span>
-                  </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableHead className="w-24">種別</TableHead>
+                      <TableHead>品名</TableHead>
+                      <TableHead className="w-20" align="right">
+                        数量
+                      </TableHead>
+                      <TableHead className="w-16">単位</TableHead>
+                      <TableHead className="w-28" align="right">
+                        単価
+                      </TableHead>
+                      <TableHead className="w-28" align="right">
+                        金額
+                      </TableHead>
+                      <TableHead className="w-12" align="center">
+                        削除
+                      </TableHead>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item) => (
+                        <InvoiceItemRow
+                          key={item.id}
+                          item={item}
+                          onUpdate={handleUpdateItem}
+                          onDelete={handleDeleteItem}
+                          onOpenProductSearch={handleOpenProductSearch}
+                          onOpenMaterialSearch={handleOpenMaterialSearch}
+                          onItemTypeChange={handleItemTypeChange}
+                          validationErrors={itemValidationErrors}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* Invoice Items */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium">請求項目</h2>
-              <div className="flex gap-2">
-                {selectedDailyReportIds.length > 0 && (
-                  <Button variant="secondary" onClick={() => setShowAutoGenerateModal(true)}>
-                    日報から自動生成
+              {/* Validation Errors */}
+              {itemValidationErrors.length > 0 && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm font-medium text-red-800 mb-2">入力エラーがあります:</p>
+                  <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                    {itemValidationErrors.map((error, index) => {
+                      const item = items.find((i) => i.id === error.itemId);
+                      const itemIndex = items.findIndex((i) => i.id === error.itemId) + 1;
+                      return (
+                        <li key={index}>
+                          {itemIndex}行目 ({item?.name || "未入力"}): {error.message}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* Totals */}
+              <div className="mt-4 border-t pt-4">
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">小計</span>
+                      <span className="font-medium">{formatCurrency(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        消費税({Math.round(parseFloat(taxRate) * 100)}%)
+                      </span>
+                      <span className="font-medium">{formatCurrency(taxAmount)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-bold">合計</span>
+                      <span className="font-bold text-blue-600">{formatCurrency(totalAmount)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex justify-end gap-4">
+                <Button
+                  variant="secondary"
+                  onClick={handleSave}
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? "保存中..." : "保存"}
+                </Button>
+                {isDraft && (
+                  <Button
+                    onClick={handleIssue}
+                    disabled={updateMutation.isPending || issueMutation.isPending}
+                  >
+                    発行
                   </Button>
                 )}
-                <Button onClick={handleAddItem}>+ 項目追加</Button>
               </div>
             </div>
+          </>
+        )}
 
-            {items.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                請求項目がありません。「+ 項目追加」で追加するか、日報から自動生成してください。
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableHead className="w-24">種別</TableHead>
-                    <TableHead>品名</TableHead>
-                    <TableHead className="w-20" align="right">
-                      数量
-                    </TableHead>
-                    <TableHead className="w-16">単位</TableHead>
-                    <TableHead className="w-28" align="right">
-                      単価
-                    </TableHead>
-                    <TableHead className="w-28" align="right">
-                      金額
-                    </TableHead>
-                    <TableHead className="w-12" align="center">
-                      削除
-                    </TableHead>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <InvoiceItemRow
-                        key={item.id}
-                        item={item}
-                        onUpdate={handleUpdateItem}
-                        onDelete={handleDeleteItem}
-                        onOpenProductSearch={handleOpenProductSearch}
-                        onOpenMaterialSearch={handleOpenMaterialSearch}
-                        onItemTypeChange={handleItemTypeChange}
-                        validationErrors={itemValidationErrors}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-
-            {/* Validation Errors */}
-            {itemValidationErrors.length > 0 && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm font-medium text-red-800 mb-2">入力エラーがあります:</p>
-                <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
-                  {itemValidationErrors.map((error, index) => {
-                    const item = items.find((i) => i.id === error.itemId);
-                    const itemIndex = items.findIndex((i) => i.id === error.itemId) + 1;
-                    return (
-                      <li key={index}>
-                        {itemIndex}行目 ({item?.name || "未入力"}): {error.message}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-
-            {/* Totals */}
-            <div className="mt-4 border-t pt-4">
-              <div className="flex justify-end">
-                <div className="w-64 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">小計</span>
-                    <span className="font-medium">{formatCurrency(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">
-                      消費税({Math.round(parseFloat(taxRate) * 100)}%)
-                    </span>
-                    <span className="font-medium">{formatCurrency(taxAmount)}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="font-bold">合計</span>
-                    <span className="font-bold text-blue-600">{formatCurrency(totalAmount)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-end gap-4">
-              <Button variant="secondary" onClick={() => navigate(`/admin/invoices/${id}`)}>
-                キャンセル
-              </Button>
-              <Button variant="secondary" onClick={handleSave} disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "保存中..." : "保存"}
-              </Button>
-              {isDraft && (
-                <Button
-                  onClick={handleIssue}
-                  disabled={updateMutation.isPending || issueMutation.isPending}
-                >
-                  発行
-                </Button>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Customer Selection Modal */}
-      <Modal
-        isOpen={showCustomerModal}
-        onClose={() => setShowCustomerModal(false)}
-        title="顧客・現場選択"
-        size="lg"
-      >
-        <div className="space-y-4">
-          <Select
-            label="顧客"
-            value={customerId}
-            onChange={(e) => handleCustomerSelect(e.target.value)}
-          >
-            <option value="">選択してください</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </Select>
-
-          {customerId && (
+        {/* Customer Selection Modal */}
+        <Modal
+          isOpen={showCustomerModal}
+          onClose={() => setShowCustomerModal(false)}
+          title="顧客・現場選択"
+          size="lg"
+        >
+          <div className="space-y-4">
             <Select
-              label="現場（任意）"
-              value={siteId}
-              onChange={(e) => handleSiteSelect(e.target.value)}
+              label="顧客"
+              value={customerId}
+              onChange={(e) => handleCustomerSelect(e.target.value)}
             >
-              <option value="">選択しない</option>
-              {sites.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.name}
+              <option value="">選択してください</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
                 </option>
               ))}
             </Select>
-          )}
-        </div>
-      </Modal>
 
-      {/* Daily Report Selection Modal */}
-      <Modal
-        isOpen={showDailyReportModal}
-        onClose={() => setShowDailyReportModal(false)}
-        title="日報選択"
-        size="lg"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setShowDailyReportModal(false)}>
-              キャンセル
-            </Button>
-            <Button onClick={() => setShowDailyReportModal(false)}>選択</Button>
-          </>
-        }
-      >
-        {dailyReports.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">該当する日報がありません</div>
-        ) : (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {dailyReports.map((report) => (
-              <label
-                key={report.id}
-                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 ${
-                  selectedDailyReportIds.includes(report.id)
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200"
-                }`}
+            {customerId && (
+              <Select
+                label="現場（任意）"
+                value={siteId}
+                onChange={(e) => handleSiteSelect(e.target.value)}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedDailyReportIds.includes(report.id)}
-                  onChange={() => handleDailyReportToggle(report.id)}
-                  className="w-4 h-4 text-blue-600 rounded"
-                />
-                <div className="flex-1">
-                  <div className="flex justify-between">
-                    <span className="font-medium">{formatDate(report.report_date)}</span>
-                    <span className="text-blue-600 font-medium">
-                      {formatCurrency(report.total_amount)}
-                    </span>
+                <option value="">選択しない</option>
+                {sites.map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </div>
+        </Modal>
+
+        {/* Daily Report Selection Modal */}
+        <Modal
+          isOpen={showDailyReportModal}
+          onClose={() => setShowDailyReportModal(false)}
+          title="日報選択"
+          size="lg"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setShowDailyReportModal(false)}>
+                キャンセル
+              </Button>
+              <Button onClick={() => setShowDailyReportModal(false)}>選択</Button>
+            </>
+          }
+        >
+          {dailyReports.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">該当する日報がありません</div>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {dailyReports.map((report) => (
+                <label
+                  key={report.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 ${
+                    selectedDailyReportIds.includes(report.id)
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedDailyReportIds.includes(report.id)}
+                    onChange={() => handleDailyReportToggle(report.id)}
+                    className="w-4 h-4 text-blue-600 rounded"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{formatDate(report.report_date)}</span>
+                      <span className="text-blue-600 font-medium">
+                        {formatCurrency(report.total_amount)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600">{report.summary || "作業"}</div>
                   </div>
-                  <div className="text-sm text-gray-600">{report.summary || "作業"}</div>
-                </div>
-              </label>
-            ))}
-          </div>
-        )}
-        <div className="mt-4 pt-4 border-t flex justify-end">
-          <span className="text-sm text-gray-600">
-            合計金額(税込):{" "}
-            <span className="font-bold text-blue-600">
-              {formatCurrency(selectedDailyReportsTotal)}
+                </label>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 pt-4 border-t flex justify-end">
+            <span className="text-sm text-gray-600">
+              合計金額(税込):{" "}
+              <span className="font-bold text-blue-600">
+                {formatCurrency(selectedDailyReportsTotal)}
+              </span>
             </span>
-          </span>
-        </div>
-      </Modal>
-
-      {/* Auto Generate Modal */}
-      <Modal
-        isOpen={showAutoGenerateModal}
-        onClose={() => setShowAutoGenerateModal(false)}
-        title="日報から自動生成"
-        size="md"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setShowAutoGenerateModal(false)}>
-              キャンセル
-            </Button>
-            <Button onClick={handleGenerateFromDailyReports}>生成する</Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div className="text-sm text-gray-600">
-            選択中の日報: {selectedDailyReportIds.length}件
           </div>
+        </Modal>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">生成パターン</label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="generatePattern"
-                  value="per_report"
-                  checked={generatePattern === "per_report"}
-                  onChange={() => setGeneratePattern("per_report")}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span>日報単位</span>
-                <span className="text-sm text-gray-500">- 日報ごとに項目を分けて生成</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="generatePattern"
-                  value="aggregated"
-                  checked={generatePattern === "aggregated"}
-                  onChange={() => setGeneratePattern("aggregated")}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span>集約</span>
-                <span className="text-sm text-gray-500">- 同じ製品・資材は合算して生成</span>
-              </label>
+        {/* Auto Generate Modal */}
+        <Modal
+          isOpen={showAutoGenerateModal}
+          onClose={() => setShowAutoGenerateModal(false)}
+          title="日報から自動生成"
+          size="md"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setShowAutoGenerateModal(false)}>
+                キャンセル
+              </Button>
+              <Button onClick={handleGenerateFromDailyReports}>生成する</Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              選択中の日報: {selectedDailyReportIds.length}件
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">生成パターン</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="generatePattern"
+                    value="per_report"
+                    checked={generatePattern === "per_report"}
+                    onChange={() => setGeneratePattern("per_report")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span>日報単位</span>
+                  <span className="text-sm text-gray-500">- 日報ごとに項目を分けて生成</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="generatePattern"
+                    value="aggregated"
+                    checked={generatePattern === "aggregated"}
+                    onChange={() => setGeneratePattern("aggregated")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span>集約</span>
+                  <span className="text-sm text-gray-500">- 同じ製品・資材は合算して生成</span>
+                </label>
+              </div>
             </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
 
-      {/* Issue Confirmation Modal */}
-      <ConfirmModal
-        isOpen={showIssueConfirmModal}
-        onClose={() => setShowIssueConfirmModal(false)}
-        onConfirm={handleConfirmIssue}
-        title="請求書の発行確認"
-        message={`この請求書を発行しますか？\n\n顧客: ${customerName}\n合計金額: ${formatCurrency(totalAmount)}`}
-        confirmText="発行する"
-        loading={updateMutation.isPending || issueMutation.isPending}
-      />
+        {/* Issue Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showIssueConfirmModal}
+          onClose={() => setShowIssueConfirmModal(false)}
+          onConfirm={handleConfirmIssue}
+          title="請求書の発行確認"
+          message={`この請求書を発行しますか？\n\n顧客: ${customerName}\n合計金額: ${formatCurrency(totalAmount)}`}
+          confirmText="発行する"
+          loading={updateMutation.isPending || issueMutation.isPending}
+        />
 
-      {/* Item Type Change Confirmation Modal */}
-      <ConfirmModal
-        isOpen={showItemTypeChangeModal}
-        onClose={cancelItemTypeChange}
-        onConfirm={confirmItemTypeChange}
-        title="種別の変更"
-        message="種別を変更すると、この行のデータがクリアされます。変更しますか？"
-        confirmText="変更する"
-        cancelText="キャンセル"
-        variant="danger"
-      />
+        {/* Item Type Change Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showItemTypeChangeModal}
+          onClose={cancelItemTypeChange}
+          onConfirm={confirmItemTypeChange}
+          title="種別の変更"
+          message="種別を変更すると、この行のデータがクリアされます。変更しますか？"
+          confirmText="変更する"
+          cancelText="キャンセル"
+          variant="danger"
+        />
 
-      {/* Product Search Modal */}
-      <ProductSearchModal
-        isOpen={showProductSearchModal}
-        onClose={() => {
-          setShowProductSearchModal(false);
-          setSearchTargetItemId(null);
-        }}
-        onSelect={handleSelectProduct}
-      />
+        {/* Product Search Modal */}
+        <ProductSearchModal
+          isOpen={showProductSearchModal}
+          onClose={() => {
+            setShowProductSearchModal(false);
+            setSearchTargetItemId(null);
+          }}
+          onSelect={handleSelectProduct}
+        />
 
-      {/* Material Search Modal */}
-      <MaterialSearchModal
-        isOpen={showMaterialSearchModal}
-        onClose={() => {
-          setShowMaterialSearchModal(false);
-          setSearchTargetItemId(null);
-        }}
-        onSelect={handleSelectMaterial}
-      />
-    </div>
+        {/* Material Search Modal */}
+        <MaterialSearchModal
+          isOpen={showMaterialSearchModal}
+          onClose={() => {
+            setShowMaterialSearchModal(false);
+            setSearchTargetItemId(null);
+          }}
+          onSelect={handleSelectMaterial}
+        />
+
+        {/* Leave Confirmation Modal */}
+        <Modal
+          isOpen={showLeaveConfirmModal}
+          onClose={() => setShowLeaveConfirmModal(false)}
+          title="編集中のデータがあります"
+          size="sm"
+          footer={
+            <div className="flex gap-3 justify-end">
+              <Button variant="danger" onClick={handleDiscardAndLeave}>
+                保存せずに戻る
+              </Button>
+              <Button onClick={handleSaveAndLeave} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "保存中..." : "保存して戻る"}
+              </Button>
+            </div>
+          }
+        >
+          <p className="text-gray-600">変更内容を保存しますか？</p>
+        </Modal>
+      </div>
+    </FullScreenModal>
   );
 }
 

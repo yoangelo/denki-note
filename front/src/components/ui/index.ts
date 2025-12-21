@@ -8,6 +8,7 @@ export { Badge } from "./Badge";
 export type { BadgeVariant, BadgeSize } from "./Badge";
 
 export { Modal, ConfirmModal } from "./Modal";
+export { FullScreenModal } from "./FullScreenModal";
 export { DataConfirmModal } from "./DataConfirmModal";
 export type { DataRecord } from "./DataConfirmModal";
 
