@@ -1,3 +1,5 @@
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { TableRow, TableCell } from "./ui";
 import { formatCurrency, hasFieldError, type InvoiceItemValidationError } from "../utils";
 import type { InvoiceItem, ItemType } from "../types/invoice";
@@ -22,6 +24,15 @@ export function InvoiceItemRow({
   onItemTypeChange,
   validationErrors,
 }: InvoiceItemRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
   const isHeader = item.item_type === "header";
   const isLabor = item.item_type === "labor";
   const isProduct = item.item_type === "product";
@@ -38,7 +49,17 @@ export function InvoiceItemRow({
   const errorBorder = "border-red-500 bg-red-50";
 
   return (
-    <TableRow>
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell>
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <div className="i-heroicons-bars-3 w-4 h-4" />
+        </button>
+      </TableCell>
       <TableCell>
         <div className="flex items-center gap-1">
           <select

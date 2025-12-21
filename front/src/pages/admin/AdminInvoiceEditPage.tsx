@@ -3,6 +3,20 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
   useAdminGetInvoice,
   useAdminUpdateInvoice,
   useAdminIssueInvoice,
@@ -447,6 +461,39 @@ export function AdminInvoiceEditPage() {
     confirmItemTypeChange,
     cancelItemTypeChange,
   } = useItemTypeChange({ items, onUpdateItem: handleUpdateItem });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        const newItems = [...items];
+        const [movedItem] = newItems.splice(oldIndex, 1);
+        newItems.splice(newIndex, 0, movedItem);
+
+        // Update sort_order for all items
+        const updatedItems = newItems.map((item, index) => ({
+          ...item,
+          sort_order: index,
+        }));
+
+        setItems(updatedItems);
+      }
+    },
+    [items]
+  );
 
   const handleDailyReportToggle = (reportId: string) => {
     setSelectedDailyReportIds((prev) =>
@@ -974,39 +1021,51 @@ export function AdminInvoiceEditPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableHead className="w-24">種別</TableHead>
-                      <TableHead>品名</TableHead>
-                      <TableHead className="w-20" align="right">
-                        数量
-                      </TableHead>
-                      <TableHead className="w-16">単位</TableHead>
-                      <TableHead className="w-28" align="right">
-                        単価
-                      </TableHead>
-                      <TableHead className="w-28" align="right">
-                        金額
-                      </TableHead>
-                      <TableHead className="w-12" align="center">
-                        削除
-                      </TableHead>
-                    </TableHeader>
-                    <TableBody>
-                      {items.map((item) => (
-                        <InvoiceItemRow
-                          key={item.id}
-                          item={item}
-                          onUpdate={handleUpdateItem}
-                          onDelete={handleDeleteItem}
-                          onOpenProductSearch={handleOpenProductSearch}
-                          onOpenMaterialSearch={handleOpenMaterialSearch}
-                          onItemTypeChange={handleItemTypeChange}
-                          validationErrors={itemValidationErrors}
-                        />
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <Table>
+                      <TableHeader>
+                        <TableHead className="w-10"></TableHead>
+                        <TableHead className="w-24">種別</TableHead>
+                        <TableHead>品名</TableHead>
+                        <TableHead className="w-20" align="right">
+                          数量
+                        </TableHead>
+                        <TableHead className="w-16">単位</TableHead>
+                        <TableHead className="w-28" align="right">
+                          単価
+                        </TableHead>
+                        <TableHead className="w-28" align="right">
+                          金額
+                        </TableHead>
+                        <TableHead className="w-12" align="center">
+                          削除
+                        </TableHead>
+                      </TableHeader>
+                      <SortableContext
+                        items={items.map((item) => item.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <TableBody>
+                          {items.map((item) => (
+                            <InvoiceItemRow
+                              key={item.id}
+                              item={item}
+                              onUpdate={handleUpdateItem}
+                              onDelete={handleDeleteItem}
+                              onOpenProductSearch={handleOpenProductSearch}
+                              onOpenMaterialSearch={handleOpenMaterialSearch}
+                              onItemTypeChange={handleItemTypeChange}
+                              validationErrors={itemValidationErrors}
+                            />
+                          ))}
+                        </TableBody>
+                      </SortableContext>
+                    </Table>
+                  </DndContext>
                 </div>
               )}
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { forwardRef, type ReactNode, type CSSProperties } from "react";
 
 interface TableProps {
   children: ReactNode;
@@ -39,21 +39,28 @@ interface TableRowProps {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
+  style?: CSSProperties;
 }
 
-export function TableRow({ children, className = "", onClick }: TableRowProps) {
-  return (
-    <tr
-      className={`hover:bg-gray-50 ${onClick ? "cursor-pointer" : ""} ${className}`}
-      onClick={onClick}
-    >
-      {children}
-    </tr>
-  );
-}
+export const TableRow = forwardRef<HTMLTableRowElement, TableRowProps>(
+  ({ children, className = "", onClick, style }, ref) => {
+    return (
+      <tr
+        ref={ref}
+        className={`hover:bg-gray-50 ${onClick ? "cursor-pointer" : ""} ${className}`}
+        onClick={onClick}
+        style={style}
+      >
+        {children}
+      </tr>
+    );
+  }
+);
+
+TableRow.displayName = "TableRow";
 
 interface TableHeadProps {
-  children: ReactNode;
+  children?: ReactNode;
   align?: "left" | "center" | "right";
   className?: string;
 }
