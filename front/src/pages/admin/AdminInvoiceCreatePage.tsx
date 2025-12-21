@@ -1040,22 +1040,24 @@ function DailyReportCard({
   return (
     <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
       <div className="flex justify-between items-start mb-2">
-        <div>
+        <div className="flex items-center gap-3">
           <span className="font-medium">{formatDate(report.report_date)}</span>
-          <span className="text-gray-500 ml-2 text-sm">{report.summary}</span>
+          <span className="text-gray-700">{report.summary || "作業"}</span>
         </div>
         <button onClick={onRemove} className="text-gray-400 hover:text-red-500">
           ×
         </button>
       </div>
-      <div className="text-sm text-gray-600">
-        <div>工賃: {formatCurrency(report.labor_cost)}</div>
+      <div className="text-sm text-gray-600 space-y-1">
         {report.products && report.products.length > 0 && (
-          <div>製品: {report.products.map((p) => `${p.name}(${p.quantity})`).join(", ")}</div>
+          <div>使用製品: {report.products.map((p) => `${p.name}×${p.quantity}`).join(", ")}</div>
         )}
         {report.materials && report.materials.length > 0 && (
-          <div>資材: {report.materials.map((m) => `${m.name}(${m.quantity})`).join(", ")}</div>
+          <div>使用資材: {report.materials.map((m) => `${m.name}×${m.quantity}`).join(", ")}</div>
         )}
+        <div className="text-right font-medium text-gray-700">
+          工賃: {formatCurrency(report.labor_cost)}
+        </div>
       </div>
     </div>
   );
