@@ -2601,6 +2601,9 @@ components:
         site_id: { type: string, format: uuid }
         site_name: { type: string, nullable: true }
         summary: { type: string }
+        workers:
+          type: array
+          items: { type: string }
         labor_cost: { type: integer }
         products:
           type: array

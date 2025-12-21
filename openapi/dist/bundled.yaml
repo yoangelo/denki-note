@@ -3712,6 +3712,10 @@ components:
           nullable: true
         summary:
           type: string
+        workers:
+          type: array
+          items:
+            type: string
         labor_cost:
           type: integer
         products:

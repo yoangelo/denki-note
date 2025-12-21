@@ -1299,23 +1299,31 @@ function DailyReportCard({
   return (
     <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
       <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-3">
-          <span className="font-medium">{formatDate(report.report_date)}</span>
-          <span className="text-gray-700">{report.summary || "作業"}</span>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="font-medium shrink-0">{formatDate(report.report_date)}</span>
+          <span className="text-gray-700 truncate">{report.summary || "作業"}</span>
         </div>
-        <button onClick={onRemove} className="text-gray-400 hover:text-red-500">
+        <button onClick={onRemove} className="text-gray-400 hover:text-red-500 shrink-0 ml-2">
           ×
         </button>
       </div>
       <div className="text-sm text-gray-600 space-y-1">
+        {report.workers && report.workers.length > 0 && (
+          <div className="truncate">作業者: {report.workers.join("、")}</div>
+        )}
         {report.products && report.products.length > 0 && (
-          <div>使用製品: {report.products.map((p) => `${p.name}×${p.quantity}`).join(", ")}</div>
+          <div className="truncate">
+            使用製品: {report.products.map((p) => `${p.name}×${p.quantity}`).join(", ")}
+          </div>
         )}
         {report.materials && report.materials.length > 0 && (
-          <div>使用資材: {report.materials.map((m) => `${m.name}×${m.quantity}`).join(", ")}</div>
+          <div className="truncate">
+            使用資材: {report.materials.map((m) => `${m.name}×${m.quantity}`).join(", ")}
+          </div>
         )}
-        <div className="text-right font-medium text-gray-700">
-          工賃: {formatCurrency(report.labor_cost)}
+        <div className="flex justify-end gap-4 font-medium text-gray-700">
+          <span>工賃: {formatCurrency(report.labor_cost)}</span>
+          <span>合計金額: {formatCurrency(report.total_amount)}</span>
         </div>
       </div>
     </div>

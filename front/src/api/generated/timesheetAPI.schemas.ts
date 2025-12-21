@@ -445,6 +445,7 @@ export interface DailyReportForInvoice {
   /** @nullable */
   site_name?: string | null;
   summary?: string;
+  workers?: string[];
   labor_cost: number;
   products?: DailyReportForInvoiceProductsItem[];
   materials?: DailyReportForInvoiceMaterialsItem[];

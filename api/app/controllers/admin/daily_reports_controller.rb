@@ -11,7 +11,7 @@ class Admin::DailyReportsController < AuthenticatedController
     scope = DailyReport.kept
                        .joins(:site)
                        .where(sites: { tenant: current_tenant, customer_id: params[:customer_id] })
-                       .includes(:site, :work_entries,
+                       .includes(:site, work_entries: :user,
                                  daily_report_products: :product, daily_report_materials: :material)
 
     scope = scope.where(site_id: params[:site_id]) if params[:site_id].present?
@@ -47,6 +47,8 @@ class Admin::DailyReportsController < AuthenticatedController
   private
 
   def format_daily_report_for_invoice(report)
+    workers = report.work_entries.map { |we| we.user.display_name }.uniq
+
     products = report.daily_report_products.map do |drp|
       {
         id: drp.product.id,
@@ -77,6 +79,7 @@ class Admin::DailyReportsController < AuthenticatedController
       site_id: report.site_id,
       site_name: report.site&.name,
       summary: report.summary || "",
+      workers: workers,
       labor_cost: report.labor_cost.to_i,
       products: products,
       materials: materials,
