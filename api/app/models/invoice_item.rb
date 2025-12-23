@@ -14,27 +14,19 @@
 #  created_at                                                   :datetime         not null
 #  updated_at                                                   :datetime         not null
 #  invoice_id(請求書ID)                                         :uuid             not null
-#  source_material_id(元の資材ID（参照用）)                     :uuid
-#  source_product_id(元の製品ID（参照用）)                      :uuid
 #
 # Indexes
 #
 #  index_invoice_items_on_invoice_id                 (invoice_id)
 #  index_invoice_items_on_invoice_id_and_sort_order  (invoice_id,sort_order)
 #  index_invoice_items_on_item_type                  (item_type)
-#  index_invoice_items_on_source_material_id         (source_material_id)
-#  index_invoice_items_on_source_product_id          (source_product_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (invoice_id => invoices.id) ON DELETE => cascade
-#  fk_rails_...  (source_material_id => materials.id) ON DELETE => nullify
-#  fk_rails_...  (source_product_id => products.id) ON DELETE => nullify
 #
 class InvoiceItem < ApplicationRecord
   belongs_to :invoice
-  belongs_to :source_product, class_name: "Product", optional: true
-  belongs_to :source_material, class_name: "Material", optional: true
 
   enum :item_type, {
     header: "header",
@@ -42,6 +34,7 @@ class InvoiceItem < ApplicationRecord
     material: "material",
     labor: "labor",
     other: "other",
+    integrated: "integrated",
   }
 
   validates :item_type, presence: { message: "項目タイプを選択してください" }

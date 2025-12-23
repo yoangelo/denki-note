@@ -175,8 +175,7 @@ class Admin::InvoicesController < AuthenticatedController
 
   def invoice_item_params(params)
     params.permit(
-      :item_type, :name, :quantity, :unit, :unit_price, :amount, :sort_order, :note,
-      :source_product_id, :source_material_id
+      :item_type, :name, :quantity, :unit, :unit_price, :amount, :sort_order, :note
     )
   end
 
@@ -264,8 +263,6 @@ class Admin::InvoicesController < AuthenticatedController
       amount: item.amount&.to_f,
       sort_order: item.sort_order,
       note: item.note,
-      source_product_id: item.source_product_id,
-      source_material_id: item.source_material_id,
     }
   end
 

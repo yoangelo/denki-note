@@ -1,5 +1,32 @@
 # frozen_string_literal: true
 
+# == Schema Information
+#
+# Table name: invoice_items
+#
+#  id                                                           :uuid             not null, primary key
+#  amount(金額（数量×単価、headerの場合はNULL）)                :decimal(12, )
+#  item_type(項目タイプ（header/product/material/labor/other）) :string           not null
+#  name(名称（コピー値、手動編集可）)                           :string           not null
+#  note(備考)                                                   :text
+#  quantity(数量（headerの場合はNULL）)                         :decimal(10, 2)
+#  sort_order(表示順)                                           :integer          default(0), not null
+#  unit(単位（式、個、m、時間等）)                              :string
+#  unit_price(単価（コピー値、headerの場合はNULL）)             :decimal(12, )
+#  created_at                                                   :datetime         not null
+#  updated_at                                                   :datetime         not null
+#  invoice_id(請求書ID)                                         :uuid             not null
+#
+# Indexes
+#
+#  index_invoice_items_on_invoice_id                 (invoice_id)
+#  index_invoice_items_on_invoice_id_and_sort_order  (invoice_id,sort_order)
+#  index_invoice_items_on_item_type                  (item_type)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (invoice_id => invoices.id) ON DELETE => cascade
+#
 require "rails_helper"
 
 RSpec.describe InvoiceItem do
@@ -174,6 +201,11 @@ RSpec.describe InvoiceItem do
       item = build(:invoice_item, invoice: invoice, item_type: :other, name: "その他")
       expect(item.other?).to be true
     end
+
+    it "supports integrated type" do
+      item = build(:invoice_item, invoice: invoice, item_type: :integrated, name: "工事一式")
+      expect(item.integrated?).to be true
+    end
   end
 
   describe "default_scope" do
@@ -193,27 +225,6 @@ RSpec.describe InvoiceItem do
     it "belongs to invoice" do
       item = create(:invoice_item, invoice: invoice, item_type: :product, name: "商品")
       expect(item.invoice).to eq(invoice)
-    end
-
-    context "with source_product" do
-      let(:manufacturer) { create(:manufacturer) }
-      let(:product) { create(:product, tenant: tenant, manufacturer: manufacturer) }
-
-      it "can reference source product" do
-        item = create(:invoice_item, invoice: invoice, item_type: :product, name: "商品",
-                                     source_product: product)
-        expect(item.source_product).to eq(product)
-      end
-    end
-
-    context "with source_material" do
-      let(:material) { create(:material, tenant: tenant) }
-
-      it "can reference source material" do
-        item = create(:invoice_item, invoice: invoice, item_type: :material, name: "資材",
-                                     source_material: material)
-        expect(item.source_material).to eq(material)
-      end
     end
   end
 end

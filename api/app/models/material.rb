@@ -30,7 +30,8 @@ class Material < ApplicationRecord
   belongs_to :tenant
   has_many :daily_report_materials, dependent: :destroy
   has_many :daily_reports, through: :daily_report_materials
-  has_many :invoice_items, foreign_key: :source_material_id, inverse_of: :source_material, dependent: :nullify
+  has_many :invoice_materials, dependent: :destroy
+  has_many :invoices, through: :invoice_materials
 
   validates :name, presence: { message: "資材名を入力してください" }
   validates :unit_price, presence: { message: "単価を入力してください" },

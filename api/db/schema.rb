@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_12_13_025045) do
+ActiveRecord::Schema[7.1].define(version: 2025_12_23_092252) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
@@ -105,15 +105,31 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_13_025045) do
     t.decimal "amount", precision: 12, comment: "金額（数量×単価、headerの場合はNULL）"
     t.integer "sort_order", default: 0, null: false, comment: "表示順"
     t.text "note", comment: "備考"
-    t.uuid "source_product_id", comment: "元の製品ID（参照用）"
-    t.uuid "source_material_id", comment: "元の資材ID（参照用）"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["invoice_id", "sort_order"], name: "index_invoice_items_on_invoice_id_and_sort_order"
     t.index ["invoice_id"], name: "index_invoice_items_on_invoice_id"
     t.index ["item_type"], name: "index_invoice_items_on_item_type"
-    t.index ["source_material_id"], name: "index_invoice_items_on_source_material_id"
-    t.index ["source_product_id"], name: "index_invoice_items_on_source_product_id"
+  end
+
+  create_table "invoice_materials", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "invoice_id", null: false, comment: "請求書ID"
+    t.uuid "material_id", null: false, comment: "資材ID"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id", "material_id"], name: "index_invoice_materials_on_invoice_id_and_material_id", unique: true
+    t.index ["invoice_id"], name: "index_invoice_materials_on_invoice_id"
+    t.index ["material_id"], name: "index_invoice_materials_on_material_id"
+  end
+
+  create_table "invoice_products", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "invoice_id", null: false, comment: "請求書ID"
+    t.uuid "product_id", null: false, comment: "製品ID"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id", "product_id"], name: "index_invoice_products_on_invoice_id_and_product_id", unique: true
+    t.index ["invoice_id"], name: "index_invoice_products_on_invoice_id"
+    t.index ["product_id"], name: "index_invoice_products_on_product_id"
   end
 
   create_table "invoices", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "請求書", force: :cascade do |t|
@@ -308,8 +324,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_13_025045) do
   add_foreign_key "invoice_daily_reports", "daily_reports", on_delete: :cascade
   add_foreign_key "invoice_daily_reports", "invoices", on_delete: :cascade
   add_foreign_key "invoice_items", "invoices", on_delete: :cascade
-  add_foreign_key "invoice_items", "materials", column: "source_material_id", on_delete: :nullify
-  add_foreign_key "invoice_items", "products", column: "source_product_id", on_delete: :nullify
+  add_foreign_key "invoice_materials", "invoices", on_delete: :cascade
+  add_foreign_key "invoice_materials", "materials", on_delete: :cascade
+  add_foreign_key "invoice_products", "invoices", on_delete: :cascade
+  add_foreign_key "invoice_products", "products", on_delete: :cascade
   add_foreign_key "invoices", "customers"
   add_foreign_key "invoices", "sites"
   add_foreign_key "invoices", "tenants"

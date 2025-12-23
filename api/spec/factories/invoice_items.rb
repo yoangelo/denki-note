@@ -14,22 +14,16 @@
 #  created_at                                                   :datetime         not null
 #  updated_at                                                   :datetime         not null
 #  invoice_id(請求書ID)                                         :uuid             not null
-#  source_material_id(元の資材ID（参照用）)                     :uuid
-#  source_product_id(元の製品ID（参照用）)                      :uuid
 #
 # Indexes
 #
 #  index_invoice_items_on_invoice_id                 (invoice_id)
 #  index_invoice_items_on_invoice_id_and_sort_order  (invoice_id,sort_order)
 #  index_invoice_items_on_item_type                  (item_type)
-#  index_invoice_items_on_source_material_id         (source_material_id)
-#  index_invoice_items_on_source_product_id          (source_product_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (invoice_id => invoices.id) ON DELETE => cascade
-#  fk_rails_...  (source_material_id => materials.id) ON DELETE => nullify
-#  fk_rails_...  (source_product_id => products.id) ON DELETE => nullify
 #
 FactoryBot.define do
   factory :invoice_item do
@@ -61,6 +55,14 @@ FactoryBot.define do
       item_type { "labor" }
       name { "人件費" }
       unit { "時間" }
+    end
+
+    trait :integrated do
+      item_type { "integrated" }
+      name { "工事一式" }
+      quantity { 1 }
+      unit { "式" }
+      unit_price { nil }
     end
   end
 end
