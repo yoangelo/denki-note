@@ -31,6 +31,8 @@ import type {
   InvoiceUpdateRequestInvoiceItemsItem,
   Product,
   Material,
+  InvoiceProduct,
+  InvoiceMaterial,
 } from "../../api/generated/timesheetAPI.schemas";
 import { InvoiceStatusBadge } from "../../components/InvoiceStatusBadge";
 import { ProductSearchModal } from "../../components/ProductSearchModal";
@@ -83,6 +85,8 @@ interface OriginalFormData {
   note: string;
   itemsJson: string;
   dailyReportIds: string[];
+  productIds: string[];
+  materialIds: string[];
 }
 
 export function AdminInvoiceEditPage() {
@@ -130,6 +134,16 @@ export function AdminInvoiceEditPage() {
   const [showMaterialSearchModal, setShowMaterialSearchModal] = useState(false);
   const [searchTargetItemId, setSearchTargetItemId] = useState<string | null>(null);
 
+  // Selected products/materials for invoice
+  const [selectedProducts, setSelectedProducts] = useState<
+    Pick<InvoiceProduct, "product_id" | "product_name" | "model_number" | "unit_price">[]
+  >([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<
+    Pick<InvoiceMaterial, "material_id" | "material_name" | "model_number" | "unit_price">[]
+  >([]);
+  const [showProductSelectModal, setShowProductSelectModal] = useState(false);
+  const [showMaterialSelectModal, setShowMaterialSelectModal] = useState(false);
+
   // Initialized flag to prevent re-initialization
   const [initialized, setInitialized] = useState(false);
 
@@ -159,7 +173,7 @@ export function AdminInvoiceEditPage() {
   // Initialize form with existing data
   useEffect(() => {
     if (data && !initialized) {
-      const { invoice, invoice_items, daily_reports } = data;
+      const { invoice, invoice_items, daily_reports, invoice_products, invoice_materials } = data;
 
       const initialCustomerId = invoice.customer_id || "";
       const initialSiteId = invoice.site_id || "";
@@ -196,8 +210,6 @@ export function AdminInvoiceEditPage() {
             unit_price: item.unit_price ?? null,
             amount: item.amount || 0,
             sort_order: item.sort_order,
-            source_product_id: item.source_product_id || undefined,
-            source_material_id: item.source_material_id || undefined,
           }))
         : [];
       setItems(initialItems);
@@ -205,6 +217,29 @@ export function AdminInvoiceEditPage() {
       // Set selected daily report IDs
       const initialDailyReportIds = daily_reports ? daily_reports.map((r) => r.id) : [];
       setSelectedDailyReportIds(initialDailyReportIds);
+
+      // Set selected products and materials
+      const initialProducts = invoice_products
+        ? invoice_products.map((p) => ({
+            product_id: p.product_id,
+            product_name: p.product_name,
+            model_number: p.model_number,
+            unit_price: p.unit_price,
+          }))
+        : [];
+      const initialMaterials = invoice_materials
+        ? invoice_materials.map((m) => ({
+            material_id: m.material_id,
+            material_name: m.material_name,
+            model_number: m.model_number,
+            unit_price: m.unit_price,
+          }))
+        : [];
+      setSelectedProducts(initialProducts);
+      setSelectedMaterials(initialMaterials);
+
+      const initialProductIds = initialProducts.map((p) => p.product_id);
+      const initialMaterialIds = initialMaterials.map((m) => m.material_id);
 
       // Store original data for dirty check
       originalDataRef.current = {
@@ -221,6 +256,8 @@ export function AdminInvoiceEditPage() {
         note: initialNote,
         itemsJson: JSON.stringify(initialItems),
         dailyReportIds: initialDailyReportIds,
+        productIds: initialProductIds,
+        materialIds: initialMaterialIds,
       };
 
       // Show other info if any optional field is filled
@@ -244,6 +281,10 @@ export function AdminInvoiceEditPage() {
     const currentItemsJson = JSON.stringify(items);
     const dailyReportIdsSorted = [...selectedDailyReportIds].sort();
     const originalDailyReportIdsSorted = [...original.dailyReportIds].sort();
+    const currentProductIdsSorted = [...selectedProducts.map((p) => p.product_id)].sort();
+    const originalProductIdsSorted = [...original.productIds].sort();
+    const currentMaterialIdsSorted = [...selectedMaterials.map((m) => m.material_id)].sort();
+    const originalMaterialIdsSorted = [...original.materialIds].sort();
 
     return (
       customerId !== original.customerId ||
@@ -258,7 +299,9 @@ export function AdminInvoiceEditPage() {
       validUntil !== original.validUntil ||
       note !== original.note ||
       currentItemsJson !== original.itemsJson ||
-      JSON.stringify(dailyReportIdsSorted) !== JSON.stringify(originalDailyReportIdsSorted)
+      JSON.stringify(dailyReportIdsSorted) !== JSON.stringify(originalDailyReportIdsSorted) ||
+      JSON.stringify(currentProductIdsSorted) !== JSON.stringify(originalProductIdsSorted) ||
+      JSON.stringify(currentMaterialIdsSorted) !== JSON.stringify(originalMaterialIdsSorted)
     );
   }, [
     initialized,
@@ -275,6 +318,8 @@ export function AdminInvoiceEditPage() {
     note,
     items,
     selectedDailyReportIds,
+    selectedProducts,
+    selectedMaterials,
   ]);
 
   // Warn before browser tab close/reload
@@ -432,8 +477,6 @@ export function AdminInvoiceEditPage() {
       unit_price: product.unit_price,
       quantity: 1,
       amount: product.unit_price,
-      source_product_id: product.id,
-      source_material_id: undefined,
     });
     setShowProductSearchModal(false);
     setSearchTargetItemId(null);
@@ -447,11 +490,52 @@ export function AdminInvoiceEditPage() {
       unit_price: material.unit_price,
       quantity: 1,
       amount: material.unit_price,
-      source_material_id: material.id,
-      source_product_id: undefined,
     });
     setShowMaterialSearchModal(false);
     setSearchTargetItemId(null);
+  };
+
+  // Invoice products/materials handlers
+  const handleAddInvoiceProduct = (product: Product) => {
+    if (selectedProducts.some((p) => p.product_id === product.id)) {
+      toast.error("この製品は既に追加されています");
+      return;
+    }
+    setSelectedProducts((prev) => [
+      ...prev,
+      {
+        product_id: product.id,
+        product_name: product.name,
+        model_number: product.model_number || null,
+        unit_price: product.unit_price,
+      },
+    ]);
+    setShowProductSelectModal(false);
+  };
+
+  const handleRemoveInvoiceProduct = (productId: string) => {
+    setSelectedProducts((prev) => prev.filter((p) => p.product_id !== productId));
+  };
+
+  const handleAddInvoiceMaterial = (material: Material) => {
+    if (selectedMaterials.some((m) => m.material_id === material.id)) {
+      toast.error("この資材は既に追加されています");
+      return;
+    }
+    setSelectedMaterials((prev) => [
+      ...prev,
+      {
+        material_id: material.id,
+        material_name: material.name,
+        model_number: material.model_number || null,
+        unit_price: material.unit_price,
+      },
+    ]);
+    setShowMaterialSelectModal(false);
+  };
+
+  const handleRemoveInvoiceMaterial = (materialId: string) => {
+    setSelectedMaterials((prev) => prev.filter((m) => m.material_id !== materialId));
   };
 
   // Item type change with confirmation
@@ -511,6 +595,16 @@ export function AdminInvoiceEditPage() {
     const newItems: InvoiceItem[] = [];
     let sortOrder = items.length;
 
+    // Collect products and materials to add to invoice
+    const productsToAdd: Pick<
+      InvoiceProduct,
+      "product_id" | "product_name" | "model_number" | "unit_price"
+    >[] = [];
+    const materialsToAdd: Pick<
+      InvoiceMaterial,
+      "material_id" | "material_name" | "model_number" | "unit_price"
+    >[] = [];
+
     if (generatePattern === "per_report") {
       // Per-report pattern: Create items grouped by daily report
       selectedReports.forEach((report) => {
@@ -538,9 +632,21 @@ export function AdminInvoiceEditPage() {
             unit_price: product.unit_price || 0,
             amount: (product.quantity || 1) * (product.unit_price || 0),
             sort_order: sortOrder++,
-            source_product_id: product.id,
             isNew: true,
           });
+          // Add to invoice products if not already added
+          if (
+            product.id &&
+            !selectedProducts.some((p) => p.product_id === product.id) &&
+            !productsToAdd.some((p) => p.product_id === product.id)
+          ) {
+            productsToAdd.push({
+              product_id: product.id,
+              product_name: product.name || "",
+              model_number: null,
+              unit_price: product.unit_price || 0,
+            });
+          }
         });
 
         // Add materials
@@ -554,9 +660,21 @@ export function AdminInvoiceEditPage() {
             unit_price: material.unit_price || 0,
             amount: (material.quantity || 1) * (material.unit_price || 0),
             sort_order: sortOrder++,
-            source_material_id: material.id,
             isNew: true,
           });
+          // Add to invoice materials if not already added
+          if (
+            material.id &&
+            !selectedMaterials.some((m) => m.material_id === material.id) &&
+            !materialsToAdd.some((m) => m.material_id === material.id)
+          ) {
+            materialsToAdd.push({
+              material_id: material.id,
+              material_name: material.name || "",
+              model_number: null,
+              unit_price: material.unit_price || 0,
+            });
+          }
         });
       });
     } else {
@@ -579,7 +697,14 @@ export function AdminInvoiceEditPage() {
       // Aggregate products by product_id
       const productMap = new Map<
         string,
-        { name: string; quantity: number; unit: string; unit_price: number; id?: string }
+        {
+          name: string;
+          quantity: number;
+          unit: string;
+          unit_price: number;
+          id?: string;
+          model_number?: string | null;
+        }
       >();
       selectedReports.forEach((report) => {
         report.products?.forEach((product) => {
@@ -594,6 +719,7 @@ export function AdminInvoiceEditPage() {
               unit: product.unit || "個",
               unit_price: product.unit_price || 0,
               id: product.id,
+              model_number: null,
             });
           }
         });
@@ -609,15 +735,34 @@ export function AdminInvoiceEditPage() {
           unit_price: product.unit_price,
           amount: product.quantity * product.unit_price,
           sort_order: sortOrder++,
-          source_product_id: product.id,
           isNew: true,
         });
+        // Add to invoice products if not already added
+        if (
+          product.id &&
+          !selectedProducts.some((p) => p.product_id === product.id) &&
+          !productsToAdd.some((p) => p.product_id === product.id)
+        ) {
+          productsToAdd.push({
+            product_id: product.id,
+            product_name: product.name,
+            model_number: product.model_number || null,
+            unit_price: product.unit_price,
+          });
+        }
       });
 
       // Aggregate materials by material_id
       const materialMap = new Map<
         string,
-        { name: string; quantity: number; unit: string; unit_price: number; id?: string }
+        {
+          name: string;
+          quantity: number;
+          unit: string;
+          unit_price: number;
+          id?: string;
+          model_number?: string | null;
+        }
       >();
       selectedReports.forEach((report) => {
         report.materials?.forEach((material) => {
@@ -632,6 +777,7 @@ export function AdminInvoiceEditPage() {
               unit: material.unit || "個",
               unit_price: material.unit_price || 0,
               id: material.id,
+              model_number: null,
             });
           }
         });
@@ -647,16 +793,41 @@ export function AdminInvoiceEditPage() {
           unit_price: material.unit_price,
           amount: material.quantity * material.unit_price,
           sort_order: sortOrder++,
-          source_material_id: material.id,
           isNew: true,
         });
+        // Add to invoice materials if not already added
+        if (
+          material.id &&
+          !selectedMaterials.some((m) => m.material_id === material.id) &&
+          !materialsToAdd.some((m) => m.material_id === material.id)
+        ) {
+          materialsToAdd.push({
+            material_id: material.id,
+            material_name: material.name,
+            model_number: material.model_number || null,
+            unit_price: material.unit_price,
+          });
+        }
       });
     }
 
     setItems([...items, ...newItems]);
+    if (productsToAdd.length > 0) {
+      setSelectedProducts((prev) => [...prev, ...productsToAdd]);
+    }
+    if (materialsToAdd.length > 0) {
+      setSelectedMaterials((prev) => [...prev, ...materialsToAdd]);
+    }
     setShowAutoGenerateModal(false);
     toast.success(`${newItems.length}件の請求項目を追加しました`);
-  }, [dailyReports, selectedDailyReportIds, generatePattern, items]);
+  }, [
+    dailyReports,
+    selectedDailyReportIds,
+    generatePattern,
+    items,
+    selectedProducts,
+    selectedMaterials,
+  ]);
 
   const handleSave = () => {
     if (!customerId) {
@@ -685,8 +856,6 @@ export function AdminInvoiceEditPage() {
       unit_price: item.unit_price ?? undefined,
       amount: item.amount,
       sort_order: index,
-      source_product_id: item.source_product_id,
-      source_material_id: item.source_material_id,
     }));
 
     updateMutation.mutate({
@@ -707,6 +876,10 @@ export function AdminInvoiceEditPage() {
         },
         invoice_items: invoiceItems,
         daily_report_ids: selectedDailyReportIds.length > 0 ? selectedDailyReportIds : undefined,
+        product_ids:
+          selectedProducts.length > 0 ? selectedProducts.map((p) => p.product_id) : undefined,
+        material_ids:
+          selectedMaterials.length > 0 ? selectedMaterials.map((m) => m.material_id) : undefined,
       },
     });
   };
@@ -742,8 +915,6 @@ export function AdminInvoiceEditPage() {
       unit_price: item.unit_price ?? undefined,
       amount: item.amount,
       sort_order: index,
-      source_product_id: item.source_product_id,
-      source_material_id: item.source_material_id,
     }));
 
     try {
@@ -765,6 +936,10 @@ export function AdminInvoiceEditPage() {
           },
           invoice_items: invoiceItems,
           daily_report_ids: selectedDailyReportIds.length > 0 ? selectedDailyReportIds : undefined,
+          product_ids:
+            selectedProducts.length > 0 ? selectedProducts.map((p) => p.product_id) : undefined,
+          material_ids:
+            selectedMaterials.length > 0 ? selectedMaterials.map((m) => m.material_id) : undefined,
         },
       });
 
@@ -996,6 +1171,91 @@ export function AdminInvoiceEditPage() {
                         </span>
                       </span>
                     </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Invoice Products/Materials Settings */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Products */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium">納入製品設定</h2>
+                  <Button variant="secondary" onClick={() => setShowProductSelectModal(true)}>
+                    製品を追加
+                  </Button>
+                </div>
+
+                {selectedProducts.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">製品が登録されていません</div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedProducts.map((product) => (
+                      <div
+                        key={product.product_id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{product.product_name}</div>
+                          {product.model_number && (
+                            <div className="text-sm text-gray-500 truncate">
+                              型番: {product.model_number}
+                            </div>
+                          )}
+                          <div className="text-sm text-gray-500">
+                            単価: {formatCurrency(product.unit_price)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveInvoiceProduct(product.product_id)}
+                          className="ml-2 text-gray-400 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Materials */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium">使用資材設定</h2>
+                  <Button variant="secondary" onClick={() => setShowMaterialSelectModal(true)}>
+                    資材を追加
+                  </Button>
+                </div>
+
+                {selectedMaterials.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">資材が登録されていません</div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedMaterials.map((material) => (
+                      <div
+                        key={material.material_id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{material.material_name}</div>
+                          {material.model_number && (
+                            <div className="text-sm text-gray-500 truncate">
+                              型番: {material.model_number}
+                            </div>
+                          )}
+                          <div className="text-sm text-gray-500">
+                            単価: {formatCurrency(material.unit_price)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveInvoiceMaterial(material.material_id)}
+                          className="ml-2 text-gray-400 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1321,6 +1581,20 @@ export function AdminInvoiceEditPage() {
             setSearchTargetItemId(null);
           }}
           onSelect={handleSelectMaterial}
+        />
+
+        {/* Product Select Modal (for invoice products) */}
+        <ProductSearchModal
+          isOpen={showProductSelectModal}
+          onClose={() => setShowProductSelectModal(false)}
+          onSelect={handleAddInvoiceProduct}
+        />
+
+        {/* Material Select Modal (for invoice materials) */}
+        <MaterialSearchModal
+          isOpen={showMaterialSelectModal}
+          onClose={() => setShowMaterialSelectModal(false)}
+          onSelect={handleAddInvoiceMaterial}
         />
 
         {/* Leave Confirmation Modal */}

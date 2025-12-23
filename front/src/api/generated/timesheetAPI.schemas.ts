@@ -274,6 +274,7 @@ export const InvoiceItemItemType = {
   material: "material",
   labor: "labor",
   other: "other",
+  integrated: "integrated",
 } as const;
 
 export interface InvoiceItem {
@@ -291,10 +292,6 @@ export interface InvoiceItem {
   sort_order: number;
   /** @nullable */
   note?: string | null;
-  /** @nullable */
-  source_product_id?: string | null;
-  /** @nullable */
-  source_material_id?: string | null;
 }
 
 export interface InvoiceDailyReport {
@@ -305,6 +302,26 @@ export interface InvoiceDailyReport {
   /** @nullable */
   summary?: string | null;
   labor_cost?: number;
+}
+
+export interface InvoiceProduct {
+  id: string;
+  product_id: string;
+  product_name: string;
+  /** @nullable */
+  model_number?: string | null;
+  /** @nullable */
+  unit_price?: number | null;
+}
+
+export interface InvoiceMaterial {
+  id: string;
+  material_id: string;
+  material_name: string;
+  /** @nullable */
+  model_number?: string | null;
+  /** @nullable */
+  unit_price?: number | null;
 }
 
 export type InvoiceDetailResponseTenant = {
@@ -327,6 +344,8 @@ export interface InvoiceDetailResponse {
   invoice: Invoice;
   invoice_items: InvoiceItem[];
   daily_reports: InvoiceDailyReport[];
+  invoice_products: InvoiceProduct[];
+  invoice_materials: InvoiceMaterial[];
   bank_account?: BankAccount;
   tenant?: InvoiceDetailResponseTenant;
 }
@@ -355,6 +374,7 @@ export const InvoiceCreateRequestInvoiceItemsItemItemType = {
   material: "material",
   labor: "labor",
   other: "other",
+  integrated: "integrated",
 } as const;
 
 export type InvoiceCreateRequestInvoiceItemsItem = {
@@ -365,14 +385,14 @@ export type InvoiceCreateRequestInvoiceItemsItem = {
   unit_price?: number;
   amount?: number;
   sort_order: number;
-  source_product_id?: string;
-  source_material_id?: string;
 };
 
 export interface InvoiceCreateRequest {
   invoice: InvoiceCreateRequestInvoice;
   invoice_items?: InvoiceCreateRequestInvoiceItemsItem[];
   daily_report_ids?: string[];
+  product_ids?: string[];
+  material_ids?: string[];
 }
 
 export type InvoiceUpdateRequestInvoice = {
@@ -399,6 +419,7 @@ export const InvoiceUpdateRequestInvoiceItemsItemItemType = {
   material: "material",
   labor: "labor",
   other: "other",
+  integrated: "integrated",
 } as const;
 
 export type InvoiceUpdateRequestInvoiceItemsItem = {
@@ -410,14 +431,14 @@ export type InvoiceUpdateRequestInvoiceItemsItem = {
   unit_price?: number;
   amount?: number;
   sort_order?: number;
-  source_product_id?: string;
-  source_material_id?: string;
 };
 
 export interface InvoiceUpdateRequest {
   invoice?: InvoiceUpdateRequestInvoice;
   invoice_items?: InvoiceUpdateRequestInvoiceItemsItem[];
   daily_report_ids?: string[];
+  product_ids?: string[];
+  material_ids?: string[];
 }
 
 export type DailyReportForInvoiceProductsItem = {

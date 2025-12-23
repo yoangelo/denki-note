@@ -11,8 +11,6 @@ export type InvoiceItem = {
   unit_price: number | null;
   amount: number;
   sort_order: number;
-  source_product_id?: string;
-  source_material_id?: string;
   isNew?: boolean;
 };
 
@@ -22,4 +20,5 @@ export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
   material: "資材",
   labor: "作業",
   other: "その他",
+  integrated: "まとめ",
 };
