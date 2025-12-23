@@ -12,7 +12,7 @@ class Admin::DailyReportsController < AuthenticatedController
                        .joins(:site)
                        .where(sites: { tenant: current_tenant, customer_id: params[:customer_id] })
                        .includes(:site, work_entries: :user,
-                                 daily_report_products: :product, daily_report_materials: :material)
+                                        daily_report_products: :product, daily_report_materials: :material)
 
     scope = scope.where(site_id: params[:site_id]) if params[:site_id].present?
     scope = scope.where(work_date: (params[:from_date])..) if params[:from_date].present?
