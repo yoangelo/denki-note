@@ -349,11 +349,17 @@ export function AdminInvoiceCreatePage() {
       return sum + item.amount;
     }, 0);
 
+    // 選択した項目の品名をカンマで連結（空文字・見出しを除く）
+    const integratedName = selectedItems
+      .filter((item) => item.item_type !== "header" && item.name.trim() !== "")
+      .map((item) => item.name)
+      .join(", ");
+
     // Create new integrated item
     const newItem: InvoiceItem = {
       id: crypto.randomUUID(),
       item_type: "integrated",
-      name: "",
+      name: integratedName,
       quantity: 1,
       unit: "式",
       unit_price: null,
@@ -389,6 +395,18 @@ export function AdminInvoiceCreatePage() {
       quantity: 1,
       amount: product.unit_price,
     });
+    // 納入製品設定にも追加（重複チェック）
+    if (!selectedProducts.some((p) => p.product_id === product.id)) {
+      setSelectedProducts([
+        ...selectedProducts,
+        {
+          product_id: product.id,
+          product_name: product.name,
+          model_number: product.model_number,
+          unit_price: product.unit_price,
+        },
+      ]);
+    }
     setShowProductSearchModal(false);
     setSearchTargetItemId(null);
   };
@@ -402,6 +420,18 @@ export function AdminInvoiceCreatePage() {
       quantity: 1,
       amount: material.unit_price,
     });
+    // 使用資材設定にも追加（重複チェック）
+    if (!selectedMaterials.some((m) => m.material_id === material.id)) {
+      setSelectedMaterials([
+        ...selectedMaterials,
+        {
+          material_id: material.id,
+          material_name: material.name,
+          model_number: material.model_number,
+          unit_price: material.unit_price,
+        },
+      ]);
+    }
     setShowMaterialSearchModal(false);
     setSearchTargetItemId(null);
   };
