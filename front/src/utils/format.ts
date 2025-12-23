@@ -6,7 +6,7 @@ const currencyFormatter = new Intl.NumberFormat("ja-JP", {
 const numberFormatter = new Intl.NumberFormat("ja-JP");
 
 export function formatCurrency(value: number | null | undefined): string {
-  if (value === null || value === undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
     return "-";
   }
   return currencyFormatter.format(value);

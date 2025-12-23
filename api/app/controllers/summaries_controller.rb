@@ -8,9 +8,20 @@ class SummariesController < AuthenticatedController
   # @return [Hash] 集計結果
   #   - rows [Array<Hash>] 日別の作業データ（date, summary, hours）
   #   - total_hours [Float] 月間合計時間
-  #   - amount_jpy [Integer] 請求金額（円）
+  #   - labor_cost_jpy [Integer] 工賃合計（円）
+  #   - product_amount_jpy [Integer] 製品金額合計（円）
+  #   - material_amount_jpy [Integer] 資材金額合計（円）
+  #   - total_amount_jpy [Integer] 請求金額合計（円）
   def customer_month
-    return render json: { rows: [], total_hours: 0, amount_jpy: 0 } unless current_tenant
+    empty_response = {
+      rows: [],
+      total_hours: 0,
+      labor_cost_jpy: 0,
+      product_amount_jpy: 0,
+      material_amount_jpy: 0,
+      total_amount_jpy: 0,
+    }
+    return render json: empty_response unless current_tenant
 
     begin
       month_date = Date.strptime("#{summary_params[:yyyymm]}-01", "%Y-%m-%d")
@@ -25,6 +36,9 @@ class SummariesController < AuthenticatedController
 
     # 現場に紐づく日報を取得（論理削除されていないもののみ）
     reports = DailyReport.kept.where(tenant: current_tenant, site_id: site_ids, work_date: month_range)
+                         .includes(:daily_report_products, :daily_report_materials,
+                                   daily_report_products: :product,
+                                   daily_report_materials: :material)
     report_map = reports.index_by(&:id)
 
     # 作業エントリを集計
@@ -48,23 +62,42 @@ class SummariesController < AuthenticatedController
 
     total_hours = rows.sum { |r| r[:hours] }.round(2)
 
-    # 金額計算
-    customer = Customer.find_by(id: summary_params[:customer_id], tenant: current_tenant)
-    tenant_setting = TenantSetting.find_by(tenant: current_tenant)
+    # 工賃計算（日報に保存されているlabor_costを合計）
+    labor_cost_jpy = reports.sum(&:labor_cost).to_i
 
-    default_unit_rate = tenant_setting&.default_unit_rate || 0
-    rate_percent = summary_params[:rate_toggle] == "on" ? (customer&.rate_percent || 100) : 100
-    amount_jpy = (total_hours * default_unit_rate * (rate_percent / 100.0)).round
+    # 製品金額計算
+    product_amount_jpy = reports.sum do |report|
+      report.daily_report_products.sum do |drp|
+        (drp.quantity * drp.product.unit_price).to_i
+      end
+    end
 
-    render json: { rows: rows, total_hours: total_hours, amount_jpy: amount_jpy }
+    # 資材金額計算
+    material_amount_jpy = reports.sum do |report|
+      report.daily_report_materials.sum do |drm|
+        (drm.quantity * drm.material.unit_price).to_i
+      end
+    end
+
+    # 合計金額
+    total_amount_jpy = labor_cost_jpy + product_amount_jpy + material_amount_jpy
+
+    render json: {
+      rows: rows,
+      total_hours: total_hours,
+      labor_cost_jpy: labor_cost_jpy,
+      product_amount_jpy: product_amount_jpy,
+      material_amount_jpy: material_amount_jpy,
+      total_amount_jpy: total_amount_jpy,
+    }
   end
 
   private
 
   # customer_monthアクション用のパラメータを許可する
   #
-  # @return [ActionController::Parameters] 許可されたパラメータ（customer_id, yyyymm, rate_toggle）
+  # @return [ActionController::Parameters] 許可されたパラメータ（customer_id, yyyymm）
   def summary_params
-    params.permit(:customer_id, :yyyymm, :rate_toggle)
+    params.permit(:customer_id, :yyyymm)
   end
 end

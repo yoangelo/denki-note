@@ -45,6 +45,15 @@ describe("calculateSubtotal", () => {
     ];
     expect(calculateSubtotal(items)).toBe(1000);
   });
+
+  it("treats NaN amounts as 0", () => {
+    const items = [
+      { item_type: "product" as const, amount: 1000 },
+      { item_type: "material" as const, amount: NaN },
+      { item_type: "labor" as const, amount: 500 },
+    ];
+    expect(calculateSubtotal(items)).toBe(1500);
+  });
 });
 
 describe("calculateTaxAmount", () => {

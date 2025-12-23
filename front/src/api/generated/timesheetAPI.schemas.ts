@@ -445,6 +445,7 @@ export interface DailyReportForInvoice {
   /** @nullable */
   site_name?: string | null;
   summary?: string;
+  workers?: string[];
   labor_cost: number;
   products?: DailyReportForInvoiceProductsItem[];
   materials?: DailyReportForInvoiceMaterialsItem[];
@@ -990,17 +991,7 @@ export type GetCustomerMonthSummaryParams = {
    * @pattern ^[0-9]{4}-[0-9]{2}$
    */
   yyyymm: string;
-  rate_toggle?: GetCustomerMonthSummaryRateToggle;
 };
-
-export type GetCustomerMonthSummaryRateToggle =
-  (typeof GetCustomerMonthSummaryRateToggle)[keyof typeof GetCustomerMonthSummaryRateToggle];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const GetCustomerMonthSummaryRateToggle = {
-  on: "on",
-  off: "off",
-} as const;
 
 export type GetCustomerMonthSummary200RowsItem = {
   date?: string;
@@ -1011,7 +1002,10 @@ export type GetCustomerMonthSummary200RowsItem = {
 export type GetCustomerMonthSummary200 = {
   rows: GetCustomerMonthSummary200RowsItem[];
   total_hours: number;
-  amount_jpy: number;
+  labor_cost_jpy: number;
+  product_amount_jpy: number;
+  material_amount_jpy: number;
+  total_amount_jpy: number;
 };
 
 export type GetAdminCustomersParams = {

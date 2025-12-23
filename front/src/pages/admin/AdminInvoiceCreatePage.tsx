@@ -1,37 +1,48 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   useAdminCreateInvoice,
   useAdminIssueInvoice,
   useAdminGetDailyReportsForInvoice,
   getAdminListInvoicesQueryKey,
 } from "../../api/generated/admin/admin";
-import { useListCustomers } from "../../api/generated/customers/customers";
-import { useListSites } from "../../api/generated/sites/sites";
 import type {
   DailyReportForInvoice,
   InvoiceCreateRequestInvoiceItemsItem,
-  InvoiceCreateRequestInvoiceItemsItemItemType,
   Product,
   Material,
 } from "../../api/generated/timesheetAPI.schemas";
 import { ProductSearchModal } from "../../components/ProductSearchModal";
 import { MaterialSearchModal } from "../../components/MaterialSearchModal";
+import { InvoiceItemRow } from "../../components/InvoiceItemRow";
+import { CustomerSiteSelectModal } from "../../components/CustomerSiteSelectModal";
 import {
   Button,
   Input,
   Select,
   Modal,
   ConfirmModal,
-  PageHeader,
+  FullScreenModal,
   Table,
   TableHeader,
   TableBody,
-  TableRow,
   TableHead,
-  TableCell,
 } from "../../components/ui";
 import {
   formatCurrency,
@@ -39,36 +50,14 @@ import {
   formatProductName,
   formatMaterialName,
   validateInvoiceItems,
-  hasFieldError,
   clearItemErrors,
   clearFieldError,
   isFieldValid,
   taxRateToApi,
   type InvoiceItemValidationError,
 } from "../../utils";
-
-type ItemType = InvoiceCreateRequestInvoiceItemsItemItemType;
-
-type InvoiceItem = {
-  id: string;
-  item_type: ItemType;
-  name: string;
-  quantity: number | null;
-  unit: string;
-  unit_price: number | null;
-  amount: number;
-  sort_order: number;
-  source_product_id?: string;
-  source_material_id?: string;
-};
-
-const ITEM_TYPE_LABELS: Record<ItemType, string> = {
-  header: "見出し",
-  product: "製品",
-  material: "資材",
-  labor: "作業",
-  other: "その他",
-};
+import type { InvoiceItem } from "../../types/invoice";
+import { useItemTypeChange } from "../../hooks/useItemTypeChange";
 
 const TAX_RATE_OPTIONS = [
   { value: "0.1", label: "10%" },
@@ -82,6 +71,10 @@ export function AdminInvoiceCreatePage() {
   // Customer/Site selection
   const [customerId, setCustomerId] = useState("");
   const [siteId, setSiteId] = useState("");
+  const [selectedCustomerType, setSelectedCustomerType] = useState<
+    "corporate" | "individual" | undefined
+  >();
+  const [selectedSiteName, setSelectedSiteName] = useState("");
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
   // Basic info
@@ -112,7 +105,9 @@ export function AdminInvoiceCreatePage() {
   );
 
   // Modals
+  const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
   const [showIssueConfirmModal, setShowIssueConfirmModal] = useState(false);
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
 
   // Product/Material search modals
   const [showProductSearchModal, setShowProductSearchModal] = useState(false);
@@ -120,11 +115,6 @@ export function AdminInvoiceCreatePage() {
   const [searchTargetItemId, setSearchTargetItemId] = useState<string | null>(null);
 
   // API
-  const { data: customers = [] } = useListCustomers();
-  const { data: sites = [] } = useListSites(
-    customerId ? { customer_id: customerId } : { customer_id: "" }
-  );
-
   const { data: dailyReportsData } = useAdminGetDailyReportsForInvoice(
     customerId
       ? {
@@ -182,21 +172,64 @@ export function AdminInvoiceCreatePage() {
 
   const totalAmount = subtotal + taxAmount;
 
-  // Handlers
-  const handleCustomerSelect = (cId: string) => {
-    const customer = customers.find((c) => c.id === cId);
-    setCustomerId(cId);
-    setSiteId("");
-    setSelectedDailyReportIds([]);
-    if (customer) {
-      setCustomerName(customer.name);
-    }
-    setShowCustomerModal(false);
-  };
+  // Check if form has unsaved changes
+  const isDirty = useMemo(() => {
+    // Check if any meaningful data has been entered
+    return (
+      customerId !== "" ||
+      title !== "" ||
+      note !== "" ||
+      deliveryDate !== "" ||
+      deliveryPlace !== "" ||
+      transactionMethod !== "" ||
+      validUntil !== "" ||
+      items.length > 0 ||
+      selectedDailyReportIds.length > 0
+    );
+  }, [
+    customerId,
+    title,
+    note,
+    deliveryDate,
+    deliveryPlace,
+    transactionMethod,
+    validUntil,
+    items.length,
+    selectedDailyReportIds.length,
+  ]);
 
-  const handleSiteSelect = (sId: string) => {
-    setSiteId(sId);
+  // Browser beforeunload event to warn about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        // Modern browsers ignore custom messages and show their own
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
+
+  // Handlers
+  const handleCustomerSiteSelect = (data: {
+    customerId: string;
+    siteId: string;
+    customerName: string;
+    siteName: string;
+    customerType: "corporate" | "individual";
+  }) => {
+    setCustomerId(data.customerId);
+    setSiteId(data.siteId);
+    setCustomerName(data.customerName);
+    setSelectedCustomerType(data.customerType);
+    setSelectedSiteName(data.siteName);
     setSelectedDailyReportIds([]);
+    setShowCustomerModal(false);
   };
 
   const handleAddItem = () => {
@@ -302,6 +335,47 @@ export function AdminInvoiceCreatePage() {
     setShowMaterialSearchModal(false);
     setSearchTargetItemId(null);
   };
+
+  // Item type change with confirmation
+  const {
+    showItemTypeChangeModal,
+    handleItemTypeChange,
+    confirmItemTypeChange,
+    cancelItemTypeChange,
+  } = useItemTypeChange({ items, onUpdateItem: handleUpdateItem });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        const newItems = [...items];
+        const [movedItem] = newItems.splice(oldIndex, 1);
+        newItems.splice(newIndex, 0, movedItem);
+
+        // Update sort_order for all items
+        const updatedItems = newItems.map((item, index) => ({
+          ...item,
+          sort_order: index,
+        }));
+
+        setItems(updatedItems);
+      }
+    },
+    [items]
+  );
 
   const handleDailyReportToggle = (reportId: string) => {
     setSelectedDailyReportIds((prev) =>
@@ -478,6 +552,10 @@ export function AdminInvoiceCreatePage() {
       return;
     }
 
+    setShowDraftConfirmModal(true);
+  };
+
+  const handleConfirmDraft = () => {
     const invoiceItems: InvoiceCreateRequestInvoiceItemsItem[] = items.map((item, index) => ({
       item_type: item.item_type,
       name: item.name,
@@ -509,6 +587,7 @@ export function AdminInvoiceCreatePage() {
         daily_report_ids: selectedDailyReportIds.length > 0 ? selectedDailyReportIds : undefined,
       },
     });
+    setShowDraftConfirmModal(false);
   };
 
   const handleIssue = () => {
@@ -575,8 +654,73 @@ export function AdminInvoiceCreatePage() {
     setShowIssueConfirmModal(false);
   };
 
-  const selectedCustomer = customers.find((c) => c.id === customerId);
-  const selectedSite = sites.find((s) => s.id === siteId);
+  // Handle back button click
+  const handleBack = () => {
+    if (isDirty) {
+      setShowLeaveConfirmModal(true);
+    } else {
+      navigate("/admin/invoices");
+    }
+  };
+
+  // Handle discard and leave
+  const handleDiscardAndLeave = () => {
+    setShowLeaveConfirmModal(false);
+    navigate("/admin/invoices");
+  };
+
+  // Handle save draft and leave
+  const handleSaveDraftAndLeave = () => {
+    setShowLeaveConfirmModal(false);
+    if (!customerId) {
+      toast.error("顧客を選択してください");
+      return;
+    }
+    if (!billingDate) {
+      toast.error("請求日を入力してください");
+      return;
+    }
+
+    // Validate invoice items
+    const errors = validateInvoiceItems(items);
+    setItemValidationErrors(errors);
+    if (errors.length > 0) {
+      toast.error("請求項目に入力エラーがあります");
+      return;
+    }
+
+    const invoiceItems: InvoiceCreateRequestInvoiceItemsItem[] = items.map((item, index) => ({
+      item_type: item.item_type,
+      name: item.name,
+      quantity: item.quantity ?? undefined,
+      unit: item.unit || undefined,
+      unit_price: item.unit_price ?? undefined,
+      amount: item.amount,
+      sort_order: index,
+      source_product_id: item.source_product_id,
+      source_material_id: item.source_material_id,
+    }));
+
+    createMutation.mutate({
+      data: {
+        invoice: {
+          customer_id: customerId,
+          site_id: siteId || undefined,
+          billing_date: billingDate,
+          customer_name: customerName || undefined,
+          title: title || undefined,
+          tax_rate: taxRateToApi(taxRate),
+          delivery_date: deliveryDate || undefined,
+          delivery_place: deliveryPlace || undefined,
+          transaction_method: transactionMethod || undefined,
+          valid_until: validUntil || undefined,
+          note: note || undefined,
+        },
+        invoice_items: invoiceItems.length > 0 ? invoiceItems : undefined,
+        daily_report_ids: selectedDailyReportIds.length > 0 ? selectedDailyReportIds : undefined,
+      },
+    });
+  };
 
   const selectedDailyReportsTotal = useMemo(() => {
     return dailyReports
@@ -585,461 +729,491 @@ export function AdminInvoiceCreatePage() {
   }, [dailyReports, selectedDailyReportIds]);
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <PageHeader title="請求書の新規作成" />
-
-      {/* Customer/Site Selection */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium">顧客・現場</h2>
-          <Button onClick={() => setShowCustomerModal(true)}>
-            {customerId ? "変更" : "顧客・現場選択"}
-          </Button>
-        </div>
-        {customerId ? (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium">{selectedCustomer?.name}</span>
-              {selectedCustomer?.customer_type === "corporate" && (
-                <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
-                  法人
-                </span>
-              )}
-            </div>
-            {siteId && <div className="text-sm text-gray-600">現場: {selectedSite?.name}</div>}
+    <FullScreenModal title="請求書の新規作成" onCloseRequest={handleBack}>
+      <div className="max-w-6xl mx-auto">
+        {/* Customer/Site Selection */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium">顧客・現場</h2>
+            <Button onClick={() => setShowCustomerModal(true)}>
+              {customerId ? "変更" : "顧客・現場選択"}
+            </Button>
           </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">顧客を選択してください</div>
-        )}
-      </div>
-
-      {/* Main Form - Only show when customer is selected */}
-      {customerId && (
-        <>
-          {/* Two column layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Basic Info */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-medium mb-4">基本情報</h2>
-              <div className="space-y-4">
-                <Input
-                  label="日付（請求日）"
-                  type="date"
-                  value={billingDate}
-                  onChange={(e) => setBillingDate(e.target.value)}
-                  required
-                />
-                <Input
-                  label="顧客表示名"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  required
-                />
-                <Input
-                  label="タイトル"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="例: 1月分工事代金"
-                />
-
-                <button
-                  type="button"
-                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
-                  onClick={() => setShowOtherInfo(!showOtherInfo)}
-                >
-                  <span>{showOtherInfo ? "▼" : "▶"}</span>
-                  <span>その他情報</span>
-                </button>
-
-                {showOtherInfo && (
-                  <div className="space-y-4 pl-4 border-l-2 border-gray-200">
-                    <Input
-                      label="受渡期日"
-                      type="date"
-                      value={deliveryDate}
-                      onChange={(e) => setDeliveryDate(e.target.value)}
-                    />
-                    <Input
-                      label="受渡場所"
-                      value={deliveryPlace}
-                      onChange={(e) => setDeliveryPlace(e.target.value)}
-                      placeholder="例: ○○工場"
-                    />
-                    <Input
-                      label="取引方法"
-                      value={transactionMethod}
-                      onChange={(e) => setTransactionMethod(e.target.value)}
-                      placeholder="例: 銀行振込"
-                    />
-                    <Input
-                      label="有効期限"
-                      type="date"
-                      value={validUntil}
-                      onChange={(e) => setValidUntil(e.target.value)}
-                    />
-                  </div>
+          {customerId ? (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium">{customerName}</span>
+                {selectedCustomerType === "corporate" && (
+                  <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                    法人
+                  </span>
                 )}
-
-                <Select
-                  label="税率"
-                  value={taxRate}
-                  onChange={(e) => setTaxRate(e.target.value)}
-                  required
-                >
-                  {TAX_RATE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </Select>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">備考</label>
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Daily Reports */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium">関連する日報の設定</h2>
-                <Button variant="secondary" onClick={() => setShowDailyReportModal(true)}>
-                  日報を選択
-                </Button>
-              </div>
-
-              {selectedDailyReportIds.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  日報を選択すると、請求項目を自動生成できます
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {dailyReports
-                    .filter((r) => selectedDailyReportIds.includes(r.id))
-                    .map((report) => (
-                      <DailyReportCard
-                        key={report.id}
-                        report={report}
-                        onRemove={() => handleDailyReportToggle(report.id)}
-                      />
-                    ))}
-                  <div className="pt-2 border-t border-gray-200 flex justify-end">
-                    <span className="text-sm text-gray-600">
-                      合計金額(税込):{" "}
-                      <span className="font-bold text-blue-600">
-                        {formatCurrency(selectedDailyReportsTotal)}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Invoice Items */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium">請求項目</h2>
-              <div className="flex gap-2">
-                {selectedDailyReportIds.length > 0 && (
-                  <Button variant="secondary" onClick={() => setShowAutoGenerateModal(true)}>
-                    日報から自動生成
-                  </Button>
+                {selectedCustomerType === "individual" && (
+                  <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                    個人
+                  </span>
                 )}
-                <Button onClick={handleAddItem}>+ 項目追加</Button>
               </div>
+              {siteId && <div className="text-sm text-gray-600">現場: {selectedSiteName}</div>}
             </div>
-
-            {items.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                請求項目がありません。「+ 項目追加」で追加するか、日報から自動生成してください。
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableHead className="w-24">種別</TableHead>
-                    <TableHead>品名</TableHead>
-                    <TableHead className="w-20" align="right">
-                      数量
-                    </TableHead>
-                    <TableHead className="w-16">単位</TableHead>
-                    <TableHead className="w-28" align="right">
-                      単価
-                    </TableHead>
-                    <TableHead className="w-28" align="right">
-                      金額
-                    </TableHead>
-                    <TableHead className="w-12" align="center">
-                      削除
-                    </TableHead>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <InvoiceItemRow
-                        key={item.id}
-                        item={item}
-                        onUpdate={handleUpdateItem}
-                        onDelete={handleDeleteItem}
-                        onOpenProductSearch={handleOpenProductSearch}
-                        onOpenMaterialSearch={handleOpenMaterialSearch}
-                        validationErrors={itemValidationErrors}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-
-            {/* Validation Errors */}
-            {itemValidationErrors.length > 0 && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm font-medium text-red-800 mb-2">入力エラーがあります:</p>
-                <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
-                  {itemValidationErrors.map((error, index) => {
-                    const item = items.find((i) => i.id === error.itemId);
-                    const itemIndex = items.findIndex((i) => i.id === error.itemId) + 1;
-                    return (
-                      <li key={index}>
-                        {itemIndex}行目 ({item?.name || "未入力"}): {error.message}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-
-            {/* Totals */}
-            <div className="mt-4 border-t pt-4">
-              <div className="flex justify-end">
-                <div className="w-64 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">小計</span>
-                    <span className="font-medium">{formatCurrency(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">
-                      消費税({Math.round(parseFloat(taxRate) * 100)}%)
-                    </span>
-                    <span className="font-medium">{formatCurrency(taxAmount)}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="font-bold">合計</span>
-                    <span className="font-bold text-blue-600">{formatCurrency(totalAmount)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-end gap-4">
-              <Button variant="secondary" onClick={() => navigate("/admin/invoices")}>
-                戻る
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleSaveDraft}
-                disabled={createMutation.isPending}
-              >
-                {createMutation.isPending ? "保存中..." : "下書き保存"}
-              </Button>
-              <Button
-                onClick={handleIssue}
-                disabled={createMutation.isPending || issueMutation.isPending}
-              >
-                発行
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Customer Selection Modal */}
-      <Modal
-        isOpen={showCustomerModal}
-        onClose={() => setShowCustomerModal(false)}
-        title="顧客・現場選択"
-        size="lg"
-      >
-        <div className="space-y-4">
-          <Select
-            label="顧客"
-            value={customerId}
-            onChange={(e) => handleCustomerSelect(e.target.value)}
-          >
-            <option value="">選択してください</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </Select>
-
-          {customerId && (
-            <Select
-              label="現場（任意）"
-              value={siteId}
-              onChange={(e) => handleSiteSelect(e.target.value)}
-            >
-              <option value="">選択しない</option>
-              {sites.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.name}
-                </option>
-              ))}
-            </Select>
+          ) : (
+            <div className="text-center py-8 text-gray-500">顧客を選択してください</div>
           )}
         </div>
-      </Modal>
 
-      {/* Daily Report Selection Modal */}
-      <Modal
-        isOpen={showDailyReportModal}
-        onClose={() => setShowDailyReportModal(false)}
-        title="日報選択"
-        size="lg"
-        footer={
+        {/* Main Form - Only show when customer is selected */}
+        {customerId && (
           <>
-            <Button variant="secondary" onClick={() => setShowDailyReportModal(false)}>
-              キャンセル
-            </Button>
-            <Button onClick={() => setShowDailyReportModal(false)}>選択</Button>
-          </>
-        }
-      >
-        {dailyReports.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">該当する日報がありません</div>
-        ) : (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {dailyReports.map((report) => (
-              <label
-                key={report.id}
-                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 ${
-                  selectedDailyReportIds.includes(report.id)
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedDailyReportIds.includes(report.id)}
-                  onChange={() => handleDailyReportToggle(report.id)}
-                  className="w-4 h-4 text-blue-600 rounded"
-                />
-                <div className="flex-1">
-                  <div className="flex justify-between">
-                    <span className="font-medium">{formatDate(report.report_date)}</span>
-                    <span className="text-blue-600 font-medium">
-                      {formatCurrency(report.total_amount)}
-                    </span>
+            {/* Two column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Basic Info */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-medium mb-4">基本情報</h2>
+                <div className="space-y-4">
+                  <Input
+                    label="日付（請求日）"
+                    type="date"
+                    value={billingDate}
+                    onChange={(e) => setBillingDate(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="顧客表示名"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="タイトル"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="例: 1月分工事代金"
+                  />
+
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+                    onClick={() => setShowOtherInfo(!showOtherInfo)}
+                  >
+                    <span>{showOtherInfo ? "▼" : "▶"}</span>
+                    <span>その他情報</span>
+                  </button>
+
+                  {showOtherInfo && (
+                    <div className="space-y-4 pl-4 border-l-2 border-gray-200">
+                      <Input
+                        label="受渡期日"
+                        type="date"
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                      />
+                      <Input
+                        label="受渡場所"
+                        value={deliveryPlace}
+                        onChange={(e) => setDeliveryPlace(e.target.value)}
+                        placeholder="例: ○○工場"
+                      />
+                      <Input
+                        label="取引方法"
+                        value={transactionMethod}
+                        onChange={(e) => setTransactionMethod(e.target.value)}
+                        placeholder="例: 銀行振込"
+                      />
+                      <Input
+                        label="有効期限"
+                        type="date"
+                        value={validUntil}
+                        onChange={(e) => setValidUntil(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <Select
+                    label="税率"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(e.target.value)}
+                    required
+                  >
+                    {TAX_RATE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </Select>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">備考</label>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                    />
                   </div>
-                  <div className="text-sm text-gray-600">{report.summary || "作業"}</div>
                 </div>
-              </label>
-            ))}
-          </div>
-        )}
-        <div className="mt-4 pt-4 border-t flex justify-end">
-          <span className="text-sm text-gray-600">
-            合計金額(税込):{" "}
-            <span className="font-bold text-blue-600">
-              {formatCurrency(selectedDailyReportsTotal)}
-            </span>
-          </span>
-        </div>
-      </Modal>
+              </div>
 
-      {/* Auto Generate Modal */}
-      <Modal
-        isOpen={showAutoGenerateModal}
-        onClose={() => setShowAutoGenerateModal(false)}
-        title="日報から自動生成"
-        size="md"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setShowAutoGenerateModal(false)}>
-              キャンセル
-            </Button>
-            <Button onClick={handleGenerateFromDailyReports}>生成する</Button>
+              {/* Daily Reports */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium">関連する日報の設定</h2>
+                  <Button variant="secondary" onClick={() => setShowDailyReportModal(true)}>
+                    日報を選択
+                  </Button>
+                </div>
+
+                {selectedDailyReportIds.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    日報を選択すると、請求項目を自動生成できます
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {dailyReports
+                      .filter((r) => selectedDailyReportIds.includes(r.id))
+                      .map((report) => (
+                        <DailyReportCard
+                          key={report.id}
+                          report={report}
+                          onRemove={() => handleDailyReportToggle(report.id)}
+                        />
+                      ))}
+                    <div className="pt-2 border-t border-gray-200 flex justify-end">
+                      <span className="text-sm text-gray-600">
+                        合計金額(税込):{" "}
+                        <span className="font-bold text-blue-600">
+                          {formatCurrency(selectedDailyReportsTotal)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Invoice Items */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium">請求項目</h2>
+                <div className="flex gap-2">
+                  {selectedDailyReportIds.length > 0 && (
+                    <Button variant="secondary" onClick={() => setShowAutoGenerateModal(true)}>
+                      日報から自動生成
+                    </Button>
+                  )}
+                  <Button onClick={handleAddItem}>+ 項目追加</Button>
+                </div>
+              </div>
+
+              {items.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  請求項目がありません。「+ 項目追加」で追加するか、日報から自動生成してください。
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <Table>
+                      <TableHeader>
+                        <TableHead className="w-10"></TableHead>
+                        <TableHead className="w-24">種別</TableHead>
+                        <TableHead>品名</TableHead>
+                        <TableHead className="w-20" align="right">
+                          数量
+                        </TableHead>
+                        <TableHead className="w-16">単位</TableHead>
+                        <TableHead className="w-28" align="right">
+                          単価
+                        </TableHead>
+                        <TableHead className="w-28" align="right">
+                          金額
+                        </TableHead>
+                        <TableHead className="w-12" align="center">
+                          削除
+                        </TableHead>
+                      </TableHeader>
+                      <SortableContext
+                        items={items.map((item) => item.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <TableBody>
+                          {items.map((item) => (
+                            <InvoiceItemRow
+                              key={item.id}
+                              item={item}
+                              onUpdate={handleUpdateItem}
+                              onDelete={handleDeleteItem}
+                              onOpenProductSearch={handleOpenProductSearch}
+                              onOpenMaterialSearch={handleOpenMaterialSearch}
+                              onItemTypeChange={handleItemTypeChange}
+                              validationErrors={itemValidationErrors}
+                            />
+                          ))}
+                        </TableBody>
+                      </SortableContext>
+                    </Table>
+                  </DndContext>
+                </div>
+              )}
+
+              {/* Validation Errors */}
+              {itemValidationErrors.length > 0 && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm font-medium text-red-800 mb-2">入力エラーがあります:</p>
+                  <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                    {itemValidationErrors.map((error, index) => {
+                      const item = items.find((i) => i.id === error.itemId);
+                      const itemIndex = items.findIndex((i) => i.id === error.itemId) + 1;
+                      return (
+                        <li key={index}>
+                          {itemIndex}行目 ({item?.name || "未入力"}): {error.message}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* Totals */}
+              <div className="mt-4 border-t pt-4">
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">小計</span>
+                      <span className="font-medium">{formatCurrency(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        消費税({Math.round(parseFloat(taxRate) * 100)}%)
+                      </span>
+                      <span className="font-medium">{formatCurrency(taxAmount)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-bold">合計</span>
+                      <span className="font-bold text-blue-600">{formatCurrency(totalAmount)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex justify-end gap-4">
+                <Button
+                  variant="secondary"
+                  onClick={handleSaveDraft}
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending ? "保存中..." : "下書き保存"}
+                </Button>
+                <Button
+                  onClick={handleIssue}
+                  disabled={createMutation.isPending || issueMutation.isPending}
+                >
+                  発行
+                </Button>
+              </div>
+            </div>
           </>
-        }
-      >
-        <div className="space-y-4">
-          <div className="text-sm text-gray-600">
-            選択中の日報: {selectedDailyReportIds.length}件
-          </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">生成パターン</label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="generatePattern"
-                  value="per_report"
-                  checked={generatePattern === "per_report"}
-                  onChange={() => setGeneratePattern("per_report")}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span>日報単位</span>
-                <span className="text-sm text-gray-500">- 日報ごとに項目を分けて生成</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="generatePattern"
-                  value="aggregated"
-                  checked={generatePattern === "aggregated"}
-                  onChange={() => setGeneratePattern("aggregated")}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span>集約</span>
-                <span className="text-sm text-gray-500">- 同じ製品・資材は合算して生成</span>
-              </label>
+        {/* Customer Selection Modal */}
+        <CustomerSiteSelectModal
+          isOpen={showCustomerModal}
+          onClose={() => setShowCustomerModal(false)}
+          onSelect={handleCustomerSiteSelect}
+          initialCustomerId={customerId}
+          initialSiteId={siteId}
+          siteRequired={false}
+        />
+
+        {/* Daily Report Selection Modal */}
+        <Modal
+          isOpen={showDailyReportModal}
+          onClose={() => setShowDailyReportModal(false)}
+          title="日報選択"
+          size="lg"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setShowDailyReportModal(false)}>
+                キャンセル
+              </Button>
+              <Button onClick={() => setShowDailyReportModal(false)}>選択</Button>
+            </>
+          }
+        >
+          {dailyReports.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">該当する日報がありません</div>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {dailyReports.map((report) => (
+                <label
+                  key={report.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 ${
+                    selectedDailyReportIds.includes(report.id)
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedDailyReportIds.includes(report.id)}
+                    onChange={() => handleDailyReportToggle(report.id)}
+                    className="w-4 h-4 text-blue-600 rounded"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{formatDate(report.report_date)}</span>
+                      <span className="text-blue-600 font-medium">
+                        {formatCurrency(report.total_amount)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600">{report.summary || "作業"}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 pt-4 border-t flex justify-end">
+            <span className="text-sm text-gray-600">
+              合計金額(税込):{" "}
+              <span className="font-bold text-blue-600">
+                {formatCurrency(selectedDailyReportsTotal)}
+              </span>
+            </span>
+          </div>
+        </Modal>
+
+        {/* Auto Generate Modal */}
+        <Modal
+          isOpen={showAutoGenerateModal}
+          onClose={() => setShowAutoGenerateModal(false)}
+          title="日報から自動生成"
+          size="md"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setShowAutoGenerateModal(false)}>
+                キャンセル
+              </Button>
+              <Button onClick={handleGenerateFromDailyReports}>生成する</Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              選択中の日報: {selectedDailyReportIds.length}件
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">生成パターン</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="generatePattern"
+                    value="per_report"
+                    checked={generatePattern === "per_report"}
+                    onChange={() => setGeneratePattern("per_report")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span>日報単位</span>
+                  <span className="text-sm text-gray-500">- 日報ごとに項目を分けて生成</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="generatePattern"
+                    value="aggregated"
+                    checked={generatePattern === "aggregated"}
+                    onChange={() => setGeneratePattern("aggregated")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span>集約</span>
+                  <span className="text-sm text-gray-500">- 同じ製品・資材は合算して生成</span>
+                </label>
+              </div>
             </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
 
-      {/* Issue Confirmation Modal */}
-      <ConfirmModal
-        isOpen={showIssueConfirmModal}
-        onClose={() => setShowIssueConfirmModal(false)}
-        onConfirm={handleConfirmIssue}
-        title="請求書の発行確認"
-        message={`この請求書を発行しますか？\n\n顧客: ${customerName}\n合計金額: ${formatCurrency(totalAmount)}`}
-        confirmText="発行する"
-        loading={createMutation.isPending || issueMutation.isPending}
-      />
+        {/* Draft Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showDraftConfirmModal}
+          onClose={() => setShowDraftConfirmModal(false)}
+          onConfirm={handleConfirmDraft}
+          title="下書き保存の確認"
+          message={`この請求書を下書き保存しますか？\n\n顧客: ${customerName}\n合計金額: ${formatCurrency(totalAmount)}`}
+          confirmText="下書き保存"
+          loading={createMutation.isPending}
+        />
 
-      {/* Product Search Modal */}
-      <ProductSearchModal
-        isOpen={showProductSearchModal}
-        onClose={() => {
-          setShowProductSearchModal(false);
-          setSearchTargetItemId(null);
-        }}
-        onSelect={handleSelectProduct}
-      />
+        {/* Issue Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showIssueConfirmModal}
+          onClose={() => setShowIssueConfirmModal(false)}
+          onConfirm={handleConfirmIssue}
+          title="請求書の発行確認"
+          message={`この請求書を発行しますか？\n\n顧客: ${customerName}\n合計金額: ${formatCurrency(totalAmount)}`}
+          confirmText="発行する"
+          loading={createMutation.isPending || issueMutation.isPending}
+        />
 
-      {/* Material Search Modal */}
-      <MaterialSearchModal
-        isOpen={showMaterialSearchModal}
-        onClose={() => {
-          setShowMaterialSearchModal(false);
-          setSearchTargetItemId(null);
-        }}
-        onSelect={handleSelectMaterial}
-      />
-    </div>
+        {/* Item Type Change Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showItemTypeChangeModal}
+          onClose={cancelItemTypeChange}
+          onConfirm={confirmItemTypeChange}
+          title="種別の変更"
+          message="種別を変更すると、この行のデータがクリアされます。変更しますか？"
+          confirmText="変更する"
+          cancelText="キャンセル"
+          variant="danger"
+        />
+
+        {/* Product Search Modal */}
+        <ProductSearchModal
+          isOpen={showProductSearchModal}
+          onClose={() => {
+            setShowProductSearchModal(false);
+            setSearchTargetItemId(null);
+          }}
+          onSelect={handleSelectProduct}
+        />
+
+        {/* Material Search Modal */}
+        <MaterialSearchModal
+          isOpen={showMaterialSearchModal}
+          onClose={() => {
+            setShowMaterialSearchModal(false);
+            setSearchTargetItemId(null);
+          }}
+          onSelect={handleSelectMaterial}
+        />
+
+        {/* Leave Confirmation Modal */}
+        <Modal
+          isOpen={showLeaveConfirmModal}
+          onClose={() => setShowLeaveConfirmModal(false)}
+          title="請求書が作成途中です"
+          size="sm"
+          footer={
+            <div className="flex gap-3 justify-end">
+              <Button variant="danger" onClick={handleDiscardAndLeave}>
+                削除する
+              </Button>
+              <Button onClick={handleSaveDraftAndLeave} disabled={createMutation.isPending}>
+                {createMutation.isPending ? "保存中..." : "下書き保存する"}
+              </Button>
+            </div>
+          }
+        >
+          <p className="text-gray-600">入力中のデータがあります。下書き保存しますか？</p>
+        </Modal>
+      </div>
+    </FullScreenModal>
   );
 }
 
@@ -1054,171 +1228,33 @@ function DailyReportCard({
   return (
     <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
       <div className="flex justify-between items-start mb-2">
-        <div>
-          <span className="font-medium">{formatDate(report.report_date)}</span>
-          <span className="text-gray-500 ml-2 text-sm">{report.summary}</span>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="font-medium shrink-0">{formatDate(report.report_date)}</span>
+          <span className="text-gray-700 truncate">{report.summary || "作業"}</span>
         </div>
-        <button onClick={onRemove} className="text-gray-400 hover:text-red-500">
+        <button onClick={onRemove} className="text-gray-400 hover:text-red-500 shrink-0 ml-2">
           ×
         </button>
       </div>
-      <div className="text-sm text-gray-600">
-        <div>工賃: {formatCurrency(report.labor_cost)}</div>
+      <div className="text-sm text-gray-600 space-y-1">
+        {report.workers && report.workers.length > 0 && (
+          <div className="truncate">作業者: {report.workers.join("、")}</div>
+        )}
         {report.products && report.products.length > 0 && (
-          <div>製品: {report.products.map((p) => `${p.name}(${p.quantity})`).join(", ")}</div>
+          <div className="truncate">
+            使用製品: {report.products.map((p) => `${p.name}×${p.quantity}`).join(", ")}
+          </div>
         )}
         {report.materials && report.materials.length > 0 && (
-          <div>資材: {report.materials.map((m) => `${m.name}(${m.quantity})`).join(", ")}</div>
+          <div className="truncate">
+            使用資材: {report.materials.map((m) => `${m.name}×${m.quantity}`).join(", ")}
+          </div>
         )}
+        <div className="flex justify-end gap-4 font-medium text-gray-700">
+          <span>工賃: {formatCurrency(report.labor_cost)}</span>
+          <span>合計金額: {formatCurrency(report.total_amount)}</span>
+        </div>
       </div>
     </div>
-  );
-}
-
-function InvoiceItemRow({
-  item,
-  onUpdate,
-  onDelete,
-  onOpenProductSearch,
-  onOpenMaterialSearch,
-  validationErrors,
-}: {
-  item: InvoiceItem;
-  onUpdate: (id: string, updates: Partial<InvoiceItem>) => void;
-  onDelete: (id: string) => void;
-  onOpenProductSearch: (itemId: string) => void;
-  onOpenMaterialSearch: (itemId: string) => void;
-  validationErrors: InvoiceItemValidationError[];
-}) {
-  const isHeader = item.item_type === "header";
-  const isLabor = item.item_type === "labor";
-  const isProduct = item.item_type === "product";
-  const isMaterial = item.item_type === "material";
-
-  const hasNameError = hasFieldError(validationErrors, item.id, "name");
-  const hasQuantityError = hasFieldError(validationErrors, item.id, "quantity");
-  const hasUnitError = hasFieldError(validationErrors, item.id, "unit");
-  const hasUnitPriceError = hasFieldError(validationErrors, item.id, "unit_price");
-  const hasAmountError = hasFieldError(validationErrors, item.id, "amount");
-
-  const baseInputClass = "w-full px-2 py-1 border rounded text-sm";
-  const normalBorder = "border-gray-300";
-  const errorBorder = "border-red-500 bg-red-50";
-
-  return (
-    <TableRow>
-      <TableCell>
-        <div className="flex items-center gap-1">
-          <select
-            value={item.item_type}
-            onChange={(e) => onUpdate(item.id, { item_type: e.target.value as ItemType })}
-            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm min-w-0"
-          >
-            {Object.entries(ITEM_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          {isProduct && (
-            <button
-              type="button"
-              onClick={() => onOpenProductSearch(item.id)}
-              className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 whitespace-nowrap"
-            >
-              検索
-            </button>
-          )}
-          {isMaterial && (
-            <button
-              type="button"
-              onClick={() => onOpenMaterialSearch(item.id)}
-              className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 whitespace-nowrap"
-            >
-              検索
-            </button>
-          )}
-        </div>
-      </TableCell>
-      <TableCell>
-        <input
-          type="text"
-          value={item.name}
-          onChange={(e) => onUpdate(item.id, { name: e.target.value })}
-          className={`${baseInputClass} ${hasNameError ? errorBorder : normalBorder}`}
-          placeholder="品名"
-        />
-      </TableCell>
-      <TableCell align="right">
-        {isHeader ? (
-          "-"
-        ) : isLabor ? (
-          "1"
-        ) : (
-          <input
-            type="number"
-            value={item.quantity ?? ""}
-            onChange={(e) =>
-              onUpdate(item.id, { quantity: e.target.value ? parseFloat(e.target.value) : null })
-            }
-            className={`${baseInputClass} text-right ${hasQuantityError ? errorBorder : normalBorder}`}
-            min="0"
-            step="0.01"
-          />
-        )}
-      </TableCell>
-      <TableCell>
-        {isHeader ? (
-          "-"
-        ) : isLabor ? (
-          "式"
-        ) : (
-          <input
-            type="text"
-            value={item.unit}
-            onChange={(e) => onUpdate(item.id, { unit: e.target.value })}
-            className={`${baseInputClass} ${hasUnitError ? errorBorder : normalBorder}`}
-            placeholder="単位"
-          />
-        )}
-      </TableCell>
-      <TableCell align="right">
-        {isHeader || isLabor ? (
-          "-"
-        ) : (
-          <input
-            type="number"
-            value={item.unit_price ?? ""}
-            onChange={(e) =>
-              onUpdate(item.id, { unit_price: e.target.value ? parseInt(e.target.value) : null })
-            }
-            className={`${baseInputClass} text-right ${hasUnitPriceError ? errorBorder : normalBorder}`}
-            min="0"
-          />
-        )}
-      </TableCell>
-      <TableCell align="right">
-        {isHeader ? (
-          "-"
-        ) : isLabor ? (
-          <input
-            type="number"
-            value={item.amount}
-            onChange={(e) =>
-              onUpdate(item.id, { amount: e.target.value ? parseInt(e.target.value) : 0 })
-            }
-            className={`${baseInputClass} text-right ${hasAmountError ? errorBorder : normalBorder}`}
-            min="0"
-          />
-        ) : (
-          formatCurrency(item.amount)
-        )}
-      </TableCell>
-      <TableCell align="center">
-        <button onClick={() => onDelete(item.id)} className="text-red-500 hover:text-red-700">
-          <div className="i-heroicons-trash w-4 h-4" />
-        </button>
-      </TableCell>
-    </TableRow>
   );
 }

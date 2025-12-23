@@ -25,6 +25,10 @@ describe("formatCurrency", () => {
   it("formats negative numbers", () => {
     expect(formatCurrency(-500)).toBe("-￥500");
   });
+
+  it("returns '-' for NaN", () => {
+    expect(formatCurrency(NaN)).toBe("-");
+  });
 });
 
 describe("formatNumber", () => {

@@ -1033,16 +1033,13 @@ paths:
           name: yyyymm
           required: true
           schema: { type: string, pattern: '^[0-9]{4}-[0-9]{2}$' }
-        - in: query
-          name: rate_toggle
-          schema: { type: string, enum: ["on", "off"] }
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                required: [rows, total_hours, amount_jpy]
+                required: [rows, total_hours, labor_cost_jpy, product_amount_jpy, material_amount_jpy, total_amount_jpy]
                 type: object
                 properties:
                   rows:
@@ -1054,7 +1051,10 @@ paths:
                         summary: { type: string }
                         hours: { type: number }
                   total_hours: { type: number }
-                  amount_jpy: { type: integer }
+                  labor_cost_jpy: { type: integer }
+                  product_amount_jpy: { type: integer }
+                  material_amount_jpy: { type: integer }
+                  total_amount_jpy: { type: integer }
 
   /admin/customers:
     get:
@@ -2601,6 +2601,9 @@ components:
         site_id: { type: string, format: uuid }
         site_name: { type: string, nullable: true }
         summary: { type: string }
+        workers:
+          type: array
+          items: { type: string }
         labor_cost: { type: integer }
         products:
           type: array
