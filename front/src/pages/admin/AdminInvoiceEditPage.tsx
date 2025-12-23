@@ -126,6 +126,10 @@ export function AdminInvoiceEditPage() {
     []
   );
 
+  // Item selection for integration
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [showIntegrateConfirmModal, setShowIntegrateConfirmModal] = useState(false);
+
   // Modals
   const [showIssueConfirmModal, setShowIssueConfirmModal] = useState(false);
 
@@ -457,6 +461,60 @@ export function AdminInvoiceEditPage() {
   const handleDeleteItem = (itemId: string) => {
     setItems(items.filter((item) => item.id !== itemId));
     setItemValidationErrors((prev) => clearItemErrors(prev, itemId));
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      next.delete(itemId);
+      return next;
+    });
+  };
+
+  // Item selection for integration
+  const handleToggleSelectItem = (id: string) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleIntegrateItems = () => {
+    if (selectedItemIds.size < 2) {
+      toast.error("2つ以上の項目を選択してください");
+      return;
+    }
+    setShowIntegrateConfirmModal(true);
+  };
+
+  const handleConfirmIntegrate = () => {
+    const selectedItems = items.filter((item) => selectedItemIds.has(item.id));
+    const totalAmount = selectedItems.reduce((sum, item) => {
+      if (item.item_type === "header") return sum;
+      return sum + item.amount;
+    }, 0);
+
+    // Create new integrated item
+    const newItem: InvoiceItem = {
+      id: crypto.randomUUID(),
+      item_type: "integrated",
+      name: "",
+      quantity: 1,
+      unit: "式",
+      unit_price: null,
+      amount: totalAmount,
+      sort_order: items.length,
+      isNew: true,
+    };
+
+    // Remove selected items and add new integrated item
+    const remainingItems = items.filter((item) => !selectedItemIds.has(item.id));
+    setItems([...remainingItems, newItem]);
+    setSelectedItemIds(new Set());
+    setShowIntegrateConfirmModal(false);
+    toast.success("選択した項目をまとめました");
   };
 
   const handleOpenProductSearch = (targetItemId: string) => {
@@ -1264,7 +1322,18 @@ export function AdminInvoiceEditPage() {
             {/* Invoice Items */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium">請求項目</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-lg font-medium">請求項目</h2>
+                  {items.length > 0 && (
+                    <Button
+                      variant="secondary"
+                      onClick={handleIntegrateItems}
+                      disabled={selectedItemIds.size < 2}
+                    >
+                      選択した項目をまとめる
+                    </Button>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   {selectedDailyReportIds.length > 0 && (
                     <Button variant="secondary" onClick={() => setShowAutoGenerateModal(true)}>
@@ -1288,6 +1357,7 @@ export function AdminInvoiceEditPage() {
                   >
                     <Table>
                       <TableHeader>
+                        <TableHead className="w-10">選択</TableHead>
                         <TableHead className="w-10"></TableHead>
                         <TableHead className="w-24">種別</TableHead>
                         <TableHead>品名</TableHead>
@@ -1320,6 +1390,9 @@ export function AdminInvoiceEditPage() {
                               onOpenMaterialSearch={handleOpenMaterialSearch}
                               onItemTypeChange={handleItemTypeChange}
                               validationErrors={itemValidationErrors}
+                              showCheckbox
+                              isSelected={selectedItemIds.has(item.id)}
+                              onToggleSelect={handleToggleSelectItem}
                             />
                           ))}
                         </TableBody>
@@ -1561,6 +1634,17 @@ export function AdminInvoiceEditPage() {
           confirmText="変更する"
           cancelText="キャンセル"
           variant="danger"
+        />
+
+        {/* Integrate Items Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showIntegrateConfirmModal}
+          onClose={() => setShowIntegrateConfirmModal(false)}
+          onConfirm={handleConfirmIntegrate}
+          title="請求項目のまとめ"
+          message={`選択した項目を一行にまとめますか？\n\n選択した項目は削除され、金額が合算された新しい請求項目が作成されます。`}
+          confirmText="はい"
+          cancelText="いいえ"
         />
 
         {/* Product Search Modal */}

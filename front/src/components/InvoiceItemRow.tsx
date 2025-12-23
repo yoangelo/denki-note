@@ -13,6 +13,9 @@ type InvoiceItemRowProps = {
   onOpenMaterialSearch: (itemId: string) => void;
   onItemTypeChange: (itemId: string, newItemType: ItemType) => void;
   validationErrors: InvoiceItemValidationError[];
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  showCheckbox?: boolean;
 };
 
 export function InvoiceItemRow({
@@ -23,6 +26,9 @@ export function InvoiceItemRow({
   onOpenMaterialSearch,
   onItemTypeChange,
   validationErrors,
+  isSelected = false,
+  onToggleSelect,
+  showCheckbox = false,
 }: InvoiceItemRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -37,6 +43,7 @@ export function InvoiceItemRow({
   const isLabor = item.item_type === "labor";
   const isProduct = item.item_type === "product";
   const isMaterial = item.item_type === "material";
+  const isIntegrated = item.item_type === "integrated";
 
   const hasNameError = hasFieldError(validationErrors, item.id, "name");
   const hasQuantityError = hasFieldError(validationErrors, item.id, "quantity");
@@ -48,8 +55,24 @@ export function InvoiceItemRow({
   const normalBorder = "border-gray-300";
   const errorBorder = "border-red-500 bg-red-50";
 
+  // integrated種別はドロップダウン選択肢に含めない
+  const selectableItemTypes = Object.entries(ITEM_TYPE_LABELS).filter(
+    ([value]) => value !== "integrated"
+  );
+
   return (
     <TableRow ref={setNodeRef} style={style}>
+      {showCheckbox && (
+        <TableCell>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect?.(item.id)}
+            className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+            disabled={isHeader}
+          />
+        </TableCell>
+      )}
       <TableCell>
         <button
           type="button"
@@ -67,7 +90,9 @@ export function InvoiceItemRow({
             onChange={(e) => onItemTypeChange(item.id, e.target.value as ItemType)}
             className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm min-w-0"
           >
-            {Object.entries(ITEM_TYPE_LABELS).map(([value, label]) => (
+            {/* integrated種別の場合は現在の値を表示し、他の選択肢も選べるようにする */}
+            {isIntegrated && <option value="integrated">{ITEM_TYPE_LABELS.integrated}</option>}
+            {selectableItemTypes.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -105,7 +130,7 @@ export function InvoiceItemRow({
       <TableCell align="right">
         {isHeader ? (
           "-"
-        ) : isLabor ? (
+        ) : isLabor || isIntegrated ? (
           "1"
         ) : (
           <input
@@ -125,7 +150,7 @@ export function InvoiceItemRow({
       <TableCell>
         {isHeader ? (
           "-"
-        ) : isLabor ? (
+        ) : isLabor || isIntegrated ? (
           "式"
         ) : (
           <input
@@ -138,7 +163,7 @@ export function InvoiceItemRow({
         )}
       </TableCell>
       <TableCell align="right">
-        {isHeader || isLabor ? (
+        {isHeader || isLabor || isIntegrated ? (
           "-"
         ) : (
           <input
@@ -156,7 +181,7 @@ export function InvoiceItemRow({
       <TableCell align="right">
         {isHeader ? (
           "-"
-        ) : isLabor ? (
+        ) : isLabor || isIntegrated ? (
           <input
             type="number"
             value={item.amount}
