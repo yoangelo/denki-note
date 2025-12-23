@@ -3450,6 +3450,7 @@ components:
             - material
             - labor
             - other
+            - integrated
         name:
           type: string
         quantity:
@@ -3468,14 +3469,6 @@ components:
           type: integer
         note:
           type: string
-          nullable: true
-        source_product_id:
-          type: string
-          format: uuid
-          nullable: true
-        source_material_id:
-          type: string
-          format: uuid
           nullable: true
     InvoiceDailyReport:
       type: object
@@ -3497,12 +3490,56 @@ components:
           nullable: true
         labor_cost:
           type: integer
+    InvoiceProduct:
+      type: object
+      required:
+        - id
+        - product_id
+        - product_name
+      properties:
+        id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        product_name:
+          type: string
+        model_number:
+          type: string
+          nullable: true
+        unit_price:
+          type: number
+          nullable: true
+    InvoiceMaterial:
+      type: object
+      required:
+        - id
+        - material_id
+        - material_name
+      properties:
+        id:
+          type: string
+          format: uuid
+        material_id:
+          type: string
+          format: uuid
+        material_name:
+          type: string
+        model_number:
+          type: string
+          nullable: true
+        unit_price:
+          type: number
+          nullable: true
     InvoiceDetailResponse:
       type: object
       required:
         - invoice
         - invoice_items
         - daily_reports
+        - invoice_products
+        - invoice_materials
       properties:
         invoice:
           $ref: '#/components/schemas/Invoice'
@@ -3514,6 +3551,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InvoiceDailyReport'
+        invoice_products:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceProduct'
+        invoice_materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceMaterial'
         bank_account:
           $ref: '#/components/schemas/BankAccount'
         tenant:
@@ -3594,6 +3639,7 @@ components:
                   - material
                   - labor
                   - other
+                  - integrated
               name:
                 type: string
               quantity:
@@ -3606,13 +3652,17 @@ components:
                 type: number
               sort_order:
                 type: integer
-              source_product_id:
-                type: string
-                format: uuid
-              source_material_id:
-                type: string
-                format: uuid
         daily_report_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        material_ids:
           type: array
           items:
             type: string
@@ -3666,6 +3716,7 @@ components:
                   - material
                   - labor
                   - other
+                  - integrated
               name:
                 type: string
               quantity:
@@ -3678,13 +3729,17 @@ components:
                 type: number
               sort_order:
                 type: integer
-              source_product_id:
-                type: string
-                format: uuid
-              source_material_id:
-                type: string
-                format: uuid
         daily_report_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        material_ids:
           type: array
           items:
             type: string

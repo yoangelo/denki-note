@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/ClassLength
 class Admin::InvoicesController < AuthenticatedController
   before_action :require_admin
   before_action :set_invoice, only: [:show, :update, :issue, :cancel, :copy]
@@ -59,6 +60,8 @@ class Admin::InvoicesController < AuthenticatedController
 
       create_invoice_items(params[:invoice_items]) if params[:invoice_items].present?
       create_invoice_daily_reports(params[:daily_report_ids]) if params[:daily_report_ids].present?
+      update_invoice_products(params[:product_ids]) if params.key?(:product_ids)
+      update_invoice_materials(params[:material_ids]) if params.key?(:material_ids)
 
       @invoice.reload
     end
@@ -81,6 +84,8 @@ class Admin::InvoicesController < AuthenticatedController
       update_invoice_items(params[:invoice_items]) if params[:invoice_items].present?
 
       update_invoice_daily_reports(params[:daily_report_ids]) if params.key?(:daily_report_ids)
+      update_invoice_products(params[:product_ids]) if params.key?(:product_ids)
+      update_invoice_materials(params[:material_ids]) if params.key?(:material_ids)
 
       @invoice.reload
     end
@@ -192,6 +197,20 @@ class Admin::InvoicesController < AuthenticatedController
     end
   end
 
+  def update_invoice_products(product_ids)
+    @invoice.invoice_products.destroy_all
+    product_ids&.each do |product_id|
+      @invoice.invoice_products.create!(product_id: product_id)
+    end
+  end
+
+  def update_invoice_materials(material_ids)
+    @invoice.invoice_materials.destroy_all
+    material_ids&.each do |material_id|
+      @invoice.invoice_materials.create!(material_id: material_id)
+    end
+  end
+
   def invoice_list_json(invoice)
     {
       id: invoice.id,
@@ -239,6 +258,8 @@ class Admin::InvoicesController < AuthenticatedController
       },
       invoice_items: invoice.invoice_items.map { |item| invoice_item_json(item) },
       daily_reports: invoice.daily_reports.kept.map { |dr| daily_report_json(dr) },
+      invoice_products: invoice.invoice_products.includes(:product).map { |ip| invoice_product_json(ip) },
+      invoice_materials: invoice.invoice_materials.includes(:material).map { |im| invoice_material_json(im) },
       bank_account: bank_account ? bank_account_json(bank_account) : nil,
       tenant: {
         name: tenant.name,
@@ -288,9 +309,32 @@ class Admin::InvoicesController < AuthenticatedController
     }
   end
 
+  def invoice_product_json(invoice_product)
+    product = invoice_product.product
+    {
+      id: invoice_product.id,
+      product_id: product.id,
+      product_name: product.name,
+      model_number: product.model_number,
+      unit_price: product.unit_price&.to_f,
+    }
+  end
+
+  def invoice_material_json(invoice_material)
+    material = invoice_material.material
+    {
+      id: invoice_material.id,
+      material_id: material.id,
+      material_name: material.name,
+      model_number: material.model_number,
+      unit_price: material.unit_price&.to_f,
+    }
+  end
+
   def require_admin
     return if current_user&.has_role?(:admin)
 
     render json: { error: "この操作を実行する権限がありません" }, status: :forbidden
   end
 end
+# rubocop:enable Metrics/ClassLength

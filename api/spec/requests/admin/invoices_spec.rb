@@ -108,6 +108,28 @@ RSpec.describe "Admin::Invoices", type: :request do
       expect(json_response["bank_account"]["bank_name"]).to eq(bank_account.bank_name)
     end
 
+    it "納入製品設定を含む" do
+      product = create(:product, tenant: tenant)
+      create(:invoice_product, invoice: invoice, product: product)
+
+      get "/admin/invoices/#{invoice.id}"
+
+      expect(json_response["invoice_products"].length).to eq(1)
+      expect(json_response["invoice_products"].first["product_id"]).to eq(product.id)
+      expect(json_response["invoice_products"].first["product_name"]).to eq(product.name)
+    end
+
+    it "使用資材設定を含む" do
+      material = create(:material, tenant: tenant)
+      create(:invoice_material, invoice: invoice, material: material)
+
+      get "/admin/invoices/#{invoice.id}"
+
+      expect(json_response["invoice_materials"].length).to eq(1)
+      expect(json_response["invoice_materials"].first["material_id"]).to eq(material.id)
+      expect(json_response["invoice_materials"].first["material_name"]).to eq(material.name)
+    end
+
     it "存在しない請求書の場合は404" do
       get "/admin/invoices/00000000-0000-0000-0000-000000000000"
 
@@ -183,6 +205,32 @@ RSpec.describe "Admin::Invoices", type: :request do
       expect(json_response["daily_reports"].length).to eq(1)
     end
 
+    it "納入製品設定を登録できる" do
+      product1 = create(:product, tenant: tenant)
+      product2 = create(:product, tenant: tenant)
+      params = valid_params.merge(product_ids: [product1.id, product2.id])
+
+      expect do
+        post "/admin/invoices", params: params
+      end.to change(InvoiceProduct, :count).by(2)
+
+      expect(response).to have_http_status(:created)
+      expect(json_response["invoice_products"].length).to eq(2)
+    end
+
+    it "使用資材設定を登録できる" do
+      material1 = create(:material, tenant: tenant)
+      material2 = create(:material, tenant: tenant)
+      params = valid_params.merge(material_ids: [material1.id, material2.id])
+
+      expect do
+        post "/admin/invoices", params: params
+      end.to change(InvoiceMaterial, :count).by(2)
+
+      expect(response).to have_http_status(:created)
+      expect(json_response["invoice_materials"].length).to eq(2)
+    end
+
     it "顧客IDがない場合はエラー" do
       post "/admin/invoices", params: { invoice: { billing_date: "2025-01-31" } }
 
@@ -217,6 +265,43 @@ RSpec.describe "Admin::Invoices", type: :request do
         expect(response).to have_http_status(:ok)
         expect(json_response["invoice_items"].length).to eq(2)
         expect(json_response["invoice_items"].find { |i| i["id"] == existing_item.id }["name"]).to eq("更新された項目")
+      end
+
+      it "納入製品設定を更新できる" do
+        product1 = create(:product, tenant: tenant)
+        product2 = create(:product, tenant: tenant)
+        create(:invoice_product, invoice: invoice, product: product1)
+
+        patch "/admin/invoices/#{invoice.id}", params: { product_ids: [product2.id] }
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response["invoice_products"].length).to eq(1)
+        expect(json_response["invoice_products"].first["product_id"]).to eq(product2.id)
+      end
+
+      it "使用資材設定を更新できる" do
+        material1 = create(:material, tenant: tenant)
+        material2 = create(:material, tenant: tenant)
+        create(:invoice_material, invoice: invoice, material: material1)
+
+        patch "/admin/invoices/#{invoice.id}", params: { material_ids: [material2.id] }
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response["invoice_materials"].length).to eq(1)
+        expect(json_response["invoice_materials"].first["material_id"]).to eq(material2.id)
+      end
+
+      it "納入製品設定・使用資材設定を空にできる" do
+        product = create(:product, tenant: tenant)
+        material = create(:material, tenant: tenant)
+        create(:invoice_product, invoice: invoice, product: product)
+        create(:invoice_material, invoice: invoice, material: material)
+
+        patch "/admin/invoices/#{invoice.id}", params: { product_ids: [], material_ids: [] }
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response["invoice_products"]).to be_empty
+        expect(json_response["invoice_materials"]).to be_empty
       end
     end
 
@@ -341,6 +426,32 @@ RSpec.describe "Admin::Invoices", type: :request do
 
       expect(json_response["invoice_items"].length).to eq(2)
       expect(json_response["invoice_items"].pluck("name")).to include("コピー元項目")
+    end
+
+    it "納入製品設定もコピーされる" do
+      product = create(:product, tenant: tenant)
+      create(:invoice_product, invoice: invoice, product: product)
+
+      expect do
+        post "/admin/invoices/#{invoice.id}/copy"
+      end.to change(InvoiceProduct, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+      expect(json_response["invoice_products"].length).to eq(1)
+      expect(json_response["invoice_products"].first["product_id"]).to eq(product.id)
+    end
+
+    it "使用資材設定もコピーされる" do
+      material = create(:material, tenant: tenant)
+      create(:invoice_material, invoice: invoice, material: material)
+
+      expect do
+        post "/admin/invoices/#{invoice.id}/copy"
+      end.to change(InvoiceMaterial, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+      expect(json_response["invoice_materials"].length).to eq(1)
+      expect(json_response["invoice_materials"].first["material_id"]).to eq(material.id)
     end
 
     it "billing_dateは今日の日付になる" do

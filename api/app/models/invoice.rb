@@ -121,6 +121,14 @@ class Invoice < ApplicationRecord
       new_invoice.invoice_items.build(item.attributes.except("id", "invoice_id", "created_at", "updated_at"))
     end
 
+    invoice_products.each do |ip|
+      new_invoice.invoice_products.build(product_id: ip.product_id)
+    end
+
+    invoice_materials.each do |im|
+      new_invoice.invoice_materials.build(material_id: im.material_id)
+    end
+
     new_invoice
   end
 
