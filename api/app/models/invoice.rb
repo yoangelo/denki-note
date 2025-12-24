@@ -53,6 +53,10 @@ class Invoice < ApplicationRecord
   has_many :invoice_items, dependent: :destroy
   has_many :invoice_daily_reports, dependent: :destroy
   has_many :daily_reports, through: :invoice_daily_reports
+  has_many :invoice_products, dependent: :destroy
+  has_many :products, through: :invoice_products
+  has_many :invoice_materials, dependent: :destroy
+  has_many :materials, through: :invoice_materials
 
   accepts_nested_attributes_for :invoice_items, allow_destroy: true
 
@@ -115,6 +119,14 @@ class Invoice < ApplicationRecord
 
     invoice_items.each do |item|
       new_invoice.invoice_items.build(item.attributes.except("id", "invoice_id", "created_at", "updated_at"))
+    end
+
+    invoice_products.each do |ip|
+      new_invoice.invoice_products.build(product_id: ip.product_id)
+    end
+
+    invoice_materials.each do |im|
+      new_invoice.invoice_materials.build(material_id: im.material_id)
     end
 
     new_invoice

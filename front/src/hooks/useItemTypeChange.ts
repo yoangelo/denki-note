@@ -24,9 +24,7 @@ const hasItemData = (item: InvoiceItem): boolean => {
     item.quantity != null ||
     item.unit ||
     item.unit_price != null ||
-    item.amount != null ||
-    item.source_product_id ||
-    item.source_material_id
+    item.amount != null
   );
 };
 
@@ -65,8 +63,6 @@ export function useItemTypeChange({
       unit: "",
       unit_price: undefined,
       amount: undefined,
-      source_product_id: undefined,
-      source_material_id: undefined,
     });
 
     setShowItemTypeChangeModal(false);
