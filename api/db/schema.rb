@@ -10,11 +10,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_12_02_210013) do
+ActiveRecord::Schema[7.1].define(version: 2025_12_23_092252) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
+
+  create_table "bank_accounts", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "口座情報", force: :cascade do |t|
+    t.uuid "tenant_id", null: false, comment: "自社ID"
+    t.string "bank_name", null: false, comment: "銀行名"
+    t.string "branch_name", null: false, comment: "支店名"
+    t.string "account_type", null: false, comment: "口座種別（ordinary/current/savings）"
+    t.string "account_number", null: false, comment: "口座番号（暗号化）"
+    t.string "account_holder", null: false, comment: "口座名義（暗号化）"
+    t.boolean "is_default_for_invoice", default: false, null: false, comment: "請求書用デフォルト口座フラグ"
+    t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_bank_accounts_on_discarded_at"
+    t.index ["tenant_id"], name: "index_bank_accounts_on_tenant_id"
+  end
 
   create_table "customers", id: { type: :uuid, default: -> { "gen_random_uuid()" }, comment: "ID" }, comment: "顧客", force: :cascade do |t|
     t.uuid "tenant_id", null: false, comment: "自社ID"
@@ -32,6 +47,28 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_02_210013) do
     t.index ["tenant_id"], name: "index_customers_on_tenant_id"
   end
 
+  create_table "daily_report_materials", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "日報資材（中間テーブル）", force: :cascade do |t|
+    t.uuid "daily_report_id", null: false, comment: "日報ID"
+    t.uuid "material_id", null: false, comment: "資材ID"
+    t.decimal "quantity", precision: 10, scale: 2, default: "1.0", null: false, comment: "数量"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["daily_report_id", "material_id"], name: "index_daily_report_materials_unique", unique: true
+    t.index ["daily_report_id"], name: "index_daily_report_materials_on_daily_report_id"
+    t.index ["material_id"], name: "index_daily_report_materials_on_material_id"
+  end
+
+  create_table "daily_report_products", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "日報製品（中間テーブル）", force: :cascade do |t|
+    t.uuid "daily_report_id", null: false, comment: "日報ID"
+    t.uuid "product_id", null: false, comment: "製品ID"
+    t.decimal "quantity", precision: 10, scale: 2, default: "1.0", null: false, comment: "数量"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["daily_report_id", "product_id"], name: "index_daily_report_products_unique", unique: true
+    t.index ["daily_report_id"], name: "index_daily_report_products_on_daily_report_id"
+    t.index ["product_id"], name: "index_daily_report_products_on_product_id"
+  end
+
   create_table "daily_reports", id: { type: :uuid, default: -> { "gen_random_uuid()" }, comment: "ID" }, comment: "日報ヘッダ", force: :cascade do |t|
     t.uuid "tenant_id", null: false, comment: "自社ID"
     t.uuid "site_id", null: false, comment: "現場ID"
@@ -41,10 +78,133 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_02_210013) do
     t.datetime "updated_at", null: false, comment: "更新日時"
     t.text "summary", null: false, comment: "概要"
     t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.decimal "labor_cost", precision: 12, default: "0", null: false
     t.index ["discarded_at"], name: "index_daily_reports_on_discarded_at"
     t.index ["site_id"], name: "index_daily_reports_on_site_id"
     t.index ["tenant_id", "site_id", "work_date"], name: "index_daily_reports_on_tenant_id_and_site_id_and_work_date"
     t.index ["tenant_id"], name: "index_daily_reports_on_tenant_id"
+  end
+
+  create_table "invoice_daily_reports", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "請求書日報（中間テーブル）", force: :cascade do |t|
+    t.uuid "invoice_id", null: false, comment: "請求書ID"
+    t.uuid "daily_report_id", null: false, comment: "日報ID"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["daily_report_id"], name: "index_invoice_daily_reports_on_daily_report_id"
+    t.index ["invoice_id", "daily_report_id"], name: "index_invoice_daily_reports_unique", unique: true
+    t.index ["invoice_id"], name: "index_invoice_daily_reports_on_invoice_id"
+  end
+
+  create_table "invoice_items", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "請求項目", force: :cascade do |t|
+    t.uuid "invoice_id", null: false, comment: "請求書ID"
+    t.string "item_type", null: false, comment: "項目タイプ（header/product/material/labor/other）"
+    t.string "name", null: false, comment: "名称（コピー値、手動編集可）"
+    t.decimal "quantity", precision: 10, scale: 2, comment: "数量（headerの場合はNULL）"
+    t.string "unit", comment: "単位（式、個、m、時間等）"
+    t.decimal "unit_price", precision: 12, comment: "単価（コピー値、headerの場合はNULL）"
+    t.decimal "amount", precision: 12, comment: "金額（数量×単価、headerの場合はNULL）"
+    t.integer "sort_order", default: 0, null: false, comment: "表示順"
+    t.text "note", comment: "備考"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id", "sort_order"], name: "index_invoice_items_on_invoice_id_and_sort_order"
+    t.index ["invoice_id"], name: "index_invoice_items_on_invoice_id"
+    t.index ["item_type"], name: "index_invoice_items_on_item_type"
+  end
+
+  create_table "invoice_materials", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "invoice_id", null: false, comment: "請求書ID"
+    t.uuid "material_id", null: false, comment: "資材ID"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id", "material_id"], name: "index_invoice_materials_on_invoice_id_and_material_id", unique: true
+    t.index ["invoice_id"], name: "index_invoice_materials_on_invoice_id"
+    t.index ["material_id"], name: "index_invoice_materials_on_material_id"
+  end
+
+  create_table "invoice_products", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "invoice_id", null: false, comment: "請求書ID"
+    t.uuid "product_id", null: false, comment: "製品ID"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id", "product_id"], name: "index_invoice_products_on_invoice_id_and_product_id", unique: true
+    t.index ["invoice_id"], name: "index_invoice_products_on_invoice_id"
+    t.index ["product_id"], name: "index_invoice_products_on_product_id"
+  end
+
+  create_table "invoices", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "請求書", force: :cascade do |t|
+    t.uuid "tenant_id", null: false, comment: "自社ID"
+    t.uuid "customer_id", null: false, comment: "顧客ID"
+    t.uuid "site_id", comment: "現場ID"
+    t.uuid "created_by", comment: "作成者ID"
+    t.string "invoice_number", comment: "請求書番号（自社内でユニーク、draftではNULL可）"
+    t.string "title", comment: "タイトル"
+    t.string "customer_name", null: false, comment: "顧客名（コピー値、手動編集可）"
+    t.decimal "subtotal", precision: 12, default: "0", null: false, comment: "税抜合計金額"
+    t.decimal "tax_rate", precision: 4, scale: 2, default: "10.0", null: false, comment: "適用税率（%）"
+    t.decimal "tax_amount", precision: 12, default: "0", null: false, comment: "消費税額"
+    t.decimal "total_amount", precision: 12, default: "0", null: false, comment: "税込合計金額"
+    t.date "delivery_date", comment: "受渡期日"
+    t.string "delivery_place", comment: "受渡場所"
+    t.string "transaction_method", comment: "取引方法"
+    t.date "valid_until", comment: "有効期限"
+    t.text "note", comment: "備考"
+    t.string "status", default: "draft", null: false, comment: "ステータス（draft/issued/canceled）"
+    t.datetime "issued_at", comment: "発行日時"
+    t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.date "billing_date", default: -> { "CURRENT_DATE" }, null: false
+    t.index ["customer_id"], name: "index_invoices_on_customer_id"
+    t.index ["discarded_at"], name: "index_invoices_on_discarded_at"
+    t.index ["site_id"], name: "index_invoices_on_site_id"
+    t.index ["status"], name: "index_invoices_on_status"
+    t.index ["tenant_id", "invoice_number"], name: "index_invoices_on_tenant_id_and_invoice_number", unique: true, where: "(invoice_number IS NOT NULL)"
+    t.index ["tenant_id"], name: "index_invoices_on_tenant_id"
+    t.check_constraint "status::text <> 'draft'::text OR issued_at IS NULL", name: "invoices_draft_issued_at_check"
+    t.check_constraint "status::text <> 'issued'::text OR issued_at IS NOT NULL AND invoice_number IS NOT NULL", name: "invoices_issued_check"
+  end
+
+  create_table "manufacturers", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "メーカー", force: :cascade do |t|
+    t.string "name", null: false, comment: "メーカー名"
+    t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_manufacturers_on_discarded_at"
+    t.index ["name"], name: "index_manufacturers_on_name", unique: true
+  end
+
+  create_table "materials", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "資材", force: :cascade do |t|
+    t.uuid "tenant_id", null: false, comment: "自社ID"
+    t.string "name", null: false, comment: "名称"
+    t.string "model_number", comment: "型番"
+    t.string "unit", comment: "単位"
+    t.decimal "unit_price", precision: 12, default: "0", null: false, comment: "単価"
+    t.string "material_type", comment: "資材タイプ（自由入力）"
+    t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_materials_on_discarded_at"
+    t.index ["model_number"], name: "index_materials_on_model_number"
+    t.index ["tenant_id", "name"], name: "index_materials_on_tenant_id_and_name"
+    t.index ["tenant_id"], name: "index_materials_on_tenant_id"
+  end
+
+  create_table "products", id: :uuid, default: -> { "gen_random_uuid()" }, comment: "製品", force: :cascade do |t|
+    t.uuid "tenant_id", null: false, comment: "自社ID"
+    t.uuid "manufacturer_id", comment: "メーカーID"
+    t.string "name", null: false, comment: "名称"
+    t.string "model_number", comment: "型番"
+    t.string "unit", comment: "単位"
+    t.decimal "unit_price", precision: 12, default: "0", null: false, comment: "単価"
+    t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_products_on_discarded_at"
+    t.index ["manufacturer_id"], name: "index_products_on_manufacturer_id"
+    t.index ["model_number"], name: "index_products_on_model_number"
+    t.index ["tenant_id", "name"], name: "index_products_on_tenant_id_and_name"
+    t.index ["tenant_id"], name: "index_products_on_tenant_id"
   end
 
   create_table "roles", id: { type: :uuid, default: -> { "gen_random_uuid()" }, comment: "ID" }, comment: "ロール（権限）", force: :cascade do |t|
@@ -60,10 +220,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_02_210013) do
     t.uuid "tenant_id", null: false, comment: "自社ID"
     t.uuid "customer_id", null: false, comment: "顧客ID"
     t.string "name", null: false, comment: "現場名"
-    t.text "note", comment: "メモ"
     t.datetime "created_at", null: false, comment: "作成日時"
     t.datetime "updated_at", null: false, comment: "更新日時"
     t.datetime "discarded_at", comment: "削除日時（論理削除）"
+    t.string "address"
     t.index ["customer_id"], name: "index_sites_on_customer_id"
     t.index ["discarded_at"], name: "index_sites_on_discarded_at"
     t.index ["tenant_id", "customer_id", "name"], name: "index_sites_on_tenant_id_and_customer_id_and_name", unique: true
@@ -83,6 +243,12 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_02_210013) do
     t.string "name", null: false, comment: "会社名"
     t.datetime "created_at", null: false, comment: "作成日時"
     t.datetime "updated_at", null: false, comment: "更新日時"
+    t.string "postal_code", comment: "郵便番号"
+    t.string "address", comment: "住所"
+    t.string "phone_number", comment: "電話番号"
+    t.string "fax_number", comment: "FAX番号"
+    t.string "corporate_number", comment: "法人番号（登録番号 / 13桁）"
+    t.string "representative_name", comment: "代表者名"
     t.index ["name"], name: "index_tenants_on_name", unique: true
   end
 
@@ -147,9 +313,28 @@ ActiveRecord::Schema[7.1].define(version: 2025_12_02_210013) do
     t.check_constraint "(minutes % 15) = 0 AND minutes >= 0", name: "work_entries_minutes_check"
   end
 
+  add_foreign_key "bank_accounts", "tenants"
   add_foreign_key "customers", "tenants"
+  add_foreign_key "daily_report_materials", "daily_reports", on_delete: :cascade
+  add_foreign_key "daily_report_materials", "materials"
+  add_foreign_key "daily_report_products", "daily_reports", on_delete: :cascade
+  add_foreign_key "daily_report_products", "products"
   add_foreign_key "daily_reports", "sites"
   add_foreign_key "daily_reports", "tenants"
+  add_foreign_key "invoice_daily_reports", "daily_reports", on_delete: :cascade
+  add_foreign_key "invoice_daily_reports", "invoices", on_delete: :cascade
+  add_foreign_key "invoice_items", "invoices", on_delete: :cascade
+  add_foreign_key "invoice_materials", "invoices", on_delete: :cascade
+  add_foreign_key "invoice_materials", "materials", on_delete: :cascade
+  add_foreign_key "invoice_products", "invoices", on_delete: :cascade
+  add_foreign_key "invoice_products", "products", on_delete: :cascade
+  add_foreign_key "invoices", "customers"
+  add_foreign_key "invoices", "sites"
+  add_foreign_key "invoices", "tenants"
+  add_foreign_key "invoices", "users", column: "created_by"
+  add_foreign_key "materials", "tenants"
+  add_foreign_key "products", "manufacturers"
+  add_foreign_key "products", "tenants"
   add_foreign_key "sites", "customers"
   add_foreign_key "sites", "tenants"
   add_foreign_key "tenant_settings", "tenants"

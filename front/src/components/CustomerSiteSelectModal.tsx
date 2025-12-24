@@ -15,6 +15,7 @@ type CustomerSiteSelectModalProps = {
   }) => void;
   initialCustomerId?: string;
   initialSiteId?: string;
+  siteRequired?: boolean;
 };
 
 export function CustomerSiteSelectModal({
@@ -23,6 +24,7 @@ export function CustomerSiteSelectModal({
   onSelect,
   initialCustomerId,
   initialSiteId,
+  siteRequired = true,
 }: CustomerSiteSelectModalProps) {
   const [query, setQuery] = useState("");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(initialCustomerId || "");
@@ -83,16 +85,18 @@ export function CustomerSiteSelectModal({
   };
 
   const handleSelect = () => {
-    if (selectedCustomerId && selectedSiteId) {
-      const customer = searchedCustomers?.find((c) => c.id === selectedCustomerId);
-      const site = sites?.find((s) => s.id === selectedSiteId);
+    const canSelect = siteRequired ? selectedCustomerId && selectedSiteId : selectedCustomerId;
 
-      if (customer && site) {
+    if (canSelect) {
+      const customer = searchedCustomers?.find((c) => c.id === selectedCustomerId);
+      const site = selectedSiteId ? sites?.find((s) => s.id === selectedSiteId) : null;
+
+      if (customer && (site || !siteRequired || !selectedSiteId)) {
         onSelect({
           customerId: selectedCustomerId,
           siteId: selectedSiteId,
           customerName: customer.name,
-          siteName: site.name,
+          siteName: site?.name || "",
           customerType: customer.customer_type,
         });
         onClose();
@@ -178,7 +182,9 @@ export function CustomerSiteSelectModal({
           {/* 現場選択セクション */}
           <div>
             <div className="flex items-center mb-3">
-              <h3 className="text-base font-semibold text-gray-700">2. 現場を選択</h3>
+              <h3 className="text-base font-semibold text-gray-700">
+                2. 現場を選択{!siteRequired && "（任意）"}
+              </h3>
               {selectedSiteId && <span className="ml-2 text-lg text-green-600">✓</span>}
             </div>
 
@@ -205,8 +211,8 @@ export function CustomerSiteSelectModal({
                       <div className="flex justify-between items-center">
                         <div>
                           <span className="font-medium text-gray-900">{site.name}</span>
-                          {site.note && (
-                            <span className="text-sm text-gray-600 ml-2">- {site.note}</span>
+                          {site.address && (
+                            <span className="text-sm text-gray-600 ml-2">- {site.address}</span>
                           )}
                         </div>
                         {selectedSiteId === site.id && (
@@ -270,9 +276,15 @@ export function CustomerSiteSelectModal({
         {/* フッター */}
         <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            {selectedCustomerId && selectedSiteId
-              ? "顧客と現場が選択されています"
-              : "顧客と現場の両方を選択してください"}
+            {siteRequired
+              ? selectedCustomerId && selectedSiteId
+                ? "顧客と現場が選択されています"
+                : "顧客と現場の両方を選択してください"
+              : selectedCustomerId
+                ? selectedSiteId
+                  ? "顧客と現場が選択されています"
+                  : "顧客が選択されています（現場は任意）"
+                : "顧客を選択してください（現場は任意）"}
           </div>
           <div className="flex gap-3">
             <button
@@ -283,9 +295,9 @@ export function CustomerSiteSelectModal({
             </button>
             <button
               onClick={handleSelect}
-              disabled={!selectedCustomerId || !selectedSiteId}
+              disabled={siteRequired ? !selectedCustomerId || !selectedSiteId : !selectedCustomerId}
               className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                selectedCustomerId && selectedSiteId
+                (siteRequired ? selectedCustomerId && selectedSiteId : selectedCustomerId)
                   ? "bg-blue-500 text-white hover:bg-blue-600"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}

@@ -1,8 +1,14 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { DailyReportEntry, type WorkRow } from "./DailyReportEntry";
+import {
+  DailyReportEntry,
+  type WorkRow,
+  type SelectedProduct,
+  type SelectedMaterial,
+} from "./DailyReportEntry";
 import { useBulkCreateDailyReports } from "@/api/generated/daily-reports/daily-reports";
+import { ConfirmModal } from "@/components/ui";
 
 export function DailyReportEntryPage() {
   const [workDate, setWorkDate] = useState(() => {
@@ -12,6 +18,7 @@ export function DailyReportEntryPage() {
 
   const [showWorkArea, setShowWorkArea] = useState(false);
   const [workRows, setWorkRows] = useState<WorkRow[]>([]);
+  const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -47,6 +54,8 @@ export function DailyReportEntryPage() {
         summary: "",
         selectedWorkers: [],
         workerHours: {},
+        products: [],
+        materials: [],
       },
     ]);
   }, []);
@@ -114,6 +123,16 @@ export function DailyReportEntryPage() {
     );
   }, []);
 
+  // 製品選択更新
+  const handleProductsChange = useCallback((rowId: string, products: SelectedProduct[]) => {
+    setWorkRows((prev) => prev.map((row) => (row.id === rowId ? { ...row, products } : row)));
+  }, []);
+
+  // 資材選択更新
+  const handleMaterialsChange = useCallback((rowId: string, materials: SelectedMaterial[]) => {
+    setWorkRows((prev) => prev.map((row) => (row.id === rowId ? { ...row, materials } : row)));
+  }, []);
+
   // 行の合計時間を計算
   const calculateRowTotal = useCallback((row: WorkRow) => {
     return Object.values(row.workerHours).reduce((sum, h) => sum + h, 0);
@@ -124,7 +143,7 @@ export function DailyReportEntryPage() {
     return workRows.reduce((sum, row) => sum + calculateRowTotal(row), 0);
   }, [workRows, calculateRowTotal]);
 
-  // 保存処理
+  // 保存処理（確認モーダルを表示）
   const handleSave = useCallback(() => {
     // バリデーション
     const validRows = workRows.filter(
@@ -136,6 +155,16 @@ export function DailyReportEntryPage() {
       toast.error("保存可能な作業がありません");
       return;
     }
+
+    setShowSaveConfirmModal(true);
+  }, [workRows, calculateRowTotal]);
+
+  // 保存確定処理
+  const handleConfirmSave = useCallback(() => {
+    const validRows = workRows.filter(
+      (row) =>
+        row.customerId && row.siteId && row.selectedWorkers.length > 0 && calculateRowTotal(row) > 0
+    );
 
     // 現場ごとに日報をグループ化
     const reportsBySite = new Map<string, WorkRow[]>();
@@ -156,11 +185,21 @@ export function DailyReportEntryPage() {
         user_id: string;
         minutes: number;
       }>;
+      products?: Array<{
+        product_id: string;
+        quantity: number;
+      }>;
+      materials?: Array<{
+        material_id: string;
+        quantity: number;
+      }>;
     }> = [];
 
     reportsBySite.forEach((rows, key) => {
       const [siteId, summary] = key.split("_");
       const work_entries: Array<{ user_id: string; minutes: number }> = [];
+      const products: Array<{ product_id: string; quantity: number }> = [];
+      const materials: Array<{ material_id: string; quantity: number }> = [];
 
       rows.forEach((row) => {
         Object.entries(row.workerHours).forEach(([workerId, hours]) => {
@@ -168,6 +207,26 @@ export function DailyReportEntryPage() {
             work_entries.push({
               user_id: workerId,
               minutes: Math.round(hours * 60),
+            });
+          }
+        });
+
+        // 製品を追加
+        row.products.forEach((product) => {
+          if (product.quantity > 0) {
+            products.push({
+              product_id: product.product_id,
+              quantity: product.quantity,
+            });
+          }
+        });
+
+        // 資材を追加
+        row.materials.forEach((material) => {
+          if (material.quantity > 0) {
+            materials.push({
+              material_id: material.material_id,
+              quantity: material.quantity,
             });
           }
         });
@@ -179,6 +238,8 @@ export function DailyReportEntryPage() {
           work_date: workDate,
           summary: summary || "作業実施",
           work_entries,
+          products: products.length > 0 ? products : undefined,
+          materials: materials.length > 0 ? materials : undefined,
         });
       }
     });
@@ -188,6 +249,7 @@ export function DailyReportEntryPage() {
         daily_reports: daily_reports as never,
       },
     });
+    setShowSaveConfirmModal(false);
   }, [workRows, workDate, calculateRowTotal, bulkCreate]);
 
   // 行が有効かチェック
@@ -214,6 +276,8 @@ export function DailyReportEntryPage() {
         summary: "",
         selectedWorkers: [],
         workerHours: {},
+        products: [],
+        materials: [],
       },
     ]);
   }, []);
@@ -249,6 +313,8 @@ export function DailyReportEntryPage() {
           handleCustomerSiteSelect={handleCustomerSiteSelect}
           handleWorkersChange={handleWorkersChange}
           updateWorkerHours={updateWorkerHours}
+          handleProductsChange={handleProductsChange}
+          handleMaterialsChange={handleMaterialsChange}
           calculateRowTotal={calculateRowTotal}
           calculateTotalHours={calculateTotalHours}
           handleSave={handleSave}
@@ -256,6 +322,17 @@ export function DailyReportEntryPage() {
           bulkCreateIsPending={bulkCreate.isPending}
         />
       </div>
+
+      {/* Save Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showSaveConfirmModal}
+        onClose={() => setShowSaveConfirmModal(false)}
+        onConfirm={handleConfirmSave}
+        title="日報の保存確認"
+        message={`日報を保存しますか？\n\n作業日: ${workDate}\n作業件数: ${workRows.filter(isRowValid).length}件\n合計時間: ${calculateTotalHours()}時間`}
+        confirmText="保存する"
+        loading={bulkCreate.isPending}
+      />
     </div>
   );
 }

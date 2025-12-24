@@ -5,6 +5,11 @@ import toast from "react-hot-toast";
 import { CustomerSiteSelector } from "@/components/CustomerSiteSelector";
 import { WorkerSelect } from "@/components/WorkerSelect";
 import { TimeInput } from "@/components/TimeInput";
+import {
+  ProductMaterialSelect,
+  type SelectedProduct,
+  type SelectedMaterial,
+} from "@/components/ProductMaterialSelect";
 import { useAuthStore } from "@/stores/authStore";
 import { ConfirmModal, UpdateConfirmModal, type DataRecord } from "@/components/ui";
 import {
@@ -15,6 +20,7 @@ import {
 import { useListUsers } from "@/api/generated/users/users";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { formatCurrency } from "@/utils/format";
 
 export function DailyReportEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +46,8 @@ export function DailyReportEditPage() {
   const [summary, setSummary] = useState("");
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
   const [workerHours, setWorkerHours] = useState<Record<string, number>>({});
+  const [products, setProducts] = useState<SelectedProduct[]>([]);
+  const [materials, setMaterials] = useState<SelectedMaterial[]>([]);
   const [showWorkerSelect, setShowWorkerSelect] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -50,6 +58,8 @@ export function DailyReportEditPage() {
   const [initialSummary, setInitialSummary] = useState("");
   const [initialSelectedWorkers, setInitialSelectedWorkers] = useState<string[]>([]);
   const [initialWorkerHours, setInitialWorkerHours] = useState<Record<string, number>>({});
+  const [initialProducts, setInitialProducts] = useState<SelectedProduct[]>([]);
+  const [initialMaterials, setInitialMaterials] = useState<SelectedMaterial[]>([]);
 
   const bulkUpdate = useBulkUpdateDailyReport({
     mutation: {
@@ -59,6 +69,9 @@ export function DailyReportEditPage() {
           queryClient.invalidateQueries({
             queryKey: ["/daily_reports"],
             exact: false,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [`/daily_reports/${id}`],
           }),
           queryClient.invalidateQueries({
             queryKey: ["/summaries/customer-month"],
@@ -120,12 +133,33 @@ export function DailyReportEditPage() {
       });
       setWorkerHours(hours);
 
+      // 製品・資材を設定
+      const loadedProducts: SelectedProduct[] = (report.products || []).map((p) => ({
+        product_id: p.product_id,
+        name: p.name,
+        quantity: p.quantity,
+        unit: p.unit,
+        unit_price: p.unit_price,
+      }));
+      setProducts(loadedProducts);
+
+      const loadedMaterials: SelectedMaterial[] = (report.materials || []).map((m) => ({
+        material_id: m.material_id,
+        name: m.name,
+        quantity: m.quantity,
+        unit: m.unit,
+        unit_price: m.unit_price,
+      }));
+      setMaterials(loadedMaterials);
+
       // 初期値を保存
       setInitialCustomerName(report.customer.name);
       setInitialSiteName(report.site.name);
       setInitialSummary(report.summary);
       setInitialSelectedWorkers(workers);
       setInitialWorkerHours(hours);
+      setInitialProducts(loadedProducts);
+      setInitialMaterials(loadedMaterials);
     }
   }, [dailyReportData]);
 
@@ -182,6 +216,20 @@ export function DailyReportEditPage() {
         minutes: Math.round((workerHours[workerId] || 0) * 60),
       }));
 
+    const productsData = products
+      .filter((p) => p.quantity > 0)
+      .map((p) => ({
+        product_id: p.product_id,
+        quantity: p.quantity,
+      }));
+
+    const materialsData = materials
+      .filter((m) => m.quantity > 0)
+      .map((m) => ({
+        material_id: m.material_id,
+        quantity: m.quantity,
+      }));
+
     bulkUpdate.mutate({
       id,
       data: {
@@ -189,6 +237,8 @@ export function DailyReportEditPage() {
           site_id: siteId,
           summary,
           work_entries: workEntries,
+          products: productsData.length > 0 ? productsData : undefined,
+          materials: materialsData.length > 0 ? materialsData : undefined,
         },
       },
     });
@@ -219,6 +269,15 @@ export function DailyReportEditPage() {
       0
     );
 
+    const initialProductsTotal = initialProducts.reduce(
+      (sum, p) => sum + p.quantity * p.unit_price,
+      0
+    );
+    const initialMaterialsTotal = initialMaterials.reduce(
+      (sum, m) => sum + m.quantity * m.unit_price,
+      0
+    );
+
     return [
       { fieldName: "顧客名", value: initialCustomerName },
       { fieldName: "現場名", value: initialSiteName },
@@ -229,6 +288,10 @@ export function DailyReportEditPage() {
       },
       { fieldName: "作業者・工数", value: initialWorkerNames || "（未設定）" },
       { fieldName: "合計工数", value: `${initialTotalHours}h` },
+      {
+        fieldName: "製品・資材",
+        value: formatCurrency(initialProductsTotal + initialMaterialsTotal),
+      },
     ];
   };
 
@@ -237,6 +300,9 @@ export function DailyReportEditPage() {
       .filter((u) => selectedWorkers.includes(u.id) && (workerHours[u.id] || 0) > 0)
       .map((u) => `${u.display_name}: ${workerHours[u.id]}h`)
       .join(", ");
+
+    const productsTotal = products.reduce((sum, p) => sum + p.quantity * p.unit_price, 0);
+    const materialsTotal = materials.reduce((sum, m) => sum + m.quantity * m.unit_price, 0);
 
     return [
       { fieldName: "顧客名", value: customerName },
@@ -247,6 +313,7 @@ export function DailyReportEditPage() {
       },
       { fieldName: "作業者・工数", value: workersWithHours || "（未設定）" },
       { fieldName: "合計工数", value: `${calculateTotalHours()}h` },
+      { fieldName: "製品・資材", value: formatCurrency(productsTotal + materialsTotal) },
     ];
   };
 
@@ -386,6 +453,17 @@ export function DailyReportEditPage() {
             </div>
           </div>
         )}
+
+        {/* 製品・資材選択 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">製品・資材（任意）</label>
+          <ProductMaterialSelect
+            selectedProducts={products}
+            selectedMaterials={materials}
+            onProductsChange={setProducts}
+            onMaterialsChange={setMaterials}
+          />
+        </div>
 
         {/* ボタン */}
         <div className="flex justify-between pt-4">

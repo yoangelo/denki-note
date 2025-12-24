@@ -6,7 +6,7 @@ import { CreateConfirmModal, type DataRecord } from "../../components/ui";
 
 interface Site {
   name: string;
-  note: string;
+  address: string;
 }
 
 interface FormErrors {
@@ -142,7 +142,7 @@ export function AdminCustomerCreatePage() {
   };
 
   const addSite = () => {
-    setSites([...sites, { name: "", note: "" }]);
+    setSites([...sites, { name: "", address: "" }]);
   };
 
   const removeSite = (index: number) => {
@@ -206,7 +206,7 @@ export function AdminCustomerCreatePage() {
         };
         sites?: Array<{
           name: string;
-          note?: string;
+          address?: string;
         }>;
       } = {
         customer: {
@@ -227,7 +227,7 @@ export function AdminCustomerCreatePage() {
       if (sites.length > 0) {
         payload.sites = sites.map((site) => ({
           name: site.name,
-          note: site.note || undefined,
+          address: site.address || undefined,
         }));
       }
 
@@ -268,7 +268,7 @@ export function AdminCustomerCreatePage() {
 
     if (sites.length > 0) {
       const sitesValue = sites
-        .map((site) => `${site.name}${site.note ? ` (${site.note})` : ""}`)
+        .map((site) => `${site.name}${site.address ? ` (${site.address})` : ""}`)
         .join(", ");
       data.push({ fieldName: "現場", value: sitesValue });
     }
@@ -466,13 +466,13 @@ export function AdminCustomerCreatePage() {
               </div>
 
               <div className="mb-2">
-                <label className="block mb-2">概要</label>
-                <textarea
-                  value={site.note}
-                  onChange={(e) => updateSite(index, "note", e.target.value)}
+                <label className="block mb-2">住所</label>
+                <input
+                  type="text"
+                  value={site.address}
+                  onChange={(e) => updateSite(index, "address", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded"
-                  rows={2}
-                  placeholder="備考やメモを入力"
+                  placeholder="例: 東京都新宿区西新宿1-1-1"
                 />
               </div>
             </div>

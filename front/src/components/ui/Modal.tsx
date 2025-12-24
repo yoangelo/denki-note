@@ -104,7 +104,7 @@ export function ConfirmModal({
         </>
       }
     >
-      <p className="text-gray-700">{message}</p>
+      <p className="text-gray-700 whitespace-pre-line">{message}</p>
     </Modal>
   );
 }

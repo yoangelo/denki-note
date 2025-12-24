@@ -46,7 +46,7 @@ export interface Site {
   tenant_id?: string;
   name: string;
   /** @nullable */
-  note?: string | null;
+  address?: string | null;
   /** @nullable */
   discarded_at?: string | null;
   created_at?: string;
@@ -109,10 +109,368 @@ export const TenantSettingsMoneyRounding = {
 export interface TenantSettings {
   id: string;
   name: string;
+  /** @nullable */
+  postal_code?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone_number?: string | null;
+  /** @nullable */
+  fax_number?: string | null;
+  /** @nullable */
+  corporate_number?: string | null;
+  /** @nullable */
+  representative_name?: string | null;
   default_unit_rate: number;
   money_rounding: TenantSettingsMoneyRounding;
   created_at: string;
   updated_at: string;
+}
+
+export interface PaginationMeta {
+  total_count?: number;
+  total_pages?: number;
+  current_page?: number;
+  per_page?: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  /** @nullable */
+  model_number?: string | null;
+  /** @nullable */
+  unit?: string | null;
+  unit_price: number;
+  /** @nullable */
+  manufacturer_id?: string | null;
+  /** @nullable */
+  manufacturer_name?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Material {
+  id: string;
+  name: string;
+  /** @nullable */
+  model_number?: string | null;
+  /** @nullable */
+  unit?: string | null;
+  unit_price: number;
+  /** @nullable */
+  material_type?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Manufacturer {
+  id: string;
+  name: string;
+}
+
+export type BankAccountAccountType =
+  (typeof BankAccountAccountType)[keyof typeof BankAccountAccountType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BankAccountAccountType = {
+  ordinary: "ordinary",
+  current: "current",
+  savings: "savings",
+} as const;
+
+export interface BankAccount {
+  id: string;
+  bank_name: string;
+  branch_name: string;
+  account_type: BankAccountAccountType;
+  account_type_label?: string;
+  account_number_masked?: string;
+  account_holder: string;
+  is_default_for_invoice?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type InvoiceListItemStatus =
+  (typeof InvoiceListItemStatus)[keyof typeof InvoiceListItemStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvoiceListItemStatus = {
+  draft: "draft",
+  issued: "issued",
+  canceled: "canceled",
+} as const;
+
+export interface InvoiceListItem {
+  id: string;
+  /** @nullable */
+  invoice_number?: string | null;
+  /** @nullable */
+  title?: string | null;
+  customer_id: string;
+  customer_name: string;
+  /** @nullable */
+  site_id?: string | null;
+  /** @nullable */
+  site_name?: string | null;
+  billing_date: string;
+  total_amount: number;
+  status: InvoiceListItemStatus;
+  /** @nullable */
+  issued_at?: string | null;
+  created_at: string;
+}
+
+export type InvoiceStatus = (typeof InvoiceStatus)[keyof typeof InvoiceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvoiceStatus = {
+  draft: "draft",
+  issued: "issued",
+  canceled: "canceled",
+} as const;
+
+export interface Invoice {
+  id: string;
+  /** @nullable */
+  invoice_number?: string | null;
+  billing_date: string;
+  customer_id: string;
+  customer_name: string;
+  /** @nullable */
+  site_id?: string | null;
+  /** @nullable */
+  site_name?: string | null;
+  /** @nullable */
+  title?: string | null;
+  subtotal: number;
+  tax_rate: number;
+  tax_amount: number;
+  total_amount: number;
+  status: InvoiceStatus;
+  /** @nullable */
+  issued_at?: string | null;
+  /** @nullable */
+  delivery_date?: string | null;
+  /** @nullable */
+  delivery_place?: string | null;
+  /** @nullable */
+  transaction_method?: string | null;
+  /** @nullable */
+  valid_until?: string | null;
+  /** @nullable */
+  note?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type InvoiceItemItemType = (typeof InvoiceItemItemType)[keyof typeof InvoiceItemItemType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvoiceItemItemType = {
+  header: "header",
+  product: "product",
+  material: "material",
+  labor: "labor",
+  other: "other",
+  integrated: "integrated",
+} as const;
+
+export interface InvoiceItem {
+  id: string;
+  item_type: InvoiceItemItemType;
+  name: string;
+  /** @nullable */
+  quantity?: number | null;
+  /** @nullable */
+  unit?: string | null;
+  /** @nullable */
+  unit_price?: number | null;
+  /** @nullable */
+  amount?: number | null;
+  sort_order: number;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface InvoiceDailyReport {
+  id: string;
+  work_date: string;
+  /** @nullable */
+  site_name?: string | null;
+  /** @nullable */
+  summary?: string | null;
+  labor_cost?: number;
+}
+
+export interface InvoiceProduct {
+  id: string;
+  product_id: string;
+  product_name: string;
+  /** @nullable */
+  model_number?: string | null;
+  /** @nullable */
+  unit_price?: number | null;
+}
+
+export interface InvoiceMaterial {
+  id: string;
+  material_id: string;
+  material_name: string;
+  /** @nullable */
+  model_number?: string | null;
+  /** @nullable */
+  unit_price?: number | null;
+}
+
+export type InvoiceDetailResponseTenant = {
+  name?: string;
+  /** @nullable */
+  postal_code?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone_number?: string | null;
+  /** @nullable */
+  fax_number?: string | null;
+  /** @nullable */
+  corporate_number?: string | null;
+  /** @nullable */
+  representative_name?: string | null;
+};
+
+export interface InvoiceDetailResponse {
+  invoice: Invoice;
+  invoice_items: InvoiceItem[];
+  daily_reports: InvoiceDailyReport[];
+  invoice_products: InvoiceProduct[];
+  invoice_materials: InvoiceMaterial[];
+  bank_account?: BankAccount;
+  tenant?: InvoiceDetailResponseTenant;
+}
+
+export type InvoiceCreateRequestInvoice = {
+  customer_id: string;
+  site_id?: string;
+  billing_date: string;
+  customer_name?: string;
+  title?: string;
+  tax_rate?: number;
+  delivery_date?: string;
+  delivery_place?: string;
+  transaction_method?: string;
+  valid_until?: string;
+  note?: string;
+};
+
+export type InvoiceCreateRequestInvoiceItemsItemItemType =
+  (typeof InvoiceCreateRequestInvoiceItemsItemItemType)[keyof typeof InvoiceCreateRequestInvoiceItemsItemItemType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvoiceCreateRequestInvoiceItemsItemItemType = {
+  header: "header",
+  product: "product",
+  material: "material",
+  labor: "labor",
+  other: "other",
+  integrated: "integrated",
+} as const;
+
+export type InvoiceCreateRequestInvoiceItemsItem = {
+  item_type: InvoiceCreateRequestInvoiceItemsItemItemType;
+  name: string;
+  quantity?: number;
+  unit?: string;
+  unit_price?: number;
+  amount?: number;
+  sort_order: number;
+};
+
+export interface InvoiceCreateRequest {
+  invoice: InvoiceCreateRequestInvoice;
+  invoice_items?: InvoiceCreateRequestInvoiceItemsItem[];
+  daily_report_ids?: string[];
+  product_ids?: string[];
+  material_ids?: string[];
+}
+
+export type InvoiceUpdateRequestInvoice = {
+  customer_id?: string;
+  site_id?: string;
+  billing_date?: string;
+  customer_name?: string;
+  title?: string;
+  tax_rate?: number;
+  delivery_date?: string;
+  delivery_place?: string;
+  transaction_method?: string;
+  valid_until?: string;
+  note?: string;
+};
+
+export type InvoiceUpdateRequestInvoiceItemsItemItemType =
+  (typeof InvoiceUpdateRequestInvoiceItemsItemItemType)[keyof typeof InvoiceUpdateRequestInvoiceItemsItemItemType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvoiceUpdateRequestInvoiceItemsItemItemType = {
+  header: "header",
+  product: "product",
+  material: "material",
+  labor: "labor",
+  other: "other",
+  integrated: "integrated",
+} as const;
+
+export type InvoiceUpdateRequestInvoiceItemsItem = {
+  id?: string;
+  item_type?: InvoiceUpdateRequestInvoiceItemsItemItemType;
+  name?: string;
+  quantity?: number;
+  unit?: string;
+  unit_price?: number;
+  amount?: number;
+  sort_order?: number;
+};
+
+export interface InvoiceUpdateRequest {
+  invoice?: InvoiceUpdateRequestInvoice;
+  invoice_items?: InvoiceUpdateRequestInvoiceItemsItem[];
+  daily_report_ids?: string[];
+  product_ids?: string[];
+  material_ids?: string[];
+}
+
+export type DailyReportForInvoiceProductsItem = {
+  id?: string;
+  name?: string;
+  quantity?: number;
+  /** @nullable */
+  unit?: string | null;
+  unit_price?: number;
+};
+
+export type DailyReportForInvoiceMaterialsItem = {
+  id?: string;
+  name?: string;
+  quantity?: number;
+  /** @nullable */
+  unit?: string | null;
+  unit_price?: number;
+};
+
+export interface DailyReportForInvoice {
+  id: string;
+  report_date: string;
+  site_id: string;
+  /** @nullable */
+  site_name?: string | null;
+  summary?: string;
+  workers?: string[];
+  labor_cost: number;
+  products?: DailyReportForInvoiceProductsItem[];
+  materials?: DailyReportForInvoiceMaterialsItem[];
+  total_amount: number;
 }
 
 export type LoginBodyUser = {
@@ -180,7 +538,7 @@ export type CreateSiteBodySite = {
   /** @maxLength 200 */
   name: string;
   /** @maxLength 500 */
-  note?: string;
+  address?: string;
 };
 
 export type CreateSiteBody = {
@@ -242,6 +600,7 @@ export type ListDailyReports200DailyReportsItem = {
   summary: string;
   work_entries: ListDailyReports200DailyReportsItemWorkEntriesItem[];
   total_minutes: number;
+  labor_cost: number;
   created_at: string;
   updated_at: string;
 };
@@ -278,6 +637,26 @@ export type GetDailyReport200DailyReportWorkEntriesItem = {
   minutes: number;
 };
 
+export type GetDailyReport200DailyReportProductsItem = {
+  id: string;
+  product_id: string;
+  name: string;
+  quantity: number;
+  /** @nullable */
+  unit: string | null;
+  unit_price: number;
+};
+
+export type GetDailyReport200DailyReportMaterialsItem = {
+  id: string;
+  material_id: string;
+  name: string;
+  quantity: number;
+  /** @nullable */
+  unit: string | null;
+  unit_price: number;
+};
+
 export type GetDailyReport200DailyReport = {
   id: string;
   work_date: string;
@@ -285,7 +664,10 @@ export type GetDailyReport200DailyReport = {
   site: GetDailyReport200DailyReportSite;
   summary: string;
   work_entries: GetDailyReport200DailyReportWorkEntriesItem[];
+  products?: GetDailyReport200DailyReportProductsItem[];
+  materials?: GetDailyReport200DailyReportMaterialsItem[];
   total_minutes: number;
+  labor_cost: number;
   created_at: string;
   updated_at: string;
 };
@@ -304,12 +686,26 @@ export type BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem = {
   minutes: number;
 };
 
+export type BulkCreateDailyReportsBodyDailyReportsItemProductsItem = {
+  product_id: string;
+  /** @minimum 0.01 */
+  quantity: number;
+};
+
+export type BulkCreateDailyReportsBodyDailyReportsItemMaterialsItem = {
+  material_id: string;
+  /** @minimum 0.01 */
+  quantity: number;
+};
+
 export type BulkCreateDailyReportsBodyDailyReportsItem = {
   site_id: string;
   work_date: string;
   summary: string;
   /** @minItems 1 */
   work_entries: BulkCreateDailyReportsBodyDailyReportsItemWorkEntriesItem[];
+  products?: BulkCreateDailyReportsBodyDailyReportsItemProductsItem[];
+  materials?: BulkCreateDailyReportsBodyDailyReportsItemMaterialsItem[];
 };
 
 export type BulkCreateDailyReportsBody = {
@@ -359,11 +755,25 @@ export type BulkUpdateDailyReportBodyDailyReportWorkEntriesItem = {
   minutes: number;
 };
 
+export type BulkUpdateDailyReportBodyDailyReportProductsItem = {
+  product_id: string;
+  /** @minimum 0.01 */
+  quantity: number;
+};
+
+export type BulkUpdateDailyReportBodyDailyReportMaterialsItem = {
+  material_id: string;
+  /** @minimum 0.01 */
+  quantity: number;
+};
+
 export type BulkUpdateDailyReportBodyDailyReport = {
   site_id: string;
   summary: string;
   /** @minItems 1 */
   work_entries: BulkUpdateDailyReportBodyDailyReportWorkEntriesItem[];
+  products?: BulkUpdateDailyReportBodyDailyReportProductsItem[];
+  materials?: BulkUpdateDailyReportBodyDailyReportMaterialsItem[];
 };
 
 export type BulkUpdateDailyReportBody = {
@@ -391,6 +801,26 @@ export type BulkUpdateDailyReport200DailyReportWorkEntriesItem = {
   minutes: number;
 };
 
+export type BulkUpdateDailyReport200DailyReportProductsItem = {
+  id: string;
+  product_id: string;
+  name: string;
+  quantity: number;
+  /** @nullable */
+  unit: string | null;
+  unit_price: number;
+};
+
+export type BulkUpdateDailyReport200DailyReportMaterialsItem = {
+  id: string;
+  material_id: string;
+  name: string;
+  quantity: number;
+  /** @nullable */
+  unit: string | null;
+  unit_price: number;
+};
+
 export type BulkUpdateDailyReport200DailyReport = {
   id: string;
   work_date: string;
@@ -398,7 +828,10 @@ export type BulkUpdateDailyReport200DailyReport = {
   site: BulkUpdateDailyReport200DailyReportSite;
   summary: string;
   work_entries: BulkUpdateDailyReport200DailyReportWorkEntriesItem[];
+  products?: BulkUpdateDailyReport200DailyReportProductsItem[];
+  materials?: BulkUpdateDailyReport200DailyReportMaterialsItem[];
   total_minutes: number;
+  labor_cost: number;
   updated_at: string;
 };
 
@@ -579,17 +1012,7 @@ export type GetCustomerMonthSummaryParams = {
    * @pattern ^[0-9]{4}-[0-9]{2}$
    */
   yyyymm: string;
-  rate_toggle?: GetCustomerMonthSummaryRateToggle;
 };
-
-export type GetCustomerMonthSummaryRateToggle =
-  (typeof GetCustomerMonthSummaryRateToggle)[keyof typeof GetCustomerMonthSummaryRateToggle];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const GetCustomerMonthSummaryRateToggle = {
-  on: "on",
-  off: "off",
-} as const;
 
 export type GetCustomerMonthSummary200RowsItem = {
   date?: string;
@@ -600,7 +1023,10 @@ export type GetCustomerMonthSummary200RowsItem = {
 export type GetCustomerMonthSummary200 = {
   rows: GetCustomerMonthSummary200RowsItem[];
   total_hours: number;
-  amount_jpy: number;
+  labor_cost_jpy: number;
+  product_amount_jpy: number;
+  material_amount_jpy: number;
+  total_amount_jpy: number;
 };
 
 export type GetAdminCustomersParams = {
@@ -668,7 +1094,7 @@ export type CreateCustomerBulkBodyCustomer = {
 
 export type CreateCustomerBulkBodySitesItem = {
   name: string;
-  note?: string;
+  address?: string;
 };
 
 export type CreateCustomerBulkBody = {
@@ -735,7 +1161,7 @@ export type CheckDuplicateCustomer200 = {
 export type CreateAdminSiteBodySite = {
   customer_id: string;
   name: string;
-  note?: string;
+  address?: string;
 };
 
 export type CreateAdminSiteBody = {
@@ -752,7 +1178,7 @@ export type CreateAdminSite422 = {
 
 export type UpdateAdminSiteBodySite = {
   name?: string;
-  note?: string;
+  address?: string;
 };
 
 export type UpdateAdminSiteBody = {
@@ -765,6 +1191,270 @@ export type UpdateAdminSite200 = {
 
 export type UpdateAdminSite422 = {
   errors?: string[];
+};
+
+export type AdminListProductsParams = {
+  /**
+   * Search by name or model number
+   */
+  keyword?: string;
+  manufacturer_id?: string;
+  page?: number;
+  per_page?: number;
+};
+
+export type AdminListProducts200 = {
+  products?: Product[];
+  meta?: PaginationMeta;
+};
+
+export type AdminCreateProductBodyProduct = {
+  name: string;
+  model_number?: string;
+  unit?: string;
+  unit_price: number;
+  manufacturer_name?: string;
+};
+
+export type AdminCreateProductBody = {
+  product: AdminCreateProductBodyProduct;
+};
+
+export type AdminCreateProduct201 = {
+  product?: Product;
+};
+
+export type AdminGetProduct200 = {
+  product?: Product;
+};
+
+export type AdminUpdateProductBodyProduct = {
+  name?: string;
+  model_number?: string;
+  unit?: string;
+  unit_price?: number;
+  manufacturer_name?: string;
+};
+
+export type AdminUpdateProductBody = {
+  product: AdminUpdateProductBodyProduct;
+};
+
+export type AdminUpdateProduct200 = {
+  product?: Product;
+};
+
+export type AdminListMaterialsParams = {
+  /**
+   * Search by name or model number
+   */
+  keyword?: string;
+  material_type?: string;
+  page?: number;
+  per_page?: number;
+};
+
+export type AdminListMaterials200 = {
+  materials?: Material[];
+  meta?: PaginationMeta;
+};
+
+export type AdminCreateMaterialBodyMaterial = {
+  name: string;
+  model_number?: string;
+  unit?: string;
+  unit_price: number;
+  material_type?: string;
+};
+
+export type AdminCreateMaterialBody = {
+  material: AdminCreateMaterialBodyMaterial;
+};
+
+export type AdminCreateMaterial201 = {
+  material?: Material;
+};
+
+export type AdminGetMaterialTypes200 = {
+  material_types?: string[];
+};
+
+export type AdminGetMaterial200 = {
+  material?: Material;
+};
+
+export type AdminUpdateMaterialBodyMaterial = {
+  name?: string;
+  model_number?: string;
+  unit?: string;
+  unit_price?: number;
+  material_type?: string;
+};
+
+export type AdminUpdateMaterialBody = {
+  material: AdminUpdateMaterialBodyMaterial;
+};
+
+export type AdminUpdateMaterial200 = {
+  material?: Material;
+};
+
+export type AdminListManufacturersParams = {
+  keyword?: string;
+};
+
+export type AdminListManufacturers200 = {
+  manufacturers?: Manufacturer[];
+};
+
+export type AdminListBankAccounts200 = {
+  bank_accounts?: BankAccount[];
+};
+
+export type AdminCreateBankAccountBodyBankAccountAccountType =
+  (typeof AdminCreateBankAccountBodyBankAccountAccountType)[keyof typeof AdminCreateBankAccountBodyBankAccountAccountType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminCreateBankAccountBodyBankAccountAccountType = {
+  ordinary: "ordinary",
+  current: "current",
+  savings: "savings",
+} as const;
+
+export type AdminCreateBankAccountBodyBankAccount = {
+  bank_name: string;
+  branch_name: string;
+  account_type: AdminCreateBankAccountBodyBankAccountAccountType;
+  account_number: string;
+  account_holder: string;
+  is_default_for_invoice?: boolean;
+};
+
+export type AdminCreateBankAccountBody = {
+  bank_account: AdminCreateBankAccountBodyBankAccount;
+};
+
+export type AdminCreateBankAccount201 = {
+  bank_account?: BankAccount;
+};
+
+export type AdminGetBankAccount200 = {
+  bank_account?: BankAccount;
+};
+
+export type AdminUpdateBankAccountBodyBankAccountAccountType =
+  (typeof AdminUpdateBankAccountBodyBankAccountAccountType)[keyof typeof AdminUpdateBankAccountBodyBankAccountAccountType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminUpdateBankAccountBodyBankAccountAccountType = {
+  ordinary: "ordinary",
+  current: "current",
+  savings: "savings",
+} as const;
+
+export type AdminUpdateBankAccountBodyBankAccount = {
+  bank_name?: string;
+  branch_name?: string;
+  account_type?: AdminUpdateBankAccountBodyBankAccountAccountType;
+  account_number?: string;
+  account_holder?: string;
+  is_default_for_invoice?: boolean;
+};
+
+export type AdminUpdateBankAccountBody = {
+  bank_account: AdminUpdateBankAccountBodyBankAccount;
+};
+
+export type AdminUpdateBankAccount200 = {
+  bank_account?: BankAccount;
+};
+
+export type AdminListInvoicesParams = {
+  customer_id?: string;
+  site_id?: string;
+  status?: AdminListInvoicesStatus;
+  issued_from?: string;
+  issued_to?: string;
+  show_discarded?: boolean;
+  sort_by?: AdminListInvoicesSortBy;
+  sort_order?: AdminListInvoicesSortOrder;
+  page?: number;
+  per_page?: number;
+};
+
+export type AdminListInvoicesStatus =
+  (typeof AdminListInvoicesStatus)[keyof typeof AdminListInvoicesStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminListInvoicesStatus = {
+  draft: "draft",
+  issued: "issued",
+  canceled: "canceled",
+} as const;
+
+export type AdminListInvoicesSortBy =
+  (typeof AdminListInvoicesSortBy)[keyof typeof AdminListInvoicesSortBy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminListInvoicesSortBy = {
+  invoice_number: "invoice_number",
+  title: "title",
+  customer_name: "customer_name",
+  total_amount: "total_amount",
+  billing_date: "billing_date",
+  issued_at: "issued_at",
+  created_at: "created_at",
+} as const;
+
+export type AdminListInvoicesSortOrder =
+  (typeof AdminListInvoicesSortOrder)[keyof typeof AdminListInvoicesSortOrder];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminListInvoicesSortOrder = {
+  asc: "asc",
+  desc: "desc",
+} as const;
+
+export type AdminListInvoices200 = {
+  invoices?: InvoiceListItem[];
+  meta?: PaginationMeta;
+};
+
+export type AdminIssueInvoice200Invoice = {
+  id?: string;
+  invoice_number?: string;
+  status?: string;
+  issued_at?: string;
+};
+
+export type AdminIssueInvoice200 = {
+  invoice?: AdminIssueInvoice200Invoice;
+};
+
+export type AdminCancelInvoice200Invoice = {
+  id?: string;
+  /** @nullable */
+  invoice_number?: string | null;
+  status?: string;
+};
+
+export type AdminCancelInvoice200 = {
+  invoice?: AdminCancelInvoice200Invoice;
+};
+
+export type AdminGetDailyReportsForInvoiceParams = {
+  customer_id: string;
+  site_id?: string;
+  from_date?: string;
+  to_date?: string;
+  exclude_invoice_id?: string;
+  page?: number;
+  per_page?: number;
+};
+
+export type AdminGetDailyReportsForInvoice200 = {
+  daily_reports?: DailyReportForInvoice[];
+  meta?: PaginationMeta;
 };
 
 export type AdminGetTenant200 = {
@@ -783,6 +1473,18 @@ export const AdminUpdateTenantBodyTenantMoneyRounding = {
 
 export type AdminUpdateTenantBodyTenant = {
   name?: string;
+  /** @nullable */
+  postal_code?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone_number?: string | null;
+  /** @nullable */
+  fax_number?: string | null;
+  /** @nullable */
+  corporate_number?: string | null;
+  /** @nullable */
+  representative_name?: string | null;
   /** @minimum 0 */
   default_unit_rate?: number;
   money_rounding?: AdminUpdateTenantBodyTenantMoneyRounding;

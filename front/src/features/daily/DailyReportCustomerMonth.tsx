@@ -12,12 +12,10 @@ export function DailyReportCustomerMonth({ customerId, customerName, onBack }: C
   const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   const [yyyymm, setYyyymm] = useState(currentYearMonth);
-  const [rateToggle, setRateToggle] = useState<"on" | "off">("on");
 
   const { data, isLoading, error, refetch } = useGetCustomerMonthSummary({
     customer_id: customerId,
     yyyymm: yyyymm,
-    rate_toggle: rateToggle,
   });
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,10 +24,6 @@ export function DailyReportCustomerMonth({ customerId, customerName, onBack }: C
     if (value.match(/^\d{4}-\d{2}$/)) {
       setYyyymm(value);
     }
-  };
-
-  const handleRateToggle = () => {
-    setRateToggle((prev) => (prev === "on" ? "off" : "on"));
   };
 
   if (!customerId) {
@@ -129,31 +123,18 @@ export function DailyReportCustomerMonth({ customerId, customerName, onBack }: C
 
           {/* 金額表示 */}
           <div className="p-5 bg-blue-50 rounded-lg border border-blue-500">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="m-0 text-blue-500 text-xl font-bold">請求予定額</h3>
-                <p className="text-3xl font-bold my-2.5 text-gray-800">
-                  ¥{data.amount_jpy.toLocaleString()}
-                </p>
-              </div>
-
-              {/* 掛率トグル */}
-              <div>
-                <label className="flex items-center cursor-pointer p-2.5 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={rateToggle === "on"}
-                    onChange={handleRateToggle}
-                    className="mr-2 scale-125"
-                  />
-                  <span>得意先掛率を適用</span>
-                </label>
-              </div>
+            <div>
+              <h3 className="m-0 text-blue-500 text-xl font-bold">請求予定額</h3>
+              <p className="text-3xl font-bold my-2.5 text-gray-800">
+                ¥{data.total_amount_jpy.toLocaleString()}
+              </p>
             </div>
 
             <div className="mt-4 text-sm text-gray-600 border-t border-gray-300 pt-4">
               <p className="mb-1">総工数: {data.total_hours.toFixed(2)}時間</p>
-              <p>掛率: {rateToggle === "on" ? "適用中" : "適用なし（100%）"}</p>
+              <p className="mb-1">工賃: ¥{data.labor_cost_jpy.toLocaleString()}</p>
+              <p className="mb-1">製品金額: ¥{data.product_amount_jpy.toLocaleString()}</p>
+              <p>資材金額: ¥{data.material_amount_jpy.toLocaleString()}</p>
             </div>
           </div>
         </div>

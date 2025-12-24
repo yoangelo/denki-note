@@ -9,12 +9,12 @@ class Admin::SitesController < AuthenticatedController
     @site = customer.sites.build(
       tenant: current_tenant,
       name: site_params[:name],
-      note: site_params[:note]
+      address: site_params[:address]
     )
 
     if @site.save
       render json: {
-        site: @site.as_json(only: [:id, :customer_id, :tenant_id, :name, :note, :discarded_at,
+        site: @site.as_json(only: [:id, :customer_id, :tenant_id, :name, :address, :discarded_at,
                                    :created_at, :updated_at,]),
       }, status: :created
     else
@@ -28,7 +28,7 @@ class Admin::SitesController < AuthenticatedController
   def update
     if @site.update(update_params)
       render json: {
-        site: @site.as_json(only: [:id, :customer_id, :tenant_id, :name, :note, :discarded_at, :created_at,
+        site: @site.as_json(only: [:id, :customer_id, :tenant_id, :name, :address, :discarded_at, :created_at,
                                    :updated_at,]),
       }
     else
@@ -51,11 +51,11 @@ class Admin::SitesController < AuthenticatedController
   end
 
   def site_params
-    params.require(:site).permit(:customer_id, :name, :note)
+    params.require(:site).permit(:customer_id, :name, :address)
   end
 
   def update_params
-    params.require(:site).permit(:name, :note)
+    params.require(:site).permit(:name, :address)
   end
 
   def require_admin

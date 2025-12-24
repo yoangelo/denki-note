@@ -1,0 +1,1601 @@
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+  useAdminCreateInvoice,
+  useAdminIssueInvoice,
+  useAdminGetDailyReportsForInvoice,
+  getAdminListInvoicesQueryKey,
+} from "../../api/generated/admin/admin";
+import type {
+  DailyReportForInvoice,
+  InvoiceCreateRequestInvoiceItemsItem,
+  Product,
+  Material,
+  InvoiceProduct,
+  InvoiceMaterial,
+} from "../../api/generated/timesheetAPI.schemas";
+import { ProductSearchModal } from "../../components/ProductSearchModal";
+import { MaterialSearchModal } from "../../components/MaterialSearchModal";
+import { InvoiceItemRow } from "../../components/InvoiceItemRow";
+import { CustomerSiteSelectModal } from "../../components/CustomerSiteSelectModal";
+import {
+  Button,
+  Input,
+  Select,
+  Modal,
+  ConfirmModal,
+  FullScreenModal,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+} from "../../components/ui";
+import {
+  formatCurrency,
+  formatDate,
+  formatProductName,
+  formatMaterialName,
+  validateInvoiceItems,
+  clearItemErrors,
+  clearFieldError,
+  isFieldValid,
+  taxRateToApi,
+  type InvoiceItemValidationError,
+} from "../../utils";
+import type { InvoiceItem } from "../../types/invoice";
+import { useItemTypeChange } from "../../hooks/useItemTypeChange";
+
+const TAX_RATE_OPTIONS = [
+  { value: "0.1", label: "10%" },
+  { value: "0.08", label: "8%" },
+];
+
+export function AdminInvoiceCreatePage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Customer/Site selection
+  const [customerId, setCustomerId] = useState("");
+  const [siteId, setSiteId] = useState("");
+  const [selectedCustomerType, setSelectedCustomerType] = useState<
+    "corporate" | "individual" | undefined
+  >();
+  const [selectedSiteName, setSelectedSiteName] = useState("");
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+
+  // Basic info
+  const [billingDate, setBillingDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  const [customerName, setCustomerName] = useState("");
+  const [title, setTitle] = useState("");
+  const [taxRate, setTaxRate] = useState("0.1");
+  const [showOtherInfo, setShowOtherInfo] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliveryPlace, setDeliveryPlace] = useState("");
+  const [transactionMethod, setTransactionMethod] = useState("");
+  const [validUntil, setValidUntil] = useState("");
+  const [note, setNote] = useState("");
+
+  // Daily reports
+  const [selectedDailyReportIds, setSelectedDailyReportIds] = useState<string[]>([]);
+  const [showDailyReportModal, setShowDailyReportModal] = useState(false);
+  const [showAutoGenerateModal, setShowAutoGenerateModal] = useState(false);
+  const [generatePattern, setGeneratePattern] = useState<"per_report" | "aggregated">("per_report");
+
+  // Invoice items
+  const [items, setItems] = useState<InvoiceItem[]>([]);
+  const [itemValidationErrors, setItemValidationErrors] = useState<InvoiceItemValidationError[]>(
+    []
+  );
+
+  // Item selection for integration
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [showIntegrateConfirmModal, setShowIntegrateConfirmModal] = useState(false);
+
+  // Modals
+  const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
+  const [showIssueConfirmModal, setShowIssueConfirmModal] = useState(false);
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
+
+  // Product/Material search modals
+  const [showProductSearchModal, setShowProductSearchModal] = useState(false);
+  const [showMaterialSearchModal, setShowMaterialSearchModal] = useState(false);
+  const [searchTargetItemId, setSearchTargetItemId] = useState<string | null>(null);
+
+  // Selected products/materials for invoice
+  const [selectedProducts, setSelectedProducts] = useState<
+    Pick<InvoiceProduct, "product_id" | "product_name" | "model_number" | "unit_price">[]
+  >([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<
+    Pick<InvoiceMaterial, "material_id" | "material_name" | "model_number" | "unit_price">[]
+  >([]);
+  const [showProductSelectModal, setShowProductSelectModal] = useState(false);
+  const [showMaterialSelectModal, setShowMaterialSelectModal] = useState(false);
+
+  // API
+  const { data: dailyReportsData } = useAdminGetDailyReportsForInvoice(
+    customerId
+      ? {
+          customer_id: customerId,
+          site_id: siteId || undefined,
+        }
+      : { customer_id: "" }
+  );
+  const dailyReports = useMemo(
+    () => dailyReportsData?.daily_reports || [],
+    [dailyReportsData?.daily_reports]
+  );
+
+  const createMutation = useAdminCreateInvoice({
+    mutation: {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: getAdminListInvoicesQueryKey() });
+        toast.success("請求書を保存しました");
+        if (data.invoice?.id) {
+          navigate(`/admin/invoices/${data.invoice.id}`);
+        } else {
+          navigate("/admin/invoices");
+        }
+      },
+      onError: () => {
+        toast.error("請求書の保存に失敗しました");
+      },
+    },
+  });
+
+  const issueMutation = useAdminIssueInvoice({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getAdminListInvoicesQueryKey() });
+        toast.success("請求書を発行しました");
+        navigate("/admin/invoices");
+      },
+      onError: () => {
+        toast.error("請求書の発行に失敗しました");
+      },
+    },
+  });
+
+  // Calculate amounts
+  const subtotal = useMemo(() => {
+    return items.reduce((sum, item) => {
+      if (item.item_type === "header") return sum;
+      return sum + item.amount;
+    }, 0);
+  }, [items]);
+
+  const taxAmount = useMemo(() => {
+    return Math.floor(subtotal * parseFloat(taxRate));
+  }, [subtotal, taxRate]);
+
+  const totalAmount = subtotal + taxAmount;
+
+  // Check if form has unsaved changes
+  const isDirty = useMemo(() => {
+    // Check if any meaningful data has been entered
+    return (
+      customerId !== "" ||
+      title !== "" ||
+      note !== "" ||
+      deliveryDate !== "" ||
+      deliveryPlace !== "" ||
+      transactionMethod !== "" ||
+      validUntil !== "" ||
+      items.length > 0 ||
+      selectedDailyReportIds.length > 0 ||
+      selectedProducts.length > 0 ||
+      selectedMaterials.length > 0
+    );
+  }, [
+    customerId,
+    title,
+    note,
+    deliveryDate,
+    deliveryPlace,
+    transactionMethod,
+    validUntil,
+    items.length,
+    selectedDailyReportIds.length,
+    selectedProducts.length,
+    selectedMaterials.length,
+  ]);
+
+  // Browser beforeunload event to warn about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        // Modern browsers ignore custom messages and show their own
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
+
+  // Handlers
+  const handleCustomerSiteSelect = (data: {
+    customerId: string;
+    siteId: string;
+    customerName: string;
+    siteName: string;
+    customerType: "corporate" | "individual";
+  }) => {
+    setCustomerId(data.customerId);
+    setSiteId(data.siteId);
+    setCustomerName(data.customerName);
+    setSelectedCustomerType(data.customerType);
+    setSelectedSiteName(data.siteName);
+    setSelectedDailyReportIds([]);
+    setShowCustomerModal(false);
+  };
+
+  const handleAddItem = () => {
+    const newItem: InvoiceItem = {
+      id: crypto.randomUUID(),
+      item_type: "other",
+      name: "",
+      quantity: 1,
+      unit: "",
+      unit_price: 0,
+      amount: 0,
+      sort_order: items.length,
+    };
+    setItems([...items, newItem]);
+  };
+
+  const handleUpdateItem = (id: string, updates: Partial<InvoiceItem>) => {
+    // If item_type is being changed, clear all errors for this item
+    if ("item_type" in updates) {
+      setItemValidationErrors((prev) => clearItemErrors(prev, id));
+    }
+
+    setItems((prevItems) => {
+      const newItems = prevItems.map((item) => {
+        if (item.id !== id) return item;
+        const updated = { ...item, ...updates };
+        // Recalculate amount if quantity or unit_price changed
+        if (
+          updated.item_type !== "header" &&
+          updated.item_type !== "labor" &&
+          updated.quantity !== null &&
+          updated.unit_price !== null
+        ) {
+          updated.amount = updated.quantity * updated.unit_price;
+        }
+        return updated;
+      });
+
+      // Clear field errors if the field is now valid (except for item_type changes which are handled above)
+      if (!("item_type" in updates)) {
+        const updatedItem = newItems.find((item) => item.id === id);
+        if (updatedItem) {
+          const fieldsToCheck: Array<"name" | "quantity" | "unit" | "unit_price" | "amount"> = [];
+          if ("name" in updates) fieldsToCheck.push("name");
+          if ("quantity" in updates) fieldsToCheck.push("quantity");
+          if ("unit" in updates) fieldsToCheck.push("unit");
+          if ("unit_price" in updates) fieldsToCheck.push("unit_price");
+          if ("amount" in updates) fieldsToCheck.push("amount");
+
+          fieldsToCheck.forEach((field) => {
+            if (isFieldValid(updatedItem, field)) {
+              setItemValidationErrors((prev) => clearFieldError(prev, id, field));
+            }
+          });
+        }
+      }
+
+      return newItems;
+    });
+  };
+
+  const handleDeleteItem = (id: string) => {
+    setItems(items.filter((item) => item.id !== id));
+    setItemValidationErrors((prev) => clearItemErrors(prev, id));
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  // Item selection for integration
+  const handleToggleSelectItem = (id: string) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleIntegrateItems = () => {
+    if (selectedItemIds.size < 2) {
+      toast.error("2つ以上の項目を選択してください");
+      return;
+    }
+    setShowIntegrateConfirmModal(true);
+  };
+
+  const handleConfirmIntegrate = () => {
+    const selectedItems = items.filter((item) => selectedItemIds.has(item.id));
+    const totalAmount = selectedItems.reduce((sum, item) => {
+      if (item.item_type === "header") return sum;
+      return sum + item.amount;
+    }, 0);
+
+    // 選択した項目の品名をカンマで連結（空文字・見出しを除く）
+    const integratedName = selectedItems
+      .filter((item) => item.item_type !== "header" && item.name.trim() !== "")
+      .map((item) => item.name)
+      .join(", ");
+
+    // Create new integrated item
+    const newItem: InvoiceItem = {
+      id: crypto.randomUUID(),
+      item_type: "integrated",
+      name: integratedName,
+      quantity: 1,
+      unit: "式",
+      unit_price: null,
+      amount: totalAmount,
+      sort_order: items.length,
+      isNew: true,
+    };
+
+    // Remove selected items and add new integrated item
+    const remainingItems = items.filter((item) => !selectedItemIds.has(item.id));
+    setItems([...remainingItems, newItem]);
+    setSelectedItemIds(new Set());
+    setShowIntegrateConfirmModal(false);
+    toast.success("選択した項目をまとめました");
+  };
+
+  const handleOpenProductSearch = (itemId: string) => {
+    setSearchTargetItemId(itemId);
+    setShowProductSearchModal(true);
+  };
+
+  const handleOpenMaterialSearch = (itemId: string) => {
+    setSearchTargetItemId(itemId);
+    setShowMaterialSearchModal(true);
+  };
+
+  const handleSelectProduct = (product: Product) => {
+    if (!searchTargetItemId) return;
+    handleUpdateItem(searchTargetItemId, {
+      name: formatProductName(product),
+      unit: product.unit || "",
+      unit_price: product.unit_price,
+      quantity: 1,
+      amount: product.unit_price,
+    });
+    // 納入製品設定にも追加（重複チェック）
+    if (!selectedProducts.some((p) => p.product_id === product.id)) {
+      setSelectedProducts([
+        ...selectedProducts,
+        {
+          product_id: product.id,
+          product_name: product.name,
+          model_number: product.model_number,
+          unit_price: product.unit_price,
+        },
+      ]);
+    }
+    setShowProductSearchModal(false);
+    setSearchTargetItemId(null);
+  };
+
+  const handleSelectMaterial = (material: Material) => {
+    if (!searchTargetItemId) return;
+    handleUpdateItem(searchTargetItemId, {
+      name: formatMaterialName(material),
+      unit: material.unit || "",
+      unit_price: material.unit_price,
+      quantity: 1,
+      amount: material.unit_price,
+    });
+    // 使用資材設定にも追加（重複チェック）
+    if (!selectedMaterials.some((m) => m.material_id === material.id)) {
+      setSelectedMaterials([
+        ...selectedMaterials,
+        {
+          material_id: material.id,
+          material_name: material.name,
+          model_number: material.model_number,
+          unit_price: material.unit_price,
+        },
+      ]);
+    }
+    setShowMaterialSearchModal(false);
+    setSearchTargetItemId(null);
+  };
+
+  // Handlers for invoice products/materials selection
+  const handleAddInvoiceProduct = (product: Product) => {
+    if (selectedProducts.some((p) => p.product_id === product.id)) {
+      toast.error("この製品は既に登録されています");
+      return;
+    }
+    setSelectedProducts([
+      ...selectedProducts,
+      {
+        product_id: product.id,
+        product_name: product.name,
+        model_number: product.model_number,
+        unit_price: product.unit_price,
+      },
+    ]);
+    setShowProductSelectModal(false);
+  };
+
+  const handleRemoveInvoiceProduct = (productId: string) => {
+    setSelectedProducts(selectedProducts.filter((p) => p.product_id !== productId));
+  };
+
+  const handleAddInvoiceMaterial = (material: Material) => {
+    if (selectedMaterials.some((m) => m.material_id === material.id)) {
+      toast.error("この資材は既に登録されています");
+      return;
+    }
+    setSelectedMaterials([
+      ...selectedMaterials,
+      {
+        material_id: material.id,
+        material_name: material.name,
+        model_number: material.model_number,
+        unit_price: material.unit_price,
+      },
+    ]);
+    setShowMaterialSelectModal(false);
+  };
+
+  const handleRemoveInvoiceMaterial = (materialId: string) => {
+    setSelectedMaterials(selectedMaterials.filter((m) => m.material_id !== materialId));
+  };
+
+  // Item type change with confirmation
+  const {
+    showItemTypeChangeModal,
+    handleItemTypeChange,
+    confirmItemTypeChange,
+    cancelItemTypeChange,
+  } = useItemTypeChange({ items, onUpdateItem: handleUpdateItem });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        const newItems = [...items];
+        const [movedItem] = newItems.splice(oldIndex, 1);
+        newItems.splice(newIndex, 0, movedItem);
+
+        // Update sort_order for all items
+        const updatedItems = newItems.map((item, index) => ({
+          ...item,
+          sort_order: index,
+        }));
+
+        setItems(updatedItems);
+      }
+    },
+    [items]
+  );
+
+  const handleDailyReportToggle = (reportId: string) => {
+    setSelectedDailyReportIds((prev) =>
+      prev.includes(reportId) ? prev.filter((id) => id !== reportId) : [...prev, reportId]
+    );
+  };
+
+  const handleGenerateFromDailyReports = useCallback(() => {
+    const selectedReports = dailyReports.filter((r) => selectedDailyReportIds.includes(r.id));
+    if (selectedReports.length === 0) {
+      toast.error("日報を選択してください");
+      return;
+    }
+
+    const newItems: InvoiceItem[] = [];
+    let sortOrder = items.length;
+
+    // Collect unique products and materials from all selected reports
+    const newProductsMap = new Map<
+      string,
+      Pick<InvoiceProduct, "product_id" | "product_name" | "model_number" | "unit_price">
+    >();
+    const newMaterialsMap = new Map<
+      string,
+      Pick<InvoiceMaterial, "material_id" | "material_name" | "model_number" | "unit_price">
+    >();
+
+    if (generatePattern === "per_report") {
+      // Per-report pattern: Create items grouped by daily report
+      selectedReports.forEach((report) => {
+        // Add labor item for this report
+        newItems.push({
+          id: crypto.randomUUID(),
+          item_type: "labor",
+          name: `${formatDate(report.report_date)} ${report.summary || "作業"}`,
+          quantity: 1,
+          unit: "式",
+          unit_price: null,
+          amount: report.labor_cost,
+          sort_order: sortOrder++,
+        });
+
+        // Add products
+        report.products?.forEach((product) => {
+          newItems.push({
+            id: crypto.randomUUID(),
+            item_type: "product",
+            name: product.name || "",
+            quantity: product.quantity || 1,
+            unit: product.unit || "個",
+            unit_price: product.unit_price || 0,
+            amount: (product.quantity || 1) * (product.unit_price || 0),
+            sort_order: sortOrder++,
+          });
+          // Add to products collection
+          if (product.id && !newProductsMap.has(product.id)) {
+            newProductsMap.set(product.id, {
+              product_id: product.id,
+              product_name: product.name || "",
+              model_number: null,
+              unit_price: product.unit_price,
+            });
+          }
+        });
+
+        // Add materials
+        report.materials?.forEach((material) => {
+          newItems.push({
+            id: crypto.randomUUID(),
+            item_type: "material",
+            name: material.name || "",
+            quantity: material.quantity || 1,
+            unit: material.unit || "個",
+            unit_price: material.unit_price || 0,
+            amount: (material.quantity || 1) * (material.unit_price || 0),
+            sort_order: sortOrder++,
+          });
+          // Add to materials collection
+          if (material.id && !newMaterialsMap.has(material.id)) {
+            newMaterialsMap.set(material.id, {
+              material_id: material.id,
+              material_name: material.name || "",
+              model_number: null,
+              unit_price: material.unit_price,
+            });
+          }
+        });
+      });
+    } else {
+      // Aggregated pattern: Combine all items
+      const totalLaborCost = selectedReports.reduce((sum, r) => sum + r.labor_cost, 0);
+
+      // Add combined labor item
+      newItems.push({
+        id: crypto.randomUUID(),
+        item_type: "labor",
+        name: "作業",
+        quantity: 1,
+        unit: "式",
+        unit_price: null,
+        amount: totalLaborCost,
+        sort_order: sortOrder++,
+      });
+
+      // Aggregate products by product_id
+      const productMap = new Map<
+        string,
+        { name: string; quantity: number; unit: string; unit_price: number; id?: string }
+      >();
+      selectedReports.forEach((report) => {
+        report.products?.forEach((product) => {
+          const key = product.id || product.name || "";
+          const existing = productMap.get(key);
+          if (existing) {
+            existing.quantity += product.quantity || 1;
+          } else {
+            productMap.set(key, {
+              name: product.name || "",
+              quantity: product.quantity || 1,
+              unit: product.unit || "個",
+              unit_price: product.unit_price || 0,
+              id: product.id,
+            });
+          }
+          // Add to products collection
+          if (product.id && !newProductsMap.has(product.id)) {
+            newProductsMap.set(product.id, {
+              product_id: product.id,
+              product_name: product.name || "",
+              model_number: null,
+              unit_price: product.unit_price,
+            });
+          }
+        });
+      });
+
+      productMap.forEach((product) => {
+        newItems.push({
+          id: crypto.randomUUID(),
+          item_type: "product",
+          name: product.name,
+          quantity: product.quantity,
+          unit: product.unit,
+          unit_price: product.unit_price,
+          amount: product.quantity * product.unit_price,
+          sort_order: sortOrder++,
+        });
+      });
+
+      // Aggregate materials by material_id
+      const materialMap = new Map<
+        string,
+        { name: string; quantity: number; unit: string; unit_price: number; id?: string }
+      >();
+      selectedReports.forEach((report) => {
+        report.materials?.forEach((material) => {
+          const key = material.id || material.name || "";
+          const existing = materialMap.get(key);
+          if (existing) {
+            existing.quantity += material.quantity || 1;
+          } else {
+            materialMap.set(key, {
+              name: material.name || "",
+              quantity: material.quantity || 1,
+              unit: material.unit || "個",
+              unit_price: material.unit_price || 0,
+              id: material.id,
+            });
+          }
+          // Add to materials collection
+          if (material.id && !newMaterialsMap.has(material.id)) {
+            newMaterialsMap.set(material.id, {
+              material_id: material.id,
+              material_name: material.name || "",
+              model_number: null,
+              unit_price: material.unit_price,
+            });
+          }
+        });
+      });
+
+      materialMap.forEach((material) => {
+        newItems.push({
+          id: crypto.randomUUID(),
+          item_type: "material",
+          name: material.name,
+          quantity: material.quantity,
+          unit: material.unit,
+          unit_price: material.unit_price,
+          amount: material.quantity * material.unit_price,
+          sort_order: sortOrder++,
+        });
+      });
+    }
+
+    setItems([...items, ...newItems]);
+
+    // Add unique products and materials that aren't already selected
+    const productsToAdd = Array.from(newProductsMap.values()).filter(
+      (p) => !selectedProducts.some((sp) => sp.product_id === p.product_id)
+    );
+    const materialsToAdd = Array.from(newMaterialsMap.values()).filter(
+      (m) => !selectedMaterials.some((sm) => sm.material_id === m.material_id)
+    );
+
+    if (productsToAdd.length > 0) {
+      setSelectedProducts([...selectedProducts, ...productsToAdd]);
+    }
+    if (materialsToAdd.length > 0) {
+      setSelectedMaterials([...selectedMaterials, ...materialsToAdd]);
+    }
+
+    setShowAutoGenerateModal(false);
+    toast.success(`${newItems.length}件の請求項目を追加しました`);
+  }, [
+    dailyReports,
+    selectedDailyReportIds,
+    generatePattern,
+    items,
+    selectedProducts,
+    selectedMaterials,
+  ]);
+
+  const handleSaveDraft = () => {
+    if (!customerId) {
+      toast.error("顧客を選択してください");
+      return;
+    }
+    if (!billingDate) {
+      toast.error("請求日を入力してください");
+      return;
+    }
+
+    // Validate invoice items
+    const errors = validateInvoiceItems(items);
+    setItemValidationErrors(errors);
+    if (errors.length > 0) {
+      toast.error("請求項目に入力エラーがあります");
+      return;
+    }
+
+    setShowDraftConfirmModal(true);
+  };
+
+  const handleConfirmDraft = () => {
+    const invoiceItems: InvoiceCreateRequestInvoiceItemsItem[] = items.map((item, index) => ({
+      item_type: item.item_type,
+      name: item.name,
+      quantity: item.quantity ?? undefined,
+      unit: item.unit || undefined,
+      unit_price: item.unit_price ?? undefined,
+      amount: item.amount,
+      sort_order: index,
+    }));
+
+    createMutation.mutate({
+      data: {
+        invoice: {
+          customer_id: customerId,
+          site_id: siteId || undefined,
+          billing_date: billingDate,
+          customer_name: customerName || undefined,
+          title: title || undefined,
+          tax_rate: taxRateToApi(taxRate),
+          delivery_date: deliveryDate || undefined,
+          delivery_place: deliveryPlace || undefined,
+          transaction_method: transactionMethod || undefined,
+          valid_until: validUntil || undefined,
+          note: note || undefined,
+        },
+        invoice_items: invoiceItems.length > 0 ? invoiceItems : undefined,
+        daily_report_ids: selectedDailyReportIds.length > 0 ? selectedDailyReportIds : undefined,
+        product_ids:
+          selectedProducts.length > 0 ? selectedProducts.map((p) => p.product_id) : undefined,
+        material_ids:
+          selectedMaterials.length > 0 ? selectedMaterials.map((m) => m.material_id) : undefined,
+      },
+    });
+    setShowDraftConfirmModal(false);
+  };
+
+  const handleIssue = () => {
+    if (!customerId) {
+      toast.error("顧客を選択してください");
+      return;
+    }
+    if (!billingDate) {
+      toast.error("請求日を入力してください");
+      return;
+    }
+
+    // Validate invoice items
+    const errors = validateInvoiceItems(items);
+    setItemValidationErrors(errors);
+    if (errors.length > 0) {
+      toast.error("請求項目に入力エラーがあります");
+      return;
+    }
+
+    setShowIssueConfirmModal(true);
+  };
+
+  const handleConfirmIssue = async () => {
+    const invoiceItems: InvoiceCreateRequestInvoiceItemsItem[] = items.map((item, index) => ({
+      item_type: item.item_type,
+      name: item.name,
+      quantity: item.quantity ?? undefined,
+      unit: item.unit || undefined,
+      unit_price: item.unit_price ?? undefined,
+      amount: item.amount,
+      sort_order: index,
+    }));
+
+    try {
+      const result = await createMutation.mutateAsync({
+        data: {
+          invoice: {
+            customer_id: customerId,
+            site_id: siteId || undefined,
+            billing_date: billingDate,
+            customer_name: customerName || undefined,
+            title: title || undefined,
+            tax_rate: taxRateToApi(taxRate),
+            delivery_date: deliveryDate || undefined,
+            delivery_place: deliveryPlace || undefined,
+            transaction_method: transactionMethod || undefined,
+            valid_until: validUntil || undefined,
+            note: note || undefined,
+          },
+          invoice_items: invoiceItems.length > 0 ? invoiceItems : undefined,
+          daily_report_ids: selectedDailyReportIds.length > 0 ? selectedDailyReportIds : undefined,
+          product_ids:
+            selectedProducts.length > 0 ? selectedProducts.map((p) => p.product_id) : undefined,
+          material_ids:
+            selectedMaterials.length > 0 ? selectedMaterials.map((m) => m.material_id) : undefined,
+        },
+      });
+
+      if (result.invoice?.id) {
+        await issueMutation.mutateAsync({ id: result.invoice.id });
+      }
+    } catch {
+      // Error handled by mutation callbacks
+    }
+    setShowIssueConfirmModal(false);
+  };
+
+  // Handle back button click
+  const handleBack = () => {
+    if (isDirty) {
+      setShowLeaveConfirmModal(true);
+    } else {
+      navigate("/admin/invoices");
+    }
+  };
+
+  // Handle discard and leave
+  const handleDiscardAndLeave = () => {
+    setShowLeaveConfirmModal(false);
+    navigate("/admin/invoices");
+  };
+
+  // Handle save draft and leave
+  const handleSaveDraftAndLeave = () => {
+    setShowLeaveConfirmModal(false);
+    if (!customerId) {
+      toast.error("顧客を選択してください");
+      return;
+    }
+    if (!billingDate) {
+      toast.error("請求日を入力してください");
+      return;
+    }
+
+    // Validate invoice items
+    const errors = validateInvoiceItems(items);
+    setItemValidationErrors(errors);
+    if (errors.length > 0) {
+      toast.error("請求項目に入力エラーがあります");
+      return;
+    }
+
+    const invoiceItems: InvoiceCreateRequestInvoiceItemsItem[] = items.map((item, index) => ({
+      item_type: item.item_type,
+      name: item.name,
+      quantity: item.quantity ?? undefined,
+      unit: item.unit || undefined,
+      unit_price: item.unit_price ?? undefined,
+      amount: item.amount,
+      sort_order: index,
+    }));
+
+    createMutation.mutate({
+      data: {
+        invoice: {
+          customer_id: customerId,
+          site_id: siteId || undefined,
+          billing_date: billingDate,
+          customer_name: customerName || undefined,
+          title: title || undefined,
+          tax_rate: taxRateToApi(taxRate),
+          delivery_date: deliveryDate || undefined,
+          delivery_place: deliveryPlace || undefined,
+          transaction_method: transactionMethod || undefined,
+          valid_until: validUntil || undefined,
+          note: note || undefined,
+        },
+        invoice_items: invoiceItems.length > 0 ? invoiceItems : undefined,
+        daily_report_ids: selectedDailyReportIds.length > 0 ? selectedDailyReportIds : undefined,
+        product_ids:
+          selectedProducts.length > 0 ? selectedProducts.map((p) => p.product_id) : undefined,
+        material_ids:
+          selectedMaterials.length > 0 ? selectedMaterials.map((m) => m.material_id) : undefined,
+      },
+    });
+  };
+
+  const selectedDailyReportsTotal = useMemo(() => {
+    return dailyReports
+      .filter((r) => selectedDailyReportIds.includes(r.id))
+      .reduce((sum, r) => sum + r.total_amount, 0);
+  }, [dailyReports, selectedDailyReportIds]);
+
+  return (
+    <FullScreenModal title="請求書の新規作成" onCloseRequest={handleBack}>
+      <div className="max-w-6xl mx-auto">
+        {/* Customer/Site Selection */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium">顧客・現場</h2>
+            <Button onClick={() => setShowCustomerModal(true)}>
+              {customerId ? "変更" : "顧客・現場選択"}
+            </Button>
+          </div>
+          {customerId ? (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium">{customerName}</span>
+                {selectedCustomerType === "corporate" && (
+                  <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                    法人
+                  </span>
+                )}
+                {selectedCustomerType === "individual" && (
+                  <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                    個人
+                  </span>
+                )}
+              </div>
+              {siteId && <div className="text-sm text-gray-600">現場: {selectedSiteName}</div>}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">顧客を選択してください</div>
+          )}
+        </div>
+
+        {/* Main Form - Only show when customer is selected */}
+        {customerId && (
+          <>
+            {/* Two column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Basic Info */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-medium mb-4">基本情報</h2>
+                <div className="space-y-4">
+                  <Input
+                    label="日付（請求日）"
+                    type="date"
+                    value={billingDate}
+                    onChange={(e) => setBillingDate(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="顧客表示名"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="タイトル"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="例: 1月分工事代金"
+                  />
+
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+                    onClick={() => setShowOtherInfo(!showOtherInfo)}
+                  >
+                    <span>{showOtherInfo ? "▼" : "▶"}</span>
+                    <span>その他情報</span>
+                  </button>
+
+                  {showOtherInfo && (
+                    <div className="space-y-4 pl-4 border-l-2 border-gray-200">
+                      <Input
+                        label="受渡期日"
+                        type="date"
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                      />
+                      <Input
+                        label="受渡場所"
+                        value={deliveryPlace}
+                        onChange={(e) => setDeliveryPlace(e.target.value)}
+                        placeholder="例: ○○工場"
+                      />
+                      <Input
+                        label="取引方法"
+                        value={transactionMethod}
+                        onChange={(e) => setTransactionMethod(e.target.value)}
+                        placeholder="例: 銀行振込"
+                      />
+                      <Input
+                        label="有効期限"
+                        type="date"
+                        value={validUntil}
+                        onChange={(e) => setValidUntil(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <Select
+                    label="税率"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(e.target.value)}
+                    required
+                  >
+                    {TAX_RATE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </Select>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">備考</label>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Daily Reports */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium">関連する日報の設定</h2>
+                  <Button variant="secondary" onClick={() => setShowDailyReportModal(true)}>
+                    日報を選択
+                  </Button>
+                </div>
+
+                {selectedDailyReportIds.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    日報を選択すると、請求項目を自動生成できます
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {dailyReports
+                      .filter((r) => selectedDailyReportIds.includes(r.id))
+                      .map((report) => (
+                        <DailyReportCard
+                          key={report.id}
+                          report={report}
+                          onRemove={() => handleDailyReportToggle(report.id)}
+                        />
+                      ))}
+                    <div className="pt-2 border-t border-gray-200 flex justify-end">
+                      <span className="text-sm text-gray-600">
+                        合計金額(税込):{" "}
+                        <span className="font-bold text-blue-600">
+                          {formatCurrency(selectedDailyReportsTotal)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Invoice Products and Materials Settings */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Invoice Products */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium">納入製品設定</h2>
+                  <Button variant="secondary" onClick={() => setShowProductSelectModal(true)}>
+                    製品を追加
+                  </Button>
+                </div>
+                {selectedProducts.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">納入製品が登録されていません</div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedProducts.map((product) => (
+                      <div
+                        key={product.product_id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div>
+                          <div className="font-medium">{product.product_name}</div>
+                          {product.model_number && (
+                            <div className="text-sm text-gray-500">
+                              型番: {product.model_number}
+                            </div>
+                          )}
+                          {product.unit_price != null && (
+                            <div className="text-sm text-gray-500">
+                              単価: {formatCurrency(product.unit_price)}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveInvoiceProduct(product.product_id)}
+                          className="text-gray-400 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Invoice Materials */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium">使用資材設定</h2>
+                  <Button variant="secondary" onClick={() => setShowMaterialSelectModal(true)}>
+                    資材を追加
+                  </Button>
+                </div>
+                {selectedMaterials.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">使用資材が登録されていません</div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedMaterials.map((material) => (
+                      <div
+                        key={material.material_id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div>
+                          <div className="font-medium">{material.material_name}</div>
+                          {material.model_number && (
+                            <div className="text-sm text-gray-500">
+                              型番: {material.model_number}
+                            </div>
+                          )}
+                          {material.unit_price != null && (
+                            <div className="text-sm text-gray-500">
+                              単価: {formatCurrency(material.unit_price)}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveInvoiceMaterial(material.material_id)}
+                          className="text-gray-400 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Invoice Items */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-lg font-medium">請求項目</h2>
+                  {items.length > 0 && (
+                    <Button
+                      variant="secondary"
+                      onClick={handleIntegrateItems}
+                      disabled={selectedItemIds.size < 2}
+                    >
+                      選択した項目をまとめる
+                    </Button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {selectedDailyReportIds.length > 0 && (
+                    <Button variant="secondary" onClick={() => setShowAutoGenerateModal(true)}>
+                      日報から自動生成
+                    </Button>
+                  )}
+                  <Button onClick={handleAddItem}>+ 項目追加</Button>
+                </div>
+              </div>
+
+              {items.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  請求項目がありません。「+ 項目追加」で追加するか、日報から自動生成してください。
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <Table>
+                      <TableHeader>
+                        <TableHead className="w-10">選択</TableHead>
+                        <TableHead className="w-10"></TableHead>
+                        <TableHead className="w-24">種別</TableHead>
+                        <TableHead>品名</TableHead>
+                        <TableHead className="w-20" align="right">
+                          数量
+                        </TableHead>
+                        <TableHead className="w-16">単位</TableHead>
+                        <TableHead className="w-28" align="right">
+                          単価
+                        </TableHead>
+                        <TableHead className="w-28" align="right">
+                          金額
+                        </TableHead>
+                        <TableHead className="w-12" align="center">
+                          削除
+                        </TableHead>
+                      </TableHeader>
+                      <SortableContext
+                        items={items.map((item) => item.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <TableBody>
+                          {items.map((item) => (
+                            <InvoiceItemRow
+                              key={item.id}
+                              item={item}
+                              onUpdate={handleUpdateItem}
+                              onDelete={handleDeleteItem}
+                              onOpenProductSearch={handleOpenProductSearch}
+                              onOpenMaterialSearch={handleOpenMaterialSearch}
+                              onItemTypeChange={handleItemTypeChange}
+                              validationErrors={itemValidationErrors}
+                              showCheckbox
+                              isSelected={selectedItemIds.has(item.id)}
+                              onToggleSelect={handleToggleSelectItem}
+                            />
+                          ))}
+                        </TableBody>
+                      </SortableContext>
+                    </Table>
+                  </DndContext>
+                </div>
+              )}
+
+              {/* Validation Errors */}
+              {itemValidationErrors.length > 0 && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm font-medium text-red-800 mb-2">入力エラーがあります:</p>
+                  <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                    {itemValidationErrors.map((error, index) => {
+                      const item = items.find((i) => i.id === error.itemId);
+                      const itemIndex = items.findIndex((i) => i.id === error.itemId) + 1;
+                      return (
+                        <li key={index}>
+                          {itemIndex}行目 ({item?.name || "未入力"}): {error.message}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* Totals */}
+              <div className="mt-4 border-t pt-4">
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">小計</span>
+                      <span className="font-medium">{formatCurrency(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        消費税({Math.round(parseFloat(taxRate) * 100)}%)
+                      </span>
+                      <span className="font-medium">{formatCurrency(taxAmount)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-bold">合計</span>
+                      <span className="font-bold text-blue-600">{formatCurrency(totalAmount)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex justify-end gap-4">
+                <Button
+                  variant="secondary"
+                  onClick={handleSaveDraft}
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending ? "保存中..." : "下書き保存"}
+                </Button>
+                <Button
+                  onClick={handleIssue}
+                  disabled={createMutation.isPending || issueMutation.isPending}
+                >
+                  発行
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Customer Selection Modal */}
+        <CustomerSiteSelectModal
+          isOpen={showCustomerModal}
+          onClose={() => setShowCustomerModal(false)}
+          onSelect={handleCustomerSiteSelect}
+          initialCustomerId={customerId}
+          initialSiteId={siteId}
+          siteRequired={false}
+        />
+
+        {/* Daily Report Selection Modal */}
+        <Modal
+          isOpen={showDailyReportModal}
+          onClose={() => setShowDailyReportModal(false)}
+          title="日報選択"
+          size="lg"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setShowDailyReportModal(false)}>
+                キャンセル
+              </Button>
+              <Button onClick={() => setShowDailyReportModal(false)}>選択</Button>
+            </>
+          }
+        >
+          {dailyReports.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">該当する日報がありません</div>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {dailyReports.map((report) => (
+                <label
+                  key={report.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 ${
+                    selectedDailyReportIds.includes(report.id)
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedDailyReportIds.includes(report.id)}
+                    onChange={() => handleDailyReportToggle(report.id)}
+                    className="w-4 h-4 text-blue-600 rounded"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{formatDate(report.report_date)}</span>
+                      <span className="text-blue-600 font-medium">
+                        {formatCurrency(report.total_amount)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600">{report.summary || "作業"}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 pt-4 border-t flex justify-end">
+            <span className="text-sm text-gray-600">
+              合計金額(税込):{" "}
+              <span className="font-bold text-blue-600">
+                {formatCurrency(selectedDailyReportsTotal)}
+              </span>
+            </span>
+          </div>
+        </Modal>
+
+        {/* Auto Generate Modal */}
+        <Modal
+          isOpen={showAutoGenerateModal}
+          onClose={() => setShowAutoGenerateModal(false)}
+          title="日報から自動生成"
+          size="md"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setShowAutoGenerateModal(false)}>
+                キャンセル
+              </Button>
+              <Button onClick={handleGenerateFromDailyReports}>生成する</Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              選択中の日報: {selectedDailyReportIds.length}件
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">生成パターン</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="generatePattern"
+                    value="per_report"
+                    checked={generatePattern === "per_report"}
+                    onChange={() => setGeneratePattern("per_report")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span>日報単位</span>
+                  <span className="text-sm text-gray-500">- 日報ごとに項目を分けて生成</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="generatePattern"
+                    value="aggregated"
+                    checked={generatePattern === "aggregated"}
+                    onChange={() => setGeneratePattern("aggregated")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span>集約</span>
+                  <span className="text-sm text-gray-500">- 同じ製品・資材は合算して生成</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Draft Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showDraftConfirmModal}
+          onClose={() => setShowDraftConfirmModal(false)}
+          onConfirm={handleConfirmDraft}
+          title="下書き保存の確認"
+          message={`この請求書を下書き保存しますか？\n\n顧客: ${customerName}\n合計金額: ${formatCurrency(totalAmount)}`}
+          confirmText="下書き保存"
+          loading={createMutation.isPending}
+        />
+
+        {/* Issue Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showIssueConfirmModal}
+          onClose={() => setShowIssueConfirmModal(false)}
+          onConfirm={handleConfirmIssue}
+          title="請求書の発行確認"
+          message={`この請求書を発行しますか？\n\n顧客: ${customerName}\n合計金額: ${formatCurrency(totalAmount)}`}
+          confirmText="発行する"
+          loading={createMutation.isPending || issueMutation.isPending}
+        />
+
+        {/* Item Type Change Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showItemTypeChangeModal}
+          onClose={cancelItemTypeChange}
+          onConfirm={confirmItemTypeChange}
+          title="種別の変更"
+          message="種別を変更すると、この行のデータがクリアされます。変更しますか？"
+          confirmText="変更する"
+          cancelText="キャンセル"
+          variant="danger"
+        />
+
+        {/* Integrate Items Confirmation Modal */}
+        <ConfirmModal
+          isOpen={showIntegrateConfirmModal}
+          onClose={() => setShowIntegrateConfirmModal(false)}
+          onConfirm={handleConfirmIntegrate}
+          title="請求項目のまとめ"
+          message={`選択した項目を一行にまとめますか？\n\n選択した項目は削除され、金額が合算された新しい請求項目が作成されます。`}
+          confirmText="はい"
+          cancelText="いいえ"
+        />
+
+        {/* Product Search Modal */}
+        <ProductSearchModal
+          isOpen={showProductSearchModal}
+          onClose={() => {
+            setShowProductSearchModal(false);
+            setSearchTargetItemId(null);
+          }}
+          onSelect={handleSelectProduct}
+        />
+
+        {/* Material Search Modal */}
+        <MaterialSearchModal
+          isOpen={showMaterialSearchModal}
+          onClose={() => {
+            setShowMaterialSearchModal(false);
+            setSearchTargetItemId(null);
+          }}
+          onSelect={handleSelectMaterial}
+        />
+
+        {/* Product Select Modal for Invoice Products */}
+        <ProductSearchModal
+          isOpen={showProductSelectModal}
+          onClose={() => setShowProductSelectModal(false)}
+          onSelect={handleAddInvoiceProduct}
+        />
+
+        {/* Material Select Modal for Invoice Materials */}
+        <MaterialSearchModal
+          isOpen={showMaterialSelectModal}
+          onClose={() => setShowMaterialSelectModal(false)}
+          onSelect={handleAddInvoiceMaterial}
+        />
+
+        {/* Leave Confirmation Modal */}
+        <Modal
+          isOpen={showLeaveConfirmModal}
+          onClose={() => setShowLeaveConfirmModal(false)}
+          title="請求書が作成途中です"
+          size="sm"
+          footer={
+            <div className="flex gap-3 justify-end">
+              <Button variant="danger" onClick={handleDiscardAndLeave}>
+                削除する
+              </Button>
+              <Button onClick={handleSaveDraftAndLeave} disabled={createMutation.isPending}>
+                {createMutation.isPending ? "保存中..." : "下書き保存する"}
+              </Button>
+            </div>
+          }
+        >
+          <p className="text-gray-600">入力中のデータがあります。下書き保存しますか？</p>
+        </Modal>
+      </div>
+    </FullScreenModal>
+  );
+}
+
+// Sub-components
+function DailyReportCard({
+  report,
+  onRemove,
+}: {
+  report: DailyReportForInvoice;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="font-medium shrink-0">{formatDate(report.report_date)}</span>
+          <span className="text-gray-700 truncate">{report.summary || "作業"}</span>
+        </div>
+        <button onClick={onRemove} className="text-gray-400 hover:text-red-500 shrink-0 ml-2">
+          ×
+        </button>
+      </div>
+      <div className="text-sm text-gray-600 space-y-1">
+        {report.workers && report.workers.length > 0 && (
+          <div className="truncate">作業者: {report.workers.join("、")}</div>
+        )}
+        {report.products && report.products.length > 0 && (
+          <div className="truncate">
+            使用製品: {report.products.map((p) => `${p.name}×${p.quantity}`).join(", ")}
+          </div>
+        )}
+        {report.materials && report.materials.length > 0 && (
+          <div className="truncate">
+            使用資材: {report.materials.map((m) => `${m.name}×${m.quantity}`).join(", ")}
+          </div>
+        )}
+        <div className="flex justify-end gap-4 font-medium text-gray-700">
+          <span>工賃: {formatCurrency(report.labor_cost)}</span>
+          <span>合計金額: {formatCurrency(report.total_amount)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
